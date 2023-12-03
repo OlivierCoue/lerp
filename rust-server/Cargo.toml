@@ -1,0 +1,17 @@
+[package]
+name = "project-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+enet-cs-sys = "0.1.1"
+enum_dispatch = "0.3.12"
+protobuf = "3.3.0"
+rand = "0.8.4"
+rust-common = { path = "../rust-common" }
+serde = { version = "1.0.192", features = ["derive"] }
+serde_json = "1.0"
+
+[build-dependencies]
+protobuf-codegen = "3.3.0"
+protoc-bin-vendored = "3.0.0"

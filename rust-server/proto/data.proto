@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+enum UdpMsgDownType {
+    GAME_ENTITY_UPDATE = 0;
+    GAME_ENTITY_REMOVED = 1;
+}
+
+message Point {
+    double x = 1;
+    double y = 2;
+}
+
+enum GameEntityBaseType {
+    CHARACTER = 0;
+    PROJECTILE = 1;
+}
+
+message UdpMsgDownGameEntityUpdate {
+    uint32 id = 1;
+    GameEntityBaseType object_type = 2;
+    optional Point location_current = 3;
+    optional Point location_target = 4;
+    optional double location_speed = 5;
+    bool is_self = 6;
+}
+
+message UdpMsgDownGameEntityRemoved {
+    uint32 id = 1;
+}
+
+message UdpMsgDown {
+    UdpMsgDownType _type = 1;
+    optional UdpMsgDownGameEntityUpdate game_entity_update = 2;
+    optional UdpMsgDownGameEntityRemoved game_entity_removed = 3;
+}
+
+message UdpMsgDownWrapper {
+    uint64 server_time = 1;
+    repeated UdpMsgDown messages = 2;
+}
