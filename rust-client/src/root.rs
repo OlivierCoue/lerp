@@ -1,24 +1,25 @@
-use godot::{
-    engine::{InputEvent, InputEventMouse},
-    prelude::*,
+use godot::{engine::InputEvent, prelude::*};
+use rust_common::proto::{
+    common::Point,
+    udp_down::UdpMsgDownType,
+    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
 };
-use rust_common::proto::data::UdpMsgDownType;
 
 use crate::{network::Network, play_node::PlayNode};
 
 #[derive(GodotClass)]
-#[class(base=Node)]
-struct Root {
+#[class(base=Node2D)]
+pub struct Root {
     #[base]
-    base: Base<Node>,
+    base: Base<Node2D>,
 
     network: Option<Gd<Network>>,
     play_node: Option<Gd<PlayNode>>,
 }
 
 #[godot_api]
-impl INode for Root {
-    fn init(base: Base<Node>) -> Self {
+impl INode2D for Root {
+    fn init(base: Base<Node2D>) -> Self {
         godot_print!("Root init");
 
         Self {
@@ -70,30 +71,70 @@ impl INode for Root {
     fn input(&mut self, event: Gd<InputEvent>) {
         if event.is_action_pressed("left_mouse_button".into()) {
             godot_print!("Left button pressed");
-            let event_mouse: Gd<InputEventMouse> = event.cast();
-            let mouse_position = event_mouse.get_position();
+            let mouse_position = self.base.get_global_mouse_position();
+            self.base
+                .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
             if let Some(network) = &self.network {
-                network.bind().send(
-                    "{\"msg_type\":\"PlayerMove\",\"msg_payload\":\"{\\\"x\\\":".to_owned()
-                        + &mouse_position.x.to_string()
-                        + ",\\\"y\\\":"
-                        + &mouse_position.y.to_string()
-                        + "}\"}",
-                )
+                network.bind().send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::PLAYER_MOVE.into(),
+                        player_move: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
             }
         } else if event.is_action_pressed("key_e".into()) {
             godot_print!("Key E pressed");
-            let mouse_position = self.base.get_viewport().unwrap().get_mouse_position();
+            let mouse_position = self.base.get_global_mouse_position();
+            self.base
+                .emit_signal("player_throw_fireball_start".into(), &[]);
             if let Some(network) = &self.network {
-                network.bind().send(
-                    "{\"msg_type\":\"PlayerThrowFrozenOrb\",\"msg_payload\":\"{\\\"x\\\":"
-                        .to_owned()
-                        + &mouse_position.x.to_string()
-                        + ",\\\"y\\\":"
-                        + &mouse_position.y.to_string()
-                        + "}\"}",
-                )
+                network.bind().send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                        player_throw_frozen_orb: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
+            }
+        } else if event.is_action_pressed("key_r".into()) {
+            godot_print!("Key R pressed");
+            let mouse_position = self.base.get_global_mouse_position();
+            if let Some(network) = &self.network {
+                network.bind().send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::PLAYER_TELEPORT.into(),
+                        player_teleport: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
             }
         }
     }
+}
+
+#[godot_api]
+impl Root {
+    #[signal]
+    fn player_move_start();
+    #[signal]
+    fn player_throw_fireball_start();
 }

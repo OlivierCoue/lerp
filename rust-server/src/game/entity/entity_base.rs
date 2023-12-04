@@ -1,5 +1,9 @@
-use rust_common::proto::data::{
-    GameEntityBaseType, Point, UdpMsgDown, UdpMsgDownGameEntityUpdate, UdpMsgDownType,
+use rust_common::{
+    helper::vector2_to_point,
+    proto::{
+        common::{GameEntityBaseType, Point},
+        udp_down::{UdpMsgDown, UdpMsgDownGameEntityUpdate, UdpMsgDownType},
+    },
 };
 
 use crate::utils::get_game_time;
@@ -142,18 +146,18 @@ impl GameEntity {
 
         let mut location_current: Option<Point> = None;
         let mut location_target: Option<Point> = None;
-        let mut location_speed: Option<f64> = None;
+        let mut location_speed: Option<f32> = None;
         // let mut health = None;
 
         if self.is_visible_for(for_game_entity) {
             location_current = self
                 .location
                 .as_ref()
-                .map(|location| location.get_current().to_point());
+                .map(|location| vector2_to_point(location.get_current()));
             location_target = self
                 .location
                 .as_ref()
-                .map(|location| location.get_target().to_point());
+                .map(|location| vector2_to_point(location.get_target()));
             location_speed = self.location.as_ref().map(|location| location.speed);
             // health = self.health.as_ref().map(|health| health.serialize());
         };

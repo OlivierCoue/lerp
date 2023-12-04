@@ -1,6 +1,6 @@
 use enet_cs_sys::*;
 use godot::log::godot_print;
-use rust_common::proto::data::UdpMsgDownWrapper;
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::UdpMsgUpWrapper};
 use std::{
     collections::VecDeque,
     ffi::CString,
@@ -18,12 +18,11 @@ unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
 const ADDRESS: &str = "127.0.0.1";
-const CONNECTION_TIMEOUT: u32 = 5000;
 const PORT: u16 = 34254;
 
 pub fn enet_start(
     udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
-    rx_enet_sender: Receiver<String>,
+    rx_enet_sender: Receiver<UdpMsgUpWrapper>,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));
     let peers_for_manage = Arc::clone(&peers);
@@ -59,7 +58,7 @@ pub fn enet_start(
         let mut event: _ENetEvent = unsafe { MaybeUninit::zeroed().assume_init() };
 
         loop {
-            if unsafe { enet_host_service(host, &mut event, CONNECTION_TIMEOUT) } > 0 {
+            if unsafe { enet_host_service(host, &mut event, 5) } > 0 {
                 #[allow(non_upper_case_globals)]
                 match event.type_ {
                     _ENetEventType_ENET_EVENT_TYPE_CONNECT => {
@@ -81,7 +80,6 @@ pub fn enet_start(
                                     .expect("packet data too long for an `usize`"),
                             )
                         };
-
                         let udp_msg_down_wrapper: UdpMsgDownWrapper =
                             UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
                                 .expect("Failed to parse UdpMsgDownWrapper");
@@ -99,11 +97,11 @@ pub fn enet_start(
     });
 
     let enet_sender = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(5000));
+        thread::sleep(Duration::from_millis(2000));
 
         for msg_to_send in &rx_enet_sender {
             if let Some(peer) = &*peers_for_send.lock().unwrap() {
-                let out_bytes = msg_to_send.as_bytes();
+                let out_bytes = msg_to_send.write_to_bytes().unwrap();
                 let packet: *mut _ENetPacket = unsafe {
                     enet_packet_create(
                         out_bytes.as_ptr().cast(),

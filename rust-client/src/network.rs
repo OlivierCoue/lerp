@@ -14,7 +14,10 @@ use godot::{
     log::godot_print,
     obj::Base,
 };
-use rust_common::proto::data::UdpMsgDownWrapper;
+use rust_common::proto::{
+    udp_down::UdpMsgDownWrapper,
+    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
+};
 
 use crate::enet::enet_start;
 
@@ -25,14 +28,12 @@ pub struct Network {
     base: Base<Node>,
 
     pub udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
-    pub tx_enet_sender: Arc<Mutex<Option<Sender<String>>>>,
+    pub tx_enet_sender: Arc<Mutex<Option<Sender<UdpMsgUpWrapper>>>>,
 }
 
 #[godot_api]
 impl INode for Network {
     fn init(base: Base<Node>) -> Self {
-        godot_print!("Network init");
-
         Network {
             base,
             udp_msg_down_wrappers: Arc::new(Mutex::new(VecDeque::<UdpMsgDownWrapper>::new())),
@@ -55,30 +56,29 @@ impl INode for Network {
             thread::sleep(Duration::from_millis(1000));
             if let Some(some_tx_enet_sender_clone) = &*tx_enet_sender_clone.lock().unwrap() {
                 some_tx_enet_sender_clone
-                    .send(String::from(
-                        "{\"msg_type\":\"PlayerPing\",\"msg_payload\":\"{}\"}\n",
-                    ))
-                    .expect("Failed to send msg to server");
+                    .send(UdpMsgUpWrapper {
+                        messages: vec![UdpMsgUp {
+                            _type: UdpMsgUpType::PLAYER_PING.into(),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    })
+                    .expect("Failed to send msg: PLAYER_PING to server");
             }
         });
 
         if let Some(some_tx_enet_sender) = &*self.tx_enet_sender.lock().unwrap() {
             some_tx_enet_sender
-                .send(String::from(
-                    "{\"msg_type\":\"PlayerInit\",\"msg_payload\":\"{}\"}",
-                ))
-                .expect("Failed to send msg to server");
+                .send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::PLAYER_INIT.into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
+                .expect("Failed to send msg: PLAYER_INIT to server");
         }
     }
-
-    // fn process(&mut self, _: f64) {
-    //     if let Ok(mut udp_msg_down_wrappers) = self.udp_msg_down_wrappers.lock() {
-    //         while let Some(udp_msg_down_wrapper) = udp_msg_down_wrappers.pop_front() {
-    //             godot_print!("Received msg: {:?}", udp_msg_down_wrapper.server_time);
-    //             self.base.emit_signal("udp_msg_down_received".into(), &[]);
-    //         }
-    //     }
-    // }
 }
 
 #[godot_api]
@@ -88,10 +88,10 @@ impl Network {
 }
 
 impl Network {
-    pub fn send(&self, msg: String) {
+    pub fn send(&self, udp_msg_up_wrapper: UdpMsgUpWrapper) {
         if let Some(some_tx_enet_sender) = &*self.tx_enet_sender.lock().unwrap() {
             some_tx_enet_sender
-                .send(msg)
+                .send(udp_msg_up_wrapper)
                 .expect("Failed to send msg to server");
         }
     }

@@ -405,21 +405,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "project-rust"
-version = "0.1.0"
-dependencies = [
- "enet-cs-sys",
- "enum_dispatch",
- "protobuf",
- "protobuf-codegen",
- "protoc-bin-vendored",
- "rand",
- "rust-common",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "protobuf"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -611,7 +596,24 @@ dependencies = [
 name = "rust-common"
 version = "0.1.0"
 dependencies = [
+ "godot",
  "protobuf",
+]
+
+[[package]]
+name = "rust-server"
+version = "0.1.0"
+dependencies = [
+ "enet-cs-sys",
+ "enum_dispatch",
+ "godot",
+ "protobuf",
+ "protobuf-codegen",
+ "protoc-bin-vendored",
+ "rand",
+ "rust-common",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

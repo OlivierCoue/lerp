@@ -1,4 +1,4 @@
-use rust_common::proto::data::UdpMsgDownWrapper;
+use rust_common::proto::udp_down::UdpMsgDownWrapper;
 
 use crate::utils::get_timestamp_millis;
 use std::sync::mpsc::Sender;

@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use rust_common::proto::data::{
-    GameEntityBaseType, UdpMsgDown, UdpMsgDownGameEntityRemoved, UdpMsgDownType,
+use godot::builtin::Vector2;
+use rust_common::proto::{
+    common::GameEntityBaseType,
+    udp_down::{UdpMsgDown, UdpMsgDownGameEntityRemoved, UdpMsgDownType},
 };
 
 use crate::{
@@ -10,7 +12,7 @@ use crate::{
         entity_health::GameEntityHealthParams,
         entity_location::GameEntityLocationParams,
     },
-    utils::{get_id, Coord},
+    utils::get_id,
 };
 
 use super::{
@@ -33,9 +35,9 @@ impl Player {
                 GameEntityBaseType::CHARACTER,
                 GameEntityParams {
                     location: Some(GameEntityLocationParams {
-                        opt_current: Some(Coord { x: 0.0, y: 0.0 }),
-                        opt_target: Some(Coord { x: 0.0, y: 0.0 }),
-                        speed: 25.0,
+                        opt_current: Some(Vector2 { x: 0.0, y: 0.0 }),
+                        opt_target: Some(Vector2 { x: 0.0, y: 0.0 }),
+                        speed: 600.0,
                         is_static: false,
                         delete_if_oob: false,
                         delete_at_target: false,
@@ -54,36 +56,36 @@ impl Player {
         })
     }
 
-    pub fn user_update_location_target(&mut self, new_x: f64, new_y: f64) {
+    pub fn user_update_location_target(&mut self, new_x: f32, new_y: f32) {
         self.action_queue
-            .push(EGameEntityAction::UpdateLocationTarget(Coord {
+            .push(EGameEntityAction::UpdateLocationTarget(Vector2 {
                 x: new_x,
                 y: new_y,
             }))
     }
 
-    pub fn user_instant_update_location(&mut self, new_x: f64, new_y: f64) {
+    pub fn user_instant_update_location(&mut self, new_x: f32, new_y: f32) {
         self.action_queue
-            .push(EGameEntityAction::InstantUpdateLocation(Coord {
+            .push(EGameEntityAction::InstantUpdateLocation(Vector2 {
                 x: new_x,
                 y: new_y,
             }))
     }
 
-    pub fn user_throw_projectile(&mut self, to_x: f64, to_y: f64) {
+    pub fn user_throw_projectile(&mut self, to_x: f32, to_y: f32) {
         if let Some(location) = &self.game_entity.location {
             self.action_queue.push(EGameEntityAction::ThrowProjectile(
                 *location.get_current(),
-                Coord { x: to_x, y: to_y },
+                Vector2 { x: to_x, y: to_y },
             ))
         }
     }
 
-    pub fn user_throw_frozen_orb(&mut self, to_x: f64, to_y: f64) {
+    pub fn user_throw_frozen_orb(&mut self, to_x: f32, to_y: f32) {
         if let Some(location) = &self.game_entity.location {
             self.action_queue.push(EGameEntityAction::ThrowFrozenOrb(
                 *location.get_current(),
-                Coord { x: to_x, y: to_y },
+                Vector2 { x: to_x, y: to_y },
             ))
         }
     }
@@ -175,9 +177,15 @@ impl GameController for Player {
                 EGameEntityAction::ToggleHidden => self.game_entity.toggle_is_hidden(),
                 EGameEntityAction::ThrowProjectile(from, to) => {
                     new_controllers.push(Projectile::create(*from, *to));
+                    if let Some(location) = &mut self.game_entity.location {
+                        location.update_target(location.get_current().x, location.get_current().y);
+                    }
                 }
                 EGameEntityAction::ThrowFrozenOrb(from, to) => {
                     new_controllers.push(FrozenOrb::create(*from, *to));
+                    if let Some(location) = &mut self.game_entity.location {
+                        location.update_target(location.get_current().x, location.get_current().y);
+                    }
                 }
             }
         }

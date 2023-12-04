@@ -7,7 +7,9 @@ fn main() {
         // All inputs and imports from the inputs must reside in `includes` directories.
         .includes(["proto"])
         // Inputs must reside in some of include paths.
-        .input("proto/data.proto")
+        .input("proto/common.proto")
+        .input("proto/udp-down.proto")
+        .input("proto/udp-up.proto")
         // Specify output directory relative to Cargo output directory.
         .out_dir("../rust-common/src/proto")
         .run_from_script();

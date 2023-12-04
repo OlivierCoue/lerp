@@ -1,8 +1,7 @@
 mod game;
-mod maths;
 mod network;
 mod utils;
-use game::serialize::udp_msg_up::UdpMsgUp;
+use rust_common::proto::udp_up::UdpMsgUpWrapper;
 
 use crate::game::Game;
 use crate::network::enet::enet_start;
@@ -16,8 +15,7 @@ use std::thread;
 fn main() {
     let (tx_enet_sender, rx_enet_sender) = mpsc::channel();
 
-    let clients_msg: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>> =
-        Arc::new(Mutex::new(VecDeque::<(u16, UdpMsgUp)>::new()));
+    let clients_msg = Arc::new(Mutex::new(VecDeque::<(u16, UdpMsgUpWrapper)>::new()));
     let clients_msg_udp_receiver = Arc::clone(&clients_msg);
     let clients_msg_game = Arc::clone(&clients_msg);
 

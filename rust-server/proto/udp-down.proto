@@ -1,18 +1,9 @@
 syntax = "proto3";
+import "common.proto";
 
 enum UdpMsgDownType {
     GAME_ENTITY_UPDATE = 0;
     GAME_ENTITY_REMOVED = 1;
-}
-
-message Point {
-    double x = 1;
-    double y = 2;
-}
-
-enum GameEntityBaseType {
-    CHARACTER = 0;
-    PROJECTILE = 1;
 }
 
 message UdpMsgDownGameEntityUpdate {
@@ -20,7 +11,7 @@ message UdpMsgDownGameEntityUpdate {
     GameEntityBaseType object_type = 2;
     optional Point location_current = 3;
     optional Point location_target = 4;
-    optional double location_speed = 5;
+    optional float location_speed = 5;
     bool is_self = 6;
 }
 

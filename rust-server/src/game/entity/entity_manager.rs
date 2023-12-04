@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rust_common::proto::data::UdpMsgDown;
+use rust_common::proto::udp_down::UdpMsgDown;
 
 use crate::game::controller::{player::Player, types::GameController, types::GameEntityController};
 

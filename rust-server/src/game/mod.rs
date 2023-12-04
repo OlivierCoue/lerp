@@ -1,11 +1,11 @@
 mod controller;
 mod entity;
-pub mod serialize;
 pub mod user;
 
-use rust_common::proto::data::UdpMsgDownWrapper;
+use rust_common::proto::udp_down::UdpMsgDownWrapper;
+use rust_common::proto::udp_up::{UdpMsgUpType, UdpMsgUpWrapper};
 
-use crate::utils::{get_timestamp_millis, inc_game_time_millis, Coord};
+use crate::utils::{get_timestamp_millis, inc_game_time_millis};
 use std::cmp::max;
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -16,11 +16,11 @@ use std::{collections::HashMap, sync::mpsc::Sender};
 use crate::game::user::User;
 
 use self::entity::entity_manager::GameEntityManager;
-use self::serialize::udp_msg_up::{UdpMsgUp, UdpMsgUpTypes};
 
 const TICK_RATE_MILLIS: u128 = 30;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
+pub const DELTA: f32 = 0.030_303_031;
 
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
@@ -29,13 +29,13 @@ pub struct Game<'a> {
     tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
     game_entity_manager: GameEntityManager,
-    clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUp)>>,
+    clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
 }
 
 impl<'a> Game<'a> {
     pub fn new(
         tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
-        clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUp)>>,
+        clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
     ) -> Game<'a> {
         Game {
             users: HashMap::new(),
@@ -128,7 +128,11 @@ impl<'a> Game<'a> {
         }
     }
 
-    pub fn handle_upd_msg_up(&mut self, from_enet_peer_id: &u16, udp_msg_up: &UdpMsgUp) {
+    pub fn handle_upd_msg_up(
+        &mut self,
+        from_enet_peer_id: &u16,
+        udp_msg_up_wrapper: &UdpMsgUpWrapper,
+    ) {
         let from_actor_id = match self.peer_id_user_id_map.get(from_enet_peer_id) {
             None => {
                 println!("New message from unknown addr {from_enet_peer_id}");
@@ -137,73 +141,71 @@ impl<'a> Game<'a> {
             Some(player_id) => *player_id,
         };
 
-        let user = self.users.get_mut(&from_actor_id);
+        for udp_msg_up in udp_msg_up_wrapper.messages.iter() {
+            let user = self.users.get_mut(&from_actor_id);
 
-        match udp_msg_up.msg_type {
-            UdpMsgUpTypes::GamePause => self.paused = !self.paused,
-            UdpMsgUpTypes::PlayerInit => {
-                if user.is_none() {
-                    self.add_user(*from_enet_peer_id, self.tx_enet_sender)
-                };
-            }
-            UdpMsgUpTypes::PlayerMove => {
-                if let Some(ok_user) = user {
-                    let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                    if let (Ok(ok_coord), Some(player)) = (
-                        serde_json::from_str::<Coord>(&udp_msg_up.msg_payload),
-                        opt_player,
-                    ) {
-                        player.user_update_location_target(ok_coord.x, ok_coord.y)
-                    }
-                };
-            }
-            UdpMsgUpTypes::PlayerTeleport => {
-                if let Some(ok_user) = user {
-                    let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                    if let (Ok(ok_coord), Some(player)) = (
-                        serde_json::from_str::<Coord>(&udp_msg_up.msg_payload),
-                        opt_player,
-                    ) {
-                        player.user_instant_update_location(ok_coord.x, ok_coord.y)
-                    }
-                };
-            }
-            UdpMsgUpTypes::PlayerThrowFrozenOrb => {
-                if let Some(ok_user) = user {
-                    let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                    if let (Ok(ok_coord), Some(player)) = (
-                        serde_json::from_str::<Coord>(&udp_msg_up.msg_payload),
-                        opt_player,
-                    ) {
-                        player.user_throw_frozen_orb(ok_coord.x, ok_coord.y)
-                    }
-                };
-            }
-            UdpMsgUpTypes::PlayerThrowProjectile => {
-                if let Some(ok_user) = user {
-                    let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                    if let (Ok(ok_coord), Some(player)) = (
-                        serde_json::from_str::<Coord>(&udp_msg_up.msg_payload),
-                        opt_player,
-                    ) {
-                        player.user_throw_projectile(ok_coord.x, ok_coord.y)
-                    }
-                };
-            }
-            UdpMsgUpTypes::PlayerPing => {
-                if let Some(ok_player) = user {
-                    ok_player.user_ping()
+            match udp_msg_up._type.unwrap() {
+                UdpMsgUpType::GAME_PAUSE => self.paused = !self.paused,
+                UdpMsgUpType::PLAYER_INIT => {
+                    if user.is_none() {
+                        self.add_user(*from_enet_peer_id, self.tx_enet_sender)
+                    };
                 }
-            }
-            UdpMsgUpTypes::PlayerToggleHidden => {
-                if let Some(ok_user) = user {
-                    let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-                    if let Some(player) = opt_player {
-                        player.user_toggle_hidden();
+                UdpMsgUpType::PLAYER_MOVE => {
+                    if let Some(ok_user) = user {
+                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+
+                        if let (Some(ok_coord), Some(player)) =
+                            (&udp_msg_up.player_move.0, opt_player)
+                        {
+                            player.user_update_location_target(ok_coord.x, ok_coord.y)
+                        }
+                    };
+                }
+                UdpMsgUpType::PLAYER_TELEPORT => {
+                    if let Some(ok_user) = user {
+                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+
+                        if let (Some(ok_coord), Some(player)) =
+                            (&udp_msg_up.player_teleport.0, opt_player)
+                        {
+                            player.user_instant_update_location(ok_coord.x, ok_coord.y)
+                        }
+                    };
+                }
+                UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => {
+                    if let Some(ok_user) = user {
+                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+
+                        if let (Some(ok_coord), Some(player)) =
+                            (&udp_msg_up.player_throw_frozen_orb.0, opt_player)
+                        {
+                            player.user_throw_frozen_orb(ok_coord.x, ok_coord.y)
+                        }
+                    };
+                }
+                UdpMsgUpType::PLAYER_THROW_PROJECTILE => {
+                    if let Some(ok_user) = user {
+                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+
+                        if let (Some(ok_coord), Some(player)) =
+                            (&udp_msg_up.player_throw_projectile.0, opt_player)
+                        {
+                            player.user_throw_projectile(ok_coord.x, ok_coord.y)
+                        }
+                    };
+                }
+                UdpMsgUpType::PLAYER_PING => {
+                    if let Some(ok_player) = user {
+                        ok_player.user_ping()
+                    }
+                }
+                UdpMsgUpType::PLAYER_TOGGLE_HIDDEN => {
+                    if let Some(ok_user) = user {
+                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+                        if let Some(player) = opt_player {
+                            player.user_toggle_hidden();
+                        }
                     }
                 }
             }

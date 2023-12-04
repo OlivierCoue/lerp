@@ -1,5 +1,6 @@
 use enet_cs_sys::*;
-use rust_common::proto::data::UdpMsgDownWrapper;
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::UdpMsgUpWrapper};
+
 use std::{
     collections::{HashMap, VecDeque},
     ffi::CString,
@@ -8,7 +9,6 @@ use std::{
     thread,
 };
 
-use crate::game::serialize::udp_msg_up::UdpMsgUp;
 use protobuf::Message;
 pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 
@@ -20,7 +20,7 @@ const PORT: u16 = 34254;
 const MAX_PEERS_COUNT: usize = 10;
 
 pub fn enet_start(
-    peers_msg: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+    peers_msg: Arc<Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>>,
     rx_enet_sender: Receiver<(u16, UdpMsgDownWrapper)>,
 ) {
     let peers = Arc::new(Mutex::new(HashMap::new()));
@@ -97,9 +97,7 @@ pub fn enet_start(
                             )
                         };
 
-                        let recv_packet_str = std::str::from_utf8(recv_packet_raw).unwrap();
-
-                        match serde_json::from_str::<UdpMsgUp>(recv_packet_str) {
+                        match UdpMsgUpWrapper::parse_from_bytes(recv_packet_raw) {
                             Ok(udp_msg_up) => {
                                 peers_msg
                                     .lock()
@@ -107,10 +105,7 @@ pub fn enet_start(
                                     .push_back((unsafe { *event.peer }.incomingPeerID, udp_msg_up));
                             }
                             Err(err) => {
-                                println!(
-                                    "Failed to parse raw_msg: {} err: {:#?}",
-                                    recv_packet_str, err
-                                );
+                                println!("Failed to parse recv_packet_raw err: {:#?}", err);
                             }
                         }
                     }

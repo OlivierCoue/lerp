@@ -1,9 +1,9 @@
-use crate::utils::Coord;
+use godot::builtin::Vector2;
 
 pub enum EGameEntityAction {
-    UpdateLocationTarget(Coord),
-    InstantUpdateLocation(Coord),
-    ThrowProjectile(Coord, Coord),
-    ThrowFrozenOrb(Coord, Coord),
+    UpdateLocationTarget(Vector2),
+    InstantUpdateLocation(Vector2),
+    ThrowProjectile(Vector2, Vector2),
+    ThrowFrozenOrb(Vector2, Vector2),
     ToggleHidden,
 }

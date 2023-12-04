@@ -1,11 +1,12 @@
-use rust_common::proto::data::GameEntityBaseType;
+use godot::builtin::Vector2;
+use rust_common::proto::common::GameEntityBaseType;
 
 use crate::{
     game::entity::{
         entity_base::{GameEntity, GameEntityParams},
         entity_location::GameEntityLocationParams,
     },
-    utils::{get_id, Coord},
+    utils::get_id,
 };
 
 use super::{
@@ -17,7 +18,7 @@ pub struct FrozenOrb {
     pub game_entity: GameEntity,
 }
 impl FrozenOrb {
-    pub fn create(from: Coord, to: Coord) -> GameEntityController {
+    pub fn create(from: Vector2, to: Vector2) -> GameEntityController {
         GameEntityController::FronzenOrb(FrozenOrb {
             game_entity: GameEntity::new(
                 get_id() as u32,
@@ -26,7 +27,7 @@ impl FrozenOrb {
                     location: Some(GameEntityLocationParams {
                         opt_current: Some(from),
                         opt_target: Some(to),
-                        speed: 30.0,
+                        speed: 1000.0,
                         is_static: false,
                         delete_if_oob: true,
                         delete_at_target: false,
@@ -55,28 +56,28 @@ impl GameController for FrozenOrb {
                 let location_current = location.get_current();
                 new_controllers.push(Projectile::create(
                     *location_current,
-                    Coord {
+                    Vector2 {
                         x: location_current.x + 600.0,
                         y: location_current.y,
                     },
                 ));
                 new_controllers.push(Projectile::create(
                     *location_current,
-                    Coord {
+                    Vector2 {
                         x: location_current.x - 600.0,
                         y: location_current.y,
                     },
                 ));
                 new_controllers.push(Projectile::create(
                     *location_current,
-                    Coord {
+                    Vector2 {
                         x: location_current.x,
                         y: location_current.y + 600.0,
                     },
                 ));
                 new_controllers.push(Projectile::create(
                     *location_current,
-                    Coord {
+                    Vector2 {
                         x: location_current.x,
                         y: location_current.y - 600.0,
                     },

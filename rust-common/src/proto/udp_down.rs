@@ -19,151 +19,11 @@
 #![allow(unused_results)]
 #![allow(unused_mut)]
 
-//! Generated file from `data.proto`
+//! Generated file from `udp-down.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
 const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_3_3_0;
-
-// @@protoc_insertion_point(message:Point)
-#[derive(PartialEq,Clone,Default,Debug)]
-pub struct Point {
-    // message fields
-    // @@protoc_insertion_point(field:Point.x)
-    pub x: f64,
-    // @@protoc_insertion_point(field:Point.y)
-    pub y: f64,
-    // special fields
-    // @@protoc_insertion_point(special_field:Point.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a Point {
-    fn default() -> &'a Point {
-        <Point as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Point {
-    pub fn new() -> Point {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "x",
-            |m: &Point| { &m.x },
-            |m: &mut Point| { &mut m.x },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "y",
-            |m: &Point| { &m.y },
-            |m: &mut Point| { &mut m.y },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Point>(
-            "Point",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for Point {
-    const NAME: &'static str = "Point";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                9 => {
-                    self.x = is.read_double()?;
-                },
-                17 => {
-                    self.y = is.read_double()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if self.x != 0. {
-            my_size += 1 + 8;
-        }
-        if self.y != 0. {
-            my_size += 1 + 8;
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if self.x != 0. {
-            os.write_double(1, self.x)?;
-        }
-        if self.y != 0. {
-            os.write_double(2, self.y)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> Point {
-        Point::new()
-    }
-
-    fn clear(&mut self) {
-        self.x = 0.;
-        self.y = 0.;
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static Point {
-        static instance: Point = Point {
-            x: 0.,
-            y: 0.,
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for Point {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("Point").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for Point {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Point {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
 
 // @@protoc_insertion_point(message:UdpMsgDownGameEntityUpdate)
 #[derive(PartialEq,Clone,Default,Debug)]
@@ -172,13 +32,13 @@ pub struct UdpMsgDownGameEntityUpdate {
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.id)
     pub id: u32,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.object_type)
-    pub object_type: ::protobuf::EnumOrUnknown<GameEntityBaseType>,
+    pub object_type: ::protobuf::EnumOrUnknown<super::common::GameEntityBaseType>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_current)
-    pub location_current: ::protobuf::MessageField<Point>,
+    pub location_current: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_target)
-    pub location_target: ::protobuf::MessageField<Point>,
+    pub location_target: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_speed)
-    pub location_speed: ::std::option::Option<f64>,
+    pub location_speed: ::std::option::Option<f32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.is_self)
     pub is_self: bool,
     // special fields
@@ -210,12 +70,12 @@ impl UdpMsgDownGameEntityUpdate {
             |m: &UdpMsgDownGameEntityUpdate| { &m.object_type },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.object_type },
         ));
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, Point>(
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
             "location_current",
             |m: &UdpMsgDownGameEntityUpdate| { &m.location_current },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_current },
         ));
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, Point>(
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
             "location_target",
             |m: &UdpMsgDownGameEntityUpdate| { &m.location_target },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_target },
@@ -260,8 +120,8 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
                 34 => {
                     ::protobuf::rt::read_singular_message_into_field(is, &mut self.location_target)?;
                 },
-                41 => {
-                    self.location_speed = ::std::option::Option::Some(is.read_double()?);
+                45 => {
+                    self.location_speed = ::std::option::Option::Some(is.read_float()?);
                 },
                 48 => {
                     self.is_self = is.read_bool()?;
@@ -281,7 +141,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if self.id != 0 {
             my_size += ::protobuf::rt::uint32_size(1, self.id);
         }
-        if self.object_type != ::protobuf::EnumOrUnknown::new(GameEntityBaseType::CHARACTER) {
+        if self.object_type != ::protobuf::EnumOrUnknown::new(super::common::GameEntityBaseType::CHARACTER) {
             my_size += ::protobuf::rt::int32_size(2, self.object_type.value());
         }
         if let Some(v) = self.location_current.as_ref() {
@@ -293,7 +153,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
         if let Some(v) = self.location_speed {
-            my_size += 1 + 8;
+            my_size += 1 + 4;
         }
         if self.is_self != false {
             my_size += 1 + 1;
@@ -307,7 +167,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if self.id != 0 {
             os.write_uint32(1, self.id)?;
         }
-        if self.object_type != ::protobuf::EnumOrUnknown::new(GameEntityBaseType::CHARACTER) {
+        if self.object_type != ::protobuf::EnumOrUnknown::new(super::common::GameEntityBaseType::CHARACTER) {
             os.write_enum(2, ::protobuf::EnumOrUnknown::value(&self.object_type))?;
         }
         if let Some(v) = self.location_current.as_ref() {
@@ -317,7 +177,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             ::protobuf::rt::write_message_field_with_cached_size(4, v, os)?;
         }
         if let Some(v) = self.location_speed {
-            os.write_double(5, v)?;
+            os.write_float(5, v)?;
         }
         if self.is_self != false {
             os.write_bool(6, self.is_self)?;
@@ -340,7 +200,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
 
     fn clear(&mut self) {
         self.id = 0;
-        self.object_type = ::protobuf::EnumOrUnknown::new(GameEntityBaseType::CHARACTER);
+        self.object_type = ::protobuf::EnumOrUnknown::new(super::common::GameEntityBaseType::CHARACTER);
         self.location_current.clear();
         self.location_target.clear();
         self.location_speed = ::std::option::Option::None;
@@ -864,80 +724,17 @@ impl UdpMsgDownType {
     }
 }
 
-#[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
-// @@protoc_insertion_point(enum:GameEntityBaseType)
-pub enum GameEntityBaseType {
-    // @@protoc_insertion_point(enum_value:GameEntityBaseType.CHARACTER)
-    CHARACTER = 0,
-    // @@protoc_insertion_point(enum_value:GameEntityBaseType.PROJECTILE)
-    PROJECTILE = 1,
-}
-
-impl ::protobuf::Enum for GameEntityBaseType {
-    const NAME: &'static str = "GameEntityBaseType";
-
-    fn value(&self) -> i32 {
-        *self as i32
-    }
-
-    fn from_i32(value: i32) -> ::std::option::Option<GameEntityBaseType> {
-        match value {
-            0 => ::std::option::Option::Some(GameEntityBaseType::CHARACTER),
-            1 => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
-            _ => ::std::option::Option::None
-        }
-    }
-
-    fn from_str(str: &str) -> ::std::option::Option<GameEntityBaseType> {
-        match str {
-            "CHARACTER" => ::std::option::Option::Some(GameEntityBaseType::CHARACTER),
-            "PROJECTILE" => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
-            _ => ::std::option::Option::None
-        }
-    }
-
-    const VALUES: &'static [GameEntityBaseType] = &[
-        GameEntityBaseType::CHARACTER,
-        GameEntityBaseType::PROJECTILE,
-    ];
-}
-
-impl ::protobuf::EnumFull for GameEntityBaseType {
-    fn enum_descriptor() -> ::protobuf::reflect::EnumDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().enum_by_package_relative_name("GameEntityBaseType").unwrap()).clone()
-    }
-
-    fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
-        let index = *self as usize;
-        Self::enum_descriptor().value_by_index(index)
-    }
-}
-
-impl ::std::default::Default for GameEntityBaseType {
-    fn default() -> Self {
-        GameEntityBaseType::CHARACTER
-    }
-}
-
-impl GameEntityBaseType {
-    fn generated_enum_descriptor_data() -> ::protobuf::reflect::GeneratedEnumDescriptorData {
-        ::protobuf::reflect::GeneratedEnumDescriptorData::new::<GameEntityBaseType>("GameEntityBaseType")
-    }
-}
-
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\ndata.proto\"#\n\x05Point\x12\x0c\n\x01x\x18\x01\x20\x01(\x01R\x01x\
-    \x12\x0c\n\x01y\x18\x02\x20\x01(\x01R\x01y\"\xd1\x02\n\x1aUdpMsgDownGame\
-    EntityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_\
-    type\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\
-    \x10location_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurr\
-    ent\x88\x01\x01\x124\n\x0flocation_target\x18\x04\x20\x01(\x0b2\x06.Poin\
-    tH\x01R\x0elocationTarget\x88\x01\x01\x12*\n\x0elocation_speed\x18\x05\
-    \x20\x01(\x01H\x02R\rlocationSpeed\x88\x01\x01\x12\x17\n\x07is_self\x18\
-    \x06\x20\x01(\x08R\x06isSelfB\x13\n\x11_location_currentB\x12\n\x10_loca\
-    tion_targetB\x11\n\x0f_location_speed\"-\n\x1bUdpMsgDownGameEntityRemove\
-    d\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\
+    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xd1\x02\n\x1aUdpMsgDownGameEn\
+    tityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_ty\
+    pe\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\x10l\
+    ocation_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurrent\
+    \x88\x01\x01\x124\n\x0flocation_target\x18\x04\x20\x01(\x0b2\x06.PointH\
+    \x01R\x0elocationTarget\x88\x01\x01\x12*\n\x0elocation_speed\x18\x05\x20\
+    \x01(\x02H\x02R\rlocationSpeed\x88\x01\x01\x12\x17\n\x07is_self\x18\x06\
+    \x20\x01(\x08R\x06isSelfB\x13\n\x11_location_currentB\x12\n\x10_location\
+    _targetB\x11\n\x0f_location_speed\"-\n\x1bUdpMsgDownGameEntityRemoved\
+    \x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\
     \n\x05_type\x18\x01\x20\x01(\x0e2\x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12\
     game_entity_update\x18\x02\x20\x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\
     \0R\x10gameEntityUpdate\x88\x01\x01\x12Q\n\x13game_entity_removed\x18\
@@ -946,8 +743,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     emoved\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\x18\x01\x20\
     \x01(\x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\x0b2\x0b.UdpM\
     sgDownR\x08messages*A\n\x0eUdpMsgDownType\x12\x16\n\x12GAME_ENTITY_UPDAT\
-    E\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01*3\n\x12GameEntityBaseTy\
-    pe\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01b\x06proto3\
+    E\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -964,16 +760,15 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
     static file_descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::FileDescriptor> = ::protobuf::rt::Lazy::new();
     file_descriptor.get(|| {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
-            let mut deps = ::std::vec::Vec::with_capacity(0);
-            let mut messages = ::std::vec::Vec::with_capacity(5);
-            messages.push(Point::generated_message_descriptor_data());
+            let mut deps = ::std::vec::Vec::with_capacity(1);
+            deps.push(super::common::file_descriptor().clone());
+            let mut messages = ::std::vec::Vec::with_capacity(4);
             messages.push(UdpMsgDownGameEntityUpdate::generated_message_descriptor_data());
             messages.push(UdpMsgDownGameEntityRemoved::generated_message_descriptor_data());
             messages.push(UdpMsgDown::generated_message_descriptor_data());
             messages.push(UdpMsgDownWrapper::generated_message_descriptor_data());
-            let mut enums = ::std::vec::Vec::with_capacity(2);
+            let mut enums = ::std::vec::Vec::with_capacity(1);
             enums.push(UdpMsgDownType::generated_enum_descriptor_data());
-            enums.push(GameEntityBaseType::generated_enum_descriptor_data());
             ::protobuf::reflect::GeneratedFileDescriptor::new_generated(
                 file_descriptor_proto(),
                 deps,

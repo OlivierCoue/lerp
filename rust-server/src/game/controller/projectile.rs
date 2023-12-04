@@ -1,11 +1,12 @@
-use rust_common::proto::data::GameEntityBaseType;
+use godot::builtin::Vector2;
+use rust_common::proto::common::GameEntityBaseType;
 
 use crate::{
     game::entity::{
         entity_base::{GameEntity, GameEntityParams},
         entity_location::GameEntityLocationParams,
     },
-    utils::{get_id, Coord},
+    utils::get_id,
 };
 
 use super::types::{GameController, GameEntityController};
@@ -14,7 +15,7 @@ pub struct Projectile {
     pub game_entity: GameEntity,
 }
 impl Projectile {
-    pub fn create(from: Coord, to: Coord) -> GameEntityController {
+    pub fn create(from: Vector2, to: Vector2) -> GameEntityController {
         GameEntityController::Projectile(Projectile {
             game_entity: GameEntity::new(
                 get_id() as u32,
@@ -23,7 +24,7 @@ impl Projectile {
                     location: Some(GameEntityLocationParams {
                         opt_current: Some(from),
                         opt_target: Some(to),
-                        speed: 20.0,
+                        speed: 1000.0,
                         is_static: false,
                         delete_if_oob: true,
                         delete_at_target: true,
