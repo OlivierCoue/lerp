@@ -41,13 +41,15 @@ impl Player {
                         is_static: false,
                         delete_if_oob: false,
                         delete_at_target: false,
+                        shape: Vector2 { x: 100.0, y: 200.0 },
                     }),
                     health: Some(GameEntityHealthParams {
-                        max: 100,
+                        max: 1000,
                         min: 0,
                         opt_current: None,
                         delete_if_bellow_min: true,
                     }),
+                    dmg_on_hit: None,
                     duration: None,
                 },
             ),
@@ -176,13 +178,13 @@ impl GameController for Player {
                 }
                 EGameEntityAction::ToggleHidden => self.game_entity.toggle_is_hidden(),
                 EGameEntityAction::ThrowProjectile(from, to) => {
-                    new_controllers.push(Projectile::create(*from, *to));
+                    new_controllers.push(Projectile::create(self.game_entity.get_id(), *from, *to));
                     if let Some(location) = &mut self.game_entity.location {
                         location.update_target(location.get_current().x, location.get_current().y);
                     }
                 }
                 EGameEntityAction::ThrowFrozenOrb(from, to) => {
-                    new_controllers.push(FrozenOrb::create(*from, *to));
+                    new_controllers.push(FrozenOrb::create(self.game_entity.get_id(), *from, *to));
                     if let Some(location) = &mut self.game_entity.location {
                         location.update_target(location.get_current().x, location.get_current().y);
                     }

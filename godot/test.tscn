@@ -10,3 +10,9 @@
 texture = ExtResource("1_kgwp3")
 
 [node name="Camera2D" type="Camera2D" parent="Node2D/Sprite2D"]
+
+[node name="Panel" type="Panel" parent="Node2D/Sprite2D"]
+offset_left = -102.0
+offset_top = -72.0
+offset_right = 86.0
+offset_bottom = 34.0

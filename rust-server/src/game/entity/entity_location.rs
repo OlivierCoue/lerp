@@ -1,6 +1,6 @@
 use godot::builtin::Vector2;
 
-use crate::game::DELTA;
+use crate::game::TICK_TIME_DELTA;
 
 const GRID_SIZE_X_MIN: f32 = -1024.0;
 const GRID_SIZE_X_MAX: f32 = 1024.0;
@@ -15,6 +15,7 @@ pub struct GameEntityLocationParams {
     pub delete_if_oob: bool,
     pub delete_at_target: bool,
     pub speed: f32,
+    pub shape: Vector2,
 }
 
 pub struct GameEntityLocation {
@@ -26,6 +27,7 @@ pub struct GameEntityLocation {
     pub delete_at_target: bool,
     pub speed: f32,
     revision: u32,
+    shape: Vector2,
 }
 impl GameEntityLocation {
     pub fn new(params: GameEntityLocationParams) -> GameEntityLocation {
@@ -36,6 +38,7 @@ impl GameEntityLocation {
             is_static,
             delete_at_target,
             speed,
+            shape,
         } = params;
 
         let current = match opt_current {
@@ -57,6 +60,7 @@ impl GameEntityLocation {
             delete_at_target,
             speed,
             revision: 0,
+            shape,
         }
     }
 
@@ -80,6 +84,10 @@ impl GameEntityLocation {
         &self.target
     }
 
+    pub fn get_shape(&self) -> &Vector2 {
+        &self.shape
+    }
+
     pub fn update_current(&mut self, x: f32, y: f32) {
         self.current.x = GameEntityLocation::bounded_x(x);
         self.current.y = GameEntityLocation::bounded_y(y);
@@ -97,7 +105,9 @@ impl GameEntityLocation {
             return;
         }
 
-        let new_coord = self.current.move_toward(self.target, self.speed * DELTA);
+        let new_coord = self
+            .current
+            .move_toward(self.target, self.speed * TICK_TIME_DELTA);
 
         self.update_current(new_coord.x, new_coord.y);
     }

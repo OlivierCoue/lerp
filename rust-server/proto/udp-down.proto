@@ -12,7 +12,9 @@ message UdpMsgDownGameEntityUpdate {
     optional Point location_current = 3;
     optional Point location_target = 4;
     optional float location_speed = 5;
-    bool is_self = 6;
+    optional Point location_shape = 6;
+    optional uint32 health_current = 7;
+    bool is_self = 8;
 }
 
 message UdpMsgDownGameEntityRemoved {

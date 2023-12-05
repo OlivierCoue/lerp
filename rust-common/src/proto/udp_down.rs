@@ -39,6 +39,10 @@ pub struct UdpMsgDownGameEntityUpdate {
     pub location_target: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_speed)
     pub location_speed: ::std::option::Option<f32>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_shape)
+    pub location_shape: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.health_current)
+    pub health_current: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.is_self)
     pub is_self: bool,
     // special fields
@@ -58,7 +62,7 @@ impl UdpMsgDownGameEntityUpdate {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(6);
+        let mut fields = ::std::vec::Vec::with_capacity(8);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "id",
@@ -84,6 +88,16 @@ impl UdpMsgDownGameEntityUpdate {
             "location_speed",
             |m: &UdpMsgDownGameEntityUpdate| { &m.location_speed },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_speed },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
+            "location_shape",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.location_shape },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_shape },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "health_current",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.health_current },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.health_current },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "is_self",
@@ -123,7 +137,13 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
                 45 => {
                     self.location_speed = ::std::option::Option::Some(is.read_float()?);
                 },
-                48 => {
+                50 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.location_shape)?;
+                },
+                56 => {
+                    self.health_current = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                64 => {
                     self.is_self = is.read_bool()?;
                 },
                 tag => {
@@ -155,6 +175,13 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if let Some(v) = self.location_speed {
             my_size += 1 + 4;
         }
+        if let Some(v) = self.location_shape.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
+        if let Some(v) = self.health_current {
+            my_size += ::protobuf::rt::uint32_size(7, v);
+        }
         if self.is_self != false {
             my_size += 1 + 1;
         }
@@ -179,8 +206,14 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if let Some(v) = self.location_speed {
             os.write_float(5, v)?;
         }
+        if let Some(v) = self.location_shape.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(6, v, os)?;
+        }
+        if let Some(v) = self.health_current {
+            os.write_uint32(7, v)?;
+        }
         if self.is_self != false {
-            os.write_bool(6, self.is_self)?;
+            os.write_bool(8, self.is_self)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -204,6 +237,8 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         self.location_current.clear();
         self.location_target.clear();
         self.location_speed = ::std::option::Option::None;
+        self.location_shape.clear();
+        self.health_current = ::std::option::Option::None;
         self.is_self = false;
         self.special_fields.clear();
     }
@@ -215,6 +250,8 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             location_current: ::protobuf::MessageField::none(),
             location_target: ::protobuf::MessageField::none(),
             location_speed: ::std::option::Option::None,
+            location_shape: ::protobuf::MessageField::none(),
+            health_current: ::std::option::Option::None,
             is_self: false,
             special_fields: ::protobuf::SpecialFields::new(),
         };
@@ -725,25 +762,28 @@ impl UdpMsgDownType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xd1\x02\n\x1aUdpMsgDownGameEn\
+    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xd7\x03\n\x1aUdpMsgDownGameEn\
     tityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_ty\
     pe\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\x10l\
     ocation_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurrent\
     \x88\x01\x01\x124\n\x0flocation_target\x18\x04\x20\x01(\x0b2\x06.PointH\
     \x01R\x0elocationTarget\x88\x01\x01\x12*\n\x0elocation_speed\x18\x05\x20\
-    \x01(\x02H\x02R\rlocationSpeed\x88\x01\x01\x12\x17\n\x07is_self\x18\x06\
-    \x20\x01(\x08R\x06isSelfB\x13\n\x11_location_currentB\x12\n\x10_location\
-    _targetB\x11\n\x0f_location_speed\"-\n\x1bUdpMsgDownGameEntityRemoved\
-    \x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\
-    \n\x05_type\x18\x01\x20\x01(\x0e2\x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12\
-    game_entity_update\x18\x02\x20\x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\
-    \0R\x10gameEntityUpdate\x88\x01\x01\x12Q\n\x13game_entity_removed\x18\
-    \x03\x20\x01(\x0b2\x1c.UdpMsgDownGameEntityRemovedH\x01R\x11gameEntityRe\
-    moved\x88\x01\x01B\x15\n\x13_game_entity_updateB\x16\n\x14_game_entity_r\
-    emoved\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\x18\x01\x20\
-    \x01(\x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\x0b2\x0b.UdpM\
-    sgDownR\x08messages*A\n\x0eUdpMsgDownType\x12\x16\n\x12GAME_ENTITY_UPDAT\
-    E\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01b\x06proto3\
+    \x01(\x02H\x02R\rlocationSpeed\x88\x01\x01\x122\n\x0elocation_shape\x18\
+    \x06\x20\x01(\x0b2\x06.PointH\x03R\rlocationShape\x88\x01\x01\x12*\n\x0e\
+    health_current\x18\x07\x20\x01(\rH\x04R\rhealthCurrent\x88\x01\x01\x12\
+    \x17\n\x07is_self\x18\x08\x20\x01(\x08R\x06isSelfB\x13\n\x11_location_cu\
+    rrentB\x12\n\x10_location_targetB\x11\n\x0f_location_speedB\x11\n\x0f_lo\
+    cation_shapeB\x11\n\x0f_health_current\"-\n\x1bUdpMsgDownGameEntityRemov\
+    ed\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12\
+    $\n\x05_type\x18\x01\x20\x01(\x0e2\x0f.UdpMsgDownTypeR\x04Type\x12N\n\
+    \x12game_entity_update\x18\x02\x20\x01(\x0b2\x1b.UdpMsgDownGameEntityUpd\
+    ateH\0R\x10gameEntityUpdate\x88\x01\x01\x12Q\n\x13game_entity_removed\
+    \x18\x03\x20\x01(\x0b2\x1c.UdpMsgDownGameEntityRemovedH\x01R\x11gameEnti\
+    tyRemoved\x88\x01\x01B\x15\n\x13_game_entity_updateB\x16\n\x14_game_enti\
+    ty_removed\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\x18\x01\
+    \x20\x01(\x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\x0b2\x0b.\
+    UdpMsgDownR\x08messages*A\n\x0eUdpMsgDownType\x12\x16\n\x12GAME_ENTITY_U\
+    PDATE\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

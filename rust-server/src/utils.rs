@@ -23,3 +23,10 @@ pub fn get_timestamp_millis() -> u128 {
         .unwrap()
         .as_millis()
 }
+
+pub fn get_timestamp_nanos() -> u128 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+}

@@ -5,7 +5,7 @@ pub mod user;
 use rust_common::proto::udp_down::UdpMsgDownWrapper;
 use rust_common::proto::udp_up::{UdpMsgUpType, UdpMsgUpWrapper};
 
-use crate::utils::{get_timestamp_millis, inc_game_time_millis};
+use crate::utils::{get_timestamp_millis, get_timestamp_nanos, inc_game_time_millis};
 use std::cmp::max;
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -18,9 +18,10 @@ use crate::game::user::User;
 use self::entity::entity_manager::GameEntityManager;
 
 const TICK_RATE_MILLIS: u128 = 30;
+const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
-pub const DELTA: f32 = 0.030_303_031;
+pub const TICK_TIME_DELTA: f32 = 0.030_303_031;
 
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
@@ -70,21 +71,21 @@ impl<'a> Game<'a> {
     pub fn start(&mut self) {
         let mut tick_count = 0;
         loop {
-            let started_at: u128 = get_timestamp_millis();
+            let started_at: u128 = get_timestamp_nanos();
             tick_count += 1;
             self.tick(tick_count == UPDATE_USERS_EVERY_N_TICK);
             if tick_count == UPDATE_USERS_EVERY_N_TICK {
                 tick_count = 0;
             }
 
-            let tick_duration = get_timestamp_millis() - started_at;
-            if tick_duration < TICK_RATE_MILLIS {
-                let time_to_wait = max(TICK_RATE_MILLIS - tick_duration, 0);
-                thread::sleep(Duration::from_millis(time_to_wait as u64));
+            let tick_duration = get_timestamp_nanos() - started_at;
+            if tick_duration < TICK_RATE_NANOS {
+                let time_to_wait = max(TICK_RATE_NANOS - tick_duration, 0);
+                thread::sleep(Duration::from_nanos(time_to_wait as u64));
             } else {
                 println!(
-                    "WARNING tick_duration ({}) in more than TICK_RATE_MILLIS ({})",
-                    tick_duration, TICK_RATE_MILLIS
+                    "WARNING tick_duration ({}) in more than TICK_RATE_NANOS ({})",
+                    tick_duration, TICK_RATE_NANOS
                 );
             }
         }

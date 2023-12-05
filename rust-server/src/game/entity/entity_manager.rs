@@ -71,7 +71,7 @@ impl GameEntityManager {
                         controller_a.analyze(controller_b);
                         controller_a
                             .get_game_entity_mut()
-                            .tick_for(controller_b.get_game_entity());
+                            .tick_for(controller_b.get_game_entity_mut());
 
                         if update_users {
                             if let GameEntityController::Player(player) = &mut controller_a {

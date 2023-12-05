@@ -9,6 +9,7 @@ use rust_common::{
 use crate::utils::get_game_time;
 
 use super::{
+    entity_damage_on_hit::{GameEntityDamageOnHit, GameEntityDamageOnHitParams},
     entity_health::{GameEntityHealth, GameEntityHealthParams},
     entity_location::{GameEntityLocation, GameEntityLocationParams},
 };
@@ -17,6 +18,7 @@ use super::{
 pub struct GameEntityParams {
     pub location: Option<GameEntityLocationParams>,
     pub health: Option<GameEntityHealthParams>,
+    pub dmg_on_hit: Option<GameEntityDamageOnHitParams>,
     pub duration: Option<u32>,
 }
 
@@ -29,7 +31,8 @@ pub struct GameEntity {
     id: u32,
     object_type: GameEntityBaseType,
     pub location: Option<GameEntityLocation>,
-    pub health: Option<GameEntityHealth>,
+    health: Option<GameEntityHealth>,
+    dmg_on_hit: Option<GameEntityDamageOnHit>,
     is_hidden: bool,
     duration: Option<u32>,
     created_at_millis: u32,
@@ -41,12 +44,14 @@ impl GameEntity {
     pub fn new(id: u32, object_type: GameEntityBaseType, params: GameEntityParams) -> GameEntity {
         let location = params.location.map(GameEntityLocation::new);
         let health = params.health.map(GameEntityHealth::new);
+        let dmg_on_hit = params.dmg_on_hit.map(GameEntityDamageOnHit::new);
 
         GameEntity {
             id,
             object_type,
             location,
             health,
+            dmg_on_hit,
             is_hidden: false,
             duration: params.duration,
             created_at_millis: get_game_time(),
@@ -64,6 +69,9 @@ impl GameEntity {
         let mut revision = 0;
         if let Some(location) = &self.location {
             revision += location.get_revision()
+        }
+        if let Some(health) = &self.health {
+            revision += health.get_revision()
         }
         self.revision + revision
     }
@@ -112,7 +120,36 @@ impl GameEntity {
         self.revision += 1;
     }
 
-    pub fn tick_for(&mut self, _: &GameEntity) {}
+    pub fn tick_for(&mut self, other: &mut GameEntity) {
+        if self.health.is_some() {
+            if let (Some(location), Some(other_location)) = (&self.location, &other.location) {
+                let r1_pos = location.get_current();
+                let r1_size = location.get_shape();
+                let r2_pos = other_location.get_current();
+                let r2_size = other_location.get_shape();
+
+                let r1x = r1_pos.x - r1_size.x / 2.0;
+                let r1y = r1_pos.y - r1_size.y / 2.0;
+                let r1w = r1_size.x;
+                let r1h = r1_size.y;
+                let r2x = r2_pos.x - r2_size.x / 2.0;
+                let r2y = r2_pos.y - r2_size.y / 2.0;
+                let r2w = r2_size.x;
+                let r2h = r2_size.y;
+
+                // https://www.jeffreythompson.org/collision-detection/rect-rect.php
+                if r1x + r1w >= r2x && r1x <= r2x + r2w && r1y + r1h >= r2y && r1y <= r2y + r2h {
+                    if let Some(dmg_on_hit) = &mut other.dmg_on_hit {
+                        if let Some(dmg_value) = dmg_on_hit.get_dmg_value_for(self) {
+                            if let Some(mut_health) = &mut self.health {
+                                mut_health.reduce_current(dmg_value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     pub fn tick_self(&mut self) {
         let stop = match self.life_state {
@@ -146,7 +183,9 @@ impl GameEntity {
 
         let mut location_current: Option<Point> = None;
         let mut location_target: Option<Point> = None;
+        let mut location_shape: Option<Point> = None;
         let mut location_speed: Option<f32> = None;
+        let mut health_current: Option<u32> = None;
         // let mut health = None;
 
         if self.is_visible_for(for_game_entity) {
@@ -158,8 +197,12 @@ impl GameEntity {
                 .location
                 .as_ref()
                 .map(|location| vector2_to_point(location.get_target()));
+            location_shape = self
+                .location
+                .as_ref()
+                .map(|location| vector2_to_point(location.get_shape()));
             location_speed = self.location.as_ref().map(|location| location.speed);
-            // health = self.health.as_ref().map(|health| health.serialize());
+            health_current = self.health.as_ref().map(|health| health.get_current());
         };
 
         Some(UdpMsgDown {
@@ -169,7 +212,9 @@ impl GameEntity {
                 object_type: self.object_type.into(),
                 location_current: location_current.into(),
                 location_target: location_target.into(),
+                location_shape: location_shape.into(),
                 location_speed,
+                health_current,
                 is_self: for_game_entity.get_id() == self.id,
                 ..Default::default()
             }))

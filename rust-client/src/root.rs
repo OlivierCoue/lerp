@@ -97,8 +97,8 @@ impl INode2D for Root {
             if let Some(network) = &self.network {
                 network.bind().send(UdpMsgUpWrapper {
                     messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
-                        player_throw_frozen_orb: Some(Point {
+                        _type: UdpMsgUpType::PLAYER_THROW_PROJECTILE.into(),
+                        player_throw_projectile: Some(Point {
                             x: mouse_position.x,
                             y: mouse_position.y,
                             ..Default::default()
