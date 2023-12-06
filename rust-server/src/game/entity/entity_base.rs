@@ -30,7 +30,7 @@ pub enum GameEntityLifeState {
 pub struct GameEntity {
     id: u32,
     object_type: GameEntityBaseType,
-    pub location: Option<GameEntityLocation>,
+    location: Option<GameEntityLocation>,
     health: Option<GameEntityHealth>,
     dmg_on_hit: Option<GameEntityDamageOnHit>,
     is_hidden: bool,
@@ -76,13 +76,25 @@ impl GameEntity {
         self.revision + revision
     }
 
+    pub fn get_location(&self) -> &Option<GameEntityLocation> {
+        &self.location
+    }
+
+    pub fn get_location_mut(&mut self) -> &mut Option<GameEntityLocation> {
+        &mut self.location
+    }
+
+    pub fn get_health(&self) -> &Option<GameEntityHealth> {
+        &self.health
+    }
+
+    pub fn get_health_mut(&mut self) -> &mut Option<GameEntityHealth> {
+        &mut self.health
+    }
+
     pub fn is_visible_for(&self, other: &GameEntity) -> bool {
         !self.is_hidden || self.id == other.get_id()
     }
-
-    // pub fn get_age(&self) -> u32 {
-    //     get_game_time() - self.created_at
-    // }
 
     pub fn is_alive(&self) -> bool {
         !self.require_deletion && matches!(self.life_state, GameEntityLifeState::Alive)
@@ -121,28 +133,38 @@ impl GameEntity {
     }
 
     pub fn tick_for(&mut self, other: &mut GameEntity) {
-        if self.health.is_some() {
-            if let (Some(location), Some(other_location)) = (&self.location, &other.location) {
-                let r1_pos = location.get_current();
-                let r1_size = location.get_shape();
-                let r2_pos = other_location.get_current();
-                let r2_size = other_location.get_shape();
+        if let Some(self_health) = &self.health {
+            if !self_health.is_dead() {
+                if let Some(other_dmg_on_hit) = &mut other.dmg_on_hit {
+                    if let (Some(self_location), Some(other_location)) =
+                        (&self.location, &other.location)
+                    {
+                        let r1_pos = self_location.get_current();
+                        let r1_size = self_location.get_shape();
+                        let r2_pos = other_location.get_current();
+                        let r2_size = other_location.get_shape();
 
-                let r1x = r1_pos.x - r1_size.x / 2.0;
-                let r1y = r1_pos.y - r1_size.y / 2.0;
-                let r1w = r1_size.x;
-                let r1h = r1_size.y;
-                let r2x = r2_pos.x - r2_size.x / 2.0;
-                let r2y = r2_pos.y - r2_size.y / 2.0;
-                let r2w = r2_size.x;
-                let r2h = r2_size.y;
+                        let r1x = r1_pos.x - r1_size.x / 2.0;
+                        let r1y = r1_pos.y - r1_size.y / 2.0;
+                        let r1w = r1_size.x;
+                        let r1h = r1_size.y;
+                        let r2x = r2_pos.x - r2_size.x / 2.0;
+                        let r2y = r2_pos.y - r2_size.y / 2.0;
+                        let r2w = r2_size.x;
+                        let r2h = r2_size.y;
 
-                // https://www.jeffreythompson.org/collision-detection/rect-rect.php
-                if r1x + r1w >= r2x && r1x <= r2x + r2w && r1y + r1h >= r2y && r1y <= r2y + r2h {
-                    if let Some(dmg_on_hit) = &mut other.dmg_on_hit {
-                        if let Some(dmg_value) = dmg_on_hit.get_dmg_value_for(self) {
-                            if let Some(mut_health) = &mut self.health {
-                                mut_health.reduce_current(dmg_value);
+                        // https://www.jeffreythompson.org/collision-detection/rect-rect.php
+                        if r1x + r1w >= r2x
+                            && r1x <= r2x + r2w
+                            && r1y + r1h >= r2y
+                            && r1y <= r2y + r2h
+                        {
+                            if let Some(other_dmg_on_hit_value) =
+                                other_dmg_on_hit.get_dmg_value_for(self)
+                            {
+                                if let Some(mut_self_health) = &mut self.health {
+                                    mut_self_health.reduce_current(other_dmg_on_hit_value);
+                                }
                             }
                         }
                     }
@@ -171,8 +193,16 @@ impl GameEntity {
         if stop {
             return;
         };
+
+        let is_health_dead = match &self.health {
+            Some(health) => health.is_dead(),
+            None => false,
+        };
+
         if let Some(location) = &mut self.location {
-            location.move_to_target()
+            if !is_health_dead {
+                location.move_to_target()
+            }
         }
     }
 
@@ -186,7 +216,6 @@ impl GameEntity {
         let mut location_shape: Option<Point> = None;
         let mut location_speed: Option<f32> = None;
         let mut health_current: Option<u32> = None;
-        // let mut health = None;
 
         if self.is_visible_for(for_game_entity) {
             location_current = self

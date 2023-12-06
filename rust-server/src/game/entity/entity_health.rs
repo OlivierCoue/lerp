@@ -1,25 +1,17 @@
-use serde::Serialize;
-
-#[derive(Serialize, Debug)]
-pub struct SGameEntityHealth {
-    pub min: u32,
-    pub max: u32,
-    pub current: u32,
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct GameEntityHealthParams {
     pub min: u32,
     pub max: u32,
     pub opt_current: Option<u32>,
-    pub delete_if_bellow_min: bool,
+    pub delete_if_dead: bool,
 }
 
 pub struct GameEntityHealth {
     min: u32,
+    #[allow(dead_code)]
     max: u32,
     current: u32,
-    delete_if_bellow_min: bool,
+    delete_if_dead: bool,
     revision: u32,
 }
 impl GameEntityHealth {
@@ -28,7 +20,7 @@ impl GameEntityHealth {
             min,
             max,
             opt_current,
-            delete_if_bellow_min,
+            delete_if_dead: delete_if_bellow_min,
         } = params;
 
         let current = match opt_current {
@@ -40,7 +32,7 @@ impl GameEntityHealth {
             max,
             min,
             current,
-            delete_if_bellow_min,
+            delete_if_dead: delete_if_bellow_min,
             revision: 0,
         }
     }
@@ -53,12 +45,17 @@ impl GameEntityHealth {
         self.current
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn full_heal(&mut self) {
+        self.current = self.max;
+        self.revision += 1;
+    }
+
+    pub fn is_dead(&self) -> bool {
         self.current <= self.min
     }
 
     pub fn should_be_delete(&self) -> bool {
-        self.delete_if_bellow_min && self.is_empty()
+        self.delete_if_dead && self.is_dead()
     }
 
     pub fn reduce_current(&mut self, dmg_value: u32) {
@@ -68,14 +65,5 @@ impl GameEntityHealth {
             self.current = 0
         }
         self.revision += 1;
-    }
-
-    #[allow(dead_code)]
-    pub fn serialize(&self) -> SGameEntityHealth {
-        SGameEntityHealth {
-            min: self.min,
-            max: self.max,
-            current: self.current,
-        }
     }
 }

@@ -16,6 +16,7 @@ pub struct GameEntity {
     speed: f32,
     base_type: GameEntityBaseType,
     health_label: Option<Gd<Label>>,
+    is_dead: bool,
     #[base]
     base: Base<Sprite2D>,
 }
@@ -31,6 +32,7 @@ impl ISprite2D for GameEntity {
             base_type: GameEntityBaseType::CHARACTER,
             is_current_player: false,
             health_label: None,
+            is_dead: false,
         }
     }
 
@@ -86,7 +88,7 @@ impl ISprite2D for GameEntity {
 impl GameEntity {
     #[func]
     fn on_player_move_start(&mut self, target: Vector2) {
-        if self.is_current_player {
+        if self.is_current_player && !self.is_dead {
             // Reduce speed if player start to move
             // this reduce the diff between server en client position
             if self.base.get_position() == self.position_target {
@@ -160,6 +162,13 @@ impl GameEntity {
         if let Some(health_label) = &mut self.health_label {
             if let Some(new_health_current) = entity_update.health_current {
                 health_label.set_text(new_health_current.to_string().into());
+                if new_health_current == 0 {
+                    self.base.set_visible(false);
+                    self.is_dead = true;
+                } else {
+                    self.base.set_visible(true);
+                    self.is_dead = false;
+                }
             }
         }
     }

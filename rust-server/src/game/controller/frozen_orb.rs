@@ -59,7 +59,7 @@ impl GameController for FrozenOrb {
     fn tick(&mut self) -> Vec<GameEntityController> {
         let mut new_controllers: Vec<GameEntityController> = Vec::new();
 
-        if let Some(location) = &self.game_entity.location {
+        if let Some(location) = &self.game_entity.get_location() {
             if location.is_at_target() {
                 let location_current = location.get_current();
                 new_controllers.push(Projectile::create(

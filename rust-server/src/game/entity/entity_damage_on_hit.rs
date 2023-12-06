@@ -32,10 +32,10 @@ impl GameEntityDamageOnHit {
             return None;
         }
 
-        if let hash_map::Entry::Vacant(entity_id_hitted) =
+        if let hash_map::Entry::Vacant(entity_id_hitted_entry) =
             self.entity_id_hitted.entry(other.get_id())
         {
-            entity_id_hitted.insert(true);
+            entity_id_hitted_entry.insert(true);
             return Some(self.dmg_value);
         }
         None

@@ -12,7 +12,7 @@ use crate::{
         entity_health::GameEntityHealthParams,
         entity_location::GameEntityLocationParams,
     },
-    utils::get_id,
+    utils::{get_game_time, get_id},
 };
 
 use super::{
@@ -22,10 +22,13 @@ use super::{
     types::{GameController, GameEntityController},
 };
 
+const PLAYER_MAX_HEALTH: u32 = 100;
+
 pub struct Player {
     pub game_entity: GameEntity,
     pub action_queue: Vec<EGameEntityAction>,
     game_entities_ids_last_revision: HashMap<u32, u32>,
+    respawn_at: Option<u32>,
 }
 impl Player {
     pub fn create() -> GameEntityController {
@@ -44,10 +47,10 @@ impl Player {
                         shape: Vector2 { x: 100.0, y: 200.0 },
                     }),
                     health: Some(GameEntityHealthParams {
-                        max: 1000,
+                        max: PLAYER_MAX_HEALTH,
                         min: 0,
                         opt_current: None,
-                        delete_if_bellow_min: true,
+                        delete_if_dead: false,
                     }),
                     dmg_on_hit: None,
                     duration: None,
@@ -55,45 +58,56 @@ impl Player {
             ),
             action_queue: Vec::new(),
             game_entities_ids_last_revision: HashMap::new(),
+            respawn_at: None,
         })
     }
 
     pub fn user_update_location_target(&mut self, new_x: f32, new_y: f32) {
-        self.action_queue
-            .push(EGameEntityAction::UpdateLocationTarget(Vector2 {
-                x: new_x,
-                y: new_y,
-            }))
+        if self.respawn_at.is_none() {
+            self.action_queue
+                .push(EGameEntityAction::UpdateLocationTarget(Vector2 {
+                    x: new_x,
+                    y: new_y,
+                }))
+        }
     }
 
     pub fn user_instant_update_location(&mut self, new_x: f32, new_y: f32) {
-        self.action_queue
-            .push(EGameEntityAction::InstantUpdateLocation(Vector2 {
-                x: new_x,
-                y: new_y,
-            }))
+        if self.respawn_at.is_none() {
+            self.action_queue
+                .push(EGameEntityAction::InstantUpdateLocation(Vector2 {
+                    x: new_x,
+                    y: new_y,
+                }))
+        }
     }
 
     pub fn user_throw_projectile(&mut self, to_x: f32, to_y: f32) {
-        if let Some(location) = &self.game_entity.location {
-            self.action_queue.push(EGameEntityAction::ThrowProjectile(
-                *location.get_current(),
-                Vector2 { x: to_x, y: to_y },
-            ))
+        if self.respawn_at.is_none() {
+            if let Some(location) = &self.game_entity.get_location() {
+                self.action_queue.push(EGameEntityAction::ThrowProjectile(
+                    *location.get_current(),
+                    Vector2 { x: to_x, y: to_y },
+                ))
+            }
         }
     }
 
     pub fn user_throw_frozen_orb(&mut self, to_x: f32, to_y: f32) {
-        if let Some(location) = &self.game_entity.location {
-            self.action_queue.push(EGameEntityAction::ThrowFrozenOrb(
-                *location.get_current(),
-                Vector2 { x: to_x, y: to_y },
-            ))
+        if self.respawn_at.is_none() {
+            if let Some(location) = &self.game_entity.get_location() {
+                self.action_queue.push(EGameEntityAction::ThrowFrozenOrb(
+                    *location.get_current(),
+                    Vector2 { x: to_x, y: to_y },
+                ))
+            }
         }
     }
 
     pub fn user_toggle_hidden(&mut self) {
-        self.action_queue.push(EGameEntityAction::ToggleHidden)
+        if self.respawn_at.is_none() {
+            self.action_queue.push(EGameEntityAction::ToggleHidden)
+        }
     }
 
     pub fn get_serialization_of(&mut self, of_game_entity: &GameEntity) -> Option<UdpMsgDown> {
@@ -161,17 +175,31 @@ impl GameController for Player {
 
     fn analyze(&mut self, _: &GameEntityController) {}
     fn tick(&mut self) -> Vec<GameEntityController> {
+        if let Some(health) = self.game_entity.get_health() {
+            if self.respawn_at.is_none() && health.is_dead() {
+                self.respawn_at = Some(get_game_time() + 5000);
+            }
+        }
+        if let Some(respawn_at) = self.respawn_at {
+            if respawn_at <= get_game_time() {
+                self.respawn_at = None;
+                self.action_queue.push(EGameEntityAction::HealthFullHeal);
+                self.action_queue
+                    .push(EGameEntityAction::InstantUpdateLocation(Vector2::ZERO));
+            }
+        }
+
         let mut new_controllers: Vec<GameEntityController> = Vec::new();
 
         for action in &self.action_queue {
             match action {
                 EGameEntityAction::UpdateLocationTarget(coor) => {
-                    if let Some(location) = &mut self.game_entity.location {
+                    if let Some(location) = &mut self.game_entity.get_location_mut() {
                         location.update_target(coor.x, coor.y);
                     }
                 }
                 EGameEntityAction::InstantUpdateLocation(coor) => {
-                    if let Some(location) = &mut self.game_entity.location {
+                    if let Some(location) = &mut self.game_entity.get_location_mut() {
                         location.update_target(coor.x, coor.y);
                         location.update_current(coor.x, coor.y);
                     }
@@ -179,14 +207,19 @@ impl GameController for Player {
                 EGameEntityAction::ToggleHidden => self.game_entity.toggle_is_hidden(),
                 EGameEntityAction::ThrowProjectile(from, to) => {
                     new_controllers.push(Projectile::create(self.game_entity.get_id(), *from, *to));
-                    if let Some(location) = &mut self.game_entity.location {
+                    if let Some(location) = &mut self.game_entity.get_location_mut() {
                         location.update_target(location.get_current().x, location.get_current().y);
                     }
                 }
                 EGameEntityAction::ThrowFrozenOrb(from, to) => {
                     new_controllers.push(FrozenOrb::create(self.game_entity.get_id(), *from, *to));
-                    if let Some(location) = &mut self.game_entity.location {
+                    if let Some(location) = &mut self.game_entity.get_location_mut() {
                         location.update_target(location.get_current().x, location.get_current().y);
+                    }
+                }
+                EGameEntityAction::HealthFullHeal => {
+                    if let Some(health) = &mut self.game_entity.get_health_mut() {
+                        health.full_heal();
                     }
                 }
             }
