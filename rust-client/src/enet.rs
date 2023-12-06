@@ -17,7 +17,7 @@ pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
-const ADDRESS: &str = "127.0.0.1";
+const ADDRESS: &str = "35.181.43.91";
 const PORT: u16 = 34254;
 
 pub fn enet_start(
