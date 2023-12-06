@@ -1,5 +1,4 @@
+pub mod collisions;
 pub mod helper;
+pub mod math;
 pub mod proto;
-pub fn test_common() {
-    println!("hello");
-}

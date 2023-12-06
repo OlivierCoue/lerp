@@ -172,6 +172,8 @@ pub enum GameEntityBaseType {
     CHARACTER = 0,
     // @@protoc_insertion_point(enum_value:GameEntityBaseType.PROJECTILE)
     PROJECTILE = 1,
+    // @@protoc_insertion_point(enum_value:GameEntityBaseType.ENEMY)
+    ENEMY = 2,
 }
 
 impl ::protobuf::Enum for GameEntityBaseType {
@@ -185,6 +187,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
         match value {
             0 => ::std::option::Option::Some(GameEntityBaseType::CHARACTER),
             1 => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
+            2 => ::std::option::Option::Some(GameEntityBaseType::ENEMY),
             _ => ::std::option::Option::None
         }
     }
@@ -193,6 +196,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
         match str {
             "CHARACTER" => ::std::option::Option::Some(GameEntityBaseType::CHARACTER),
             "PROJECTILE" => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
+            "ENEMY" => ::std::option::Option::Some(GameEntityBaseType::ENEMY),
             _ => ::std::option::Option::None
         }
     }
@@ -200,6 +204,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
     const VALUES: &'static [GameEntityBaseType] = &[
         GameEntityBaseType::CHARACTER,
         GameEntityBaseType::PROJECTILE,
+        GameEntityBaseType::ENEMY,
     ];
 }
 
@@ -229,8 +234,9 @@ impl GameEntityBaseType {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0ccommon.proto\"#\n\x05Point\x12\x0c\n\x01x\x18\x01\x20\x01(\x02R\
-    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*3\n\x12GameEntityBaseTyp\
-    e\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01b\x06proto3\
+    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*>\n\x12GameEntityBaseTyp\
+    e\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01\x12\t\n\x05ENEM\
+    Y\x10\x02b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

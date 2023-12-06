@@ -8,4 +8,5 @@ message Point {
 enum GameEntityBaseType {
     CHARACTER = 0;
     PROJECTILE = 1;
+    ENEMY = 2;
 }

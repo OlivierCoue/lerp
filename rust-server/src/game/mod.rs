@@ -1,27 +1,36 @@
-mod controller;
-mod entity;
+mod bundles;
+mod components;
+mod events;
+mod resources;
+mod systems;
 pub mod user;
 
-use rust_common::proto::udp_down::UdpMsgDownWrapper;
+use bevy_ecs::prelude::*;
+use godot::builtin::Vector2;
+use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
+use rust_common::math::get_point_from_points_and_distance;
+use rust_common::proto::udp_down::{
+    UdpMsgDown, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate, UdpMsgDownType,
+    UdpMsgDownWrapper,
+};
 use rust_common::proto::udp_up::{UdpMsgUpType, UdpMsgUpWrapper};
 
-use crate::utils::{get_timestamp_millis, get_timestamp_nanos, inc_game_time_millis};
+use crate::utils::inc_game_time_millis;
 use std::cmp::max;
 use std::collections::VecDeque;
 use std::sync::Mutex;
-use std::thread;
 use std::time::Duration;
 use std::{collections::HashMap, sync::mpsc::Sender};
 
-use crate::game::user::User;
-
-use self::entity::entity_manager::GameEntityManager;
+use crate::game::{
+    bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
+    systems::prelude::*, user::User,
+};
 
 const TICK_RATE_MILLIS: u128 = 30;
 const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
-pub const TICK_TIME_DELTA: f32 = 0.030_303_031;
 
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
@@ -29,8 +38,9 @@ pub struct Game<'a> {
     peer_id_user_id_map: HashMap<u16, u32>,
     tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
-    game_entity_manager: GameEntityManager,
     clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
+    world: World,
+    world_schedule: Schedule,
 }
 
 impl<'a> Game<'a> {
@@ -38,23 +48,55 @@ impl<'a> Game<'a> {
         tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
         clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
     ) -> Game<'a> {
+        let mut world = World::new();
+
+        world.init_resource::<Events<UpdateVelocityTarget>>();
+        world.init_resource::<Events<UpdatePositionCurrent>>();
+        world.init_resource::<Events<SpawnProjectile>>();
+        world.init_resource::<Events<SpawnFrozenOrb>>();
+        world.init_resource::<Events<VelocityReachedTarget>>();
+        world.insert_resource(Time::new());
+        world.insert_resource(EnemiesState::new());
+
+        let mut world_schedule = Schedule::default();
+
+        world_schedule
+            .add_systems(despawn_if_velocity_at_target.before(increase_game_entity_revision));
+
+        world_schedule.add_systems(movement.before(increase_game_entity_revision));
+        world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
+        world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
+
+        world_schedule
+            .add_systems(on_update_position_current.before(increase_game_entity_revision));
+        world_schedule.add_systems(on_update_velocity_target.before(increase_game_entity_revision));
+        world_schedule.add_systems(on_spawn_projectile.before(increase_game_entity_revision));
+        world_schedule.add_systems(on_spawn_frozen_orb.before(increase_game_entity_revision));
+        world_schedule.add_systems(
+            on_frozen_orb_velocity_reached_target.before(increase_game_entity_revision),
+        );
+
+        world_schedule.add_systems(increase_game_entity_revision);
+
         Game {
             users: HashMap::new(),
             peer_id_user_id_map: HashMap::new(),
             users_curr_id: 0,
             tx_enet_sender,
             paused: false,
-            game_entity_manager: GameEntityManager::new(),
             clients_msg,
+            world,
+            world_schedule,
         }
     }
 
     fn add_user(&mut self, peer_id: u16, udp_tunnel: &'a Sender<(u16, UdpMsgDownWrapper)>) {
         self.users_curr_id += 1;
 
-        let player_id = self.game_entity_manager.add_player();
+        let player = PlayerBundle::new();
+        let player_entity = self.world.spawn(player).id();
 
-        let new_user = User::new(self.users_curr_id, peer_id, udp_tunnel, player_id);
+        let new_user = User::new(self.users_curr_id, peer_id, udp_tunnel, player_entity);
         self.users.insert(self.users_curr_id, new_user);
         self.peer_id_user_id_map.insert(peer_id, self.users_curr_id);
 
@@ -63,8 +105,7 @@ impl<'a> Game<'a> {
 
     fn delete_user(&mut self, user_id: u32) {
         if let Some(removed_user) = self.users.remove(&user_id) {
-            self.game_entity_manager
-                .remove_entity(&removed_user.player_id);
+            self.world.despawn(removed_user.player_entity);
         }
     }
 
@@ -81,17 +122,19 @@ impl<'a> Game<'a> {
             let tick_duration = get_timestamp_nanos() - started_at;
             if tick_duration < TICK_RATE_NANOS {
                 let time_to_wait = max(TICK_RATE_NANOS - tick_duration, 0);
-                thread::sleep(Duration::from_nanos(time_to_wait as u64));
+                spin_sleep::sleep(Duration::from_nanos(time_to_wait as u64));
             } else {
                 println!(
                     "WARNING tick_duration ({}) in more than TICK_RATE_NANOS ({})",
                     tick_duration, TICK_RATE_NANOS
                 );
             }
+            self.world.get_resource_mut::<Time>().unwrap().delta =
+                (get_timestamp_nanos() - started_at) as f32 / 1000000000.0;
         }
     }
 
-    pub fn tick(&mut self, update_users: bool) {
+    pub fn tick(&mut self, _: bool) {
         let mut users_to_delete_ids = Vec::new();
         for (user_id, user) in self.users.iter_mut() {
             if user.should_be_deleted() {
@@ -115,16 +158,112 @@ impl<'a> Game<'a> {
             return;
         }
 
-        let mut player_msg_down_map = self.game_entity_manager.tick(update_users);
+        let mut entities_to_despawn = Vec::new();
+        for (entity_id, game_entity) in self
+            .world
+            .query::<(Entity, &GameEntity)>()
+            .iter(&self.world)
+        {
+            if game_entity.pending_despwan {
+                entities_to_despawn.push(entity_id);
+            }
+        }
+        for entity_to_despawn in entities_to_despawn {
+            self.world.despawn(entity_to_despawn);
+        }
+
+        self.world_schedule.run(&mut self.world);
         inc_game_time_millis(GAME_TIME_TICK_DURATION_MILLIS);
 
+        let mut player_udp_msg_down_wrapper_map = HashMap::new();
+
+        for (entity_id, game_entity) in self
+            .world
+            .query::<(Entity, &GameEntity)>()
+            .iter(&self.world)
+        {
+            let entity_ref = self.world.entity(entity_id);
+
+            for user_mut in self.users.values_mut() {
+                let opt_last_revision = user_mut
+                    .entity_id_revision_map
+                    .insert(game_entity.id, game_entity.revision);
+                let require_update = match opt_last_revision {
+                    None => true,
+                    Some(last_revision) => last_revision < game_entity.revision,
+                };
+
+                if require_update {
+                    let udp_msg_down_wrapper = player_udp_msg_down_wrapper_map
+                        .entry(user_mut.id)
+                        .or_insert(UdpMsgDownWrapper {
+                            messages: Vec::new(),
+                            ..Default::default()
+                        });
+
+                    if game_entity.pending_despwan {
+                        udp_msg_down_wrapper.messages.push(UdpMsgDown {
+                            _type: UdpMsgDownType::GAME_ENTITY_REMOVED.into(),
+                            game_entity_removed: (Some(UdpMsgDownGameEntityRemoved {
+                                id: game_entity.id,
+                                ..Default::default()
+                            }))
+                            .into(),
+                            ..Default::default()
+                        })
+                    } else {
+                        let location_current = entity_ref
+                            .get::<Position>()
+                            .map(|position| vector2_to_point(&position.current));
+
+                        let (
+                            location_target,
+                            location_speed,
+                            location_timestamp_at_target,
+                            location_distance_to_target,
+                        ) = match entity_ref.get::<Velocity>() {
+                            Some(velocity) => (
+                                Some(vector2_to_point(velocity.get_target())),
+                                Some(velocity.get_speed()),
+                                Some(velocity.get_timestamp_at_target()),
+                                Some(velocity.get_distance_to_target()),
+                            ),
+                            None => (None, None, None, None),
+                        };
+                        let location_shape = entity_ref
+                            .get::<Shape>()
+                            .map(|shape| vector2_to_point(&shape.rect));
+                        let health_current =
+                            entity_ref.get::<Health>().map(|health| health.current);
+
+                        udp_msg_down_wrapper.messages.push(UdpMsgDown {
+                            _type: UdpMsgDownType::GAME_ENTITY_UPDATE.into(),
+                            game_entity_update: (Some(UdpMsgDownGameEntityUpdate {
+                                id: game_entity.id,
+                                object_type: game_entity._type.into(),
+                                location_current: location_current.into(),
+                                location_target: location_target.into(),
+                                location_shape: location_shape.into(),
+                                location_speed,
+                                location_timestamp_at_target,
+                                location_distance_to_target,
+                                health_current,
+                                is_self: entity_id == user_mut.player_entity,
+                                ..Default::default()
+                            }))
+                            .into(),
+                            ..Default::default()
+                        })
+                    }
+                }
+            }
+        }
+
         for user in self.users.values() {
-            if let Some(messages) = player_msg_down_map.remove(&user.player_id) {
-                user.send_message(UdpMsgDownWrapper {
-                    server_time: get_timestamp_millis() as u64,
-                    messages,
-                    ..Default::default()
-                })
+            if let Some(udp_msg_down_wrapper) = player_udp_msg_down_wrapper_map.remove(&user.id) {
+                if !udp_msg_down_wrapper.messages.is_empty() {
+                    user.send_message(udp_msg_down_wrapper)
+                }
             }
         }
     }
@@ -154,45 +293,57 @@ impl<'a> Game<'a> {
                 }
                 UdpMsgUpType::PLAYER_MOVE => {
                     if let Some(ok_user) = user {
-                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                        if let (Some(ok_coord), Some(player)) =
-                            (&udp_msg_up.player_move.0, opt_player)
-                        {
-                            player.user_update_location_target(ok_coord.x, ok_coord.y)
+                        if let Some(ok_coord) = &udp_msg_up.player_move.0 {
+                            self.world.send_event(UpdateVelocityTarget {
+                                entity: ok_user.player_entity,
+                                target: Vector2::new(ok_coord.x, ok_coord.y),
+                            });
                         }
                     };
                 }
                 UdpMsgUpType::PLAYER_TELEPORT => {
                     if let Some(ok_user) = user {
-                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                        if let (Some(ok_coord), Some(player)) =
-                            (&udp_msg_up.player_teleport.0, opt_player)
-                        {
-                            player.user_instant_update_location(ok_coord.x, ok_coord.y)
+                        if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
+                            self.world.send_event(UpdatePositionCurrent {
+                                entity: ok_user.player_entity,
+                                current: Vector2::new(ok_coord.x, ok_coord.y),
+                            });
                         }
                     };
                 }
                 UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => {
                     if let Some(ok_user) = user {
-                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                        if let (Some(ok_coord), Some(player)) =
-                            (&udp_msg_up.player_throw_frozen_orb.0, opt_player)
-                        {
-                            player.user_throw_frozen_orb(ok_coord.x, ok_coord.y)
+                        if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+                            let player_position =
+                                self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            self.world.send_event(SpawnFrozenOrb {
+                                from_entity: ok_user.player_entity,
+                                from_position: player_position.current,
+                                to_target: get_point_from_points_and_distance(
+                                    player_position.current,
+                                    Vector2::new(ok_coord.x, ok_coord.y),
+                                    600.0,
+                                ),
+                                ignored_entity: ok_user.player_entity,
+                            });
                         }
                     };
                 }
                 UdpMsgUpType::PLAYER_THROW_PROJECTILE => {
                     if let Some(ok_user) = user {
-                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-
-                        if let (Some(ok_coord), Some(player)) =
-                            (&udp_msg_up.player_throw_projectile.0, opt_player)
-                        {
-                            player.user_throw_projectile(ok_coord.x, ok_coord.y)
+                        if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
+                            let player_position =
+                                self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            self.world.send_event(SpawnProjectile {
+                                from_entity: ok_user.player_entity,
+                                from_position: player_position.current,
+                                to_target: get_point_from_points_and_distance(
+                                    player_position.current,
+                                    Vector2::new(ok_coord.x, ok_coord.y),
+                                    600.0,
+                                ),
+                                ignored_entity: ok_user.player_entity,
+                            });
                         }
                     };
                 }
@@ -201,14 +352,15 @@ impl<'a> Game<'a> {
                         ok_player.user_ping()
                     }
                 }
-                UdpMsgUpType::PLAYER_TOGGLE_HIDDEN => {
-                    if let Some(ok_user) = user {
-                        let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-                        if let Some(player) = opt_player {
-                            player.user_toggle_hidden();
-                        }
-                    }
-                }
+                // UdpMsgUpType::PLAYER_TOGGLE_HIDDEN => {
+                //     if let Some(ok_user) = user {
+                //         let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
+                //         if let Some(player) = opt_player {
+                //             player.user_toggle_hidden();
+                //         }
+                //     }
+                // }
+                _ => println!("Not handled event"),
             }
         }
     }

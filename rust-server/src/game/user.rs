@@ -1,28 +1,30 @@
-use rust_common::proto::udp_down::UdpMsgDownWrapper;
+use bevy_ecs::entity::Entity;
+use rust_common::{helper::get_timestamp_millis, proto::udp_down::UdpMsgDownWrapper};
 
-use crate::utils::get_timestamp_millis;
-use std::sync::mpsc::Sender;
+use std::{collections::HashMap, sync::mpsc::Sender};
 
 pub struct User<'a> {
     pub id: u32,
     pub enet_peer_id: u16,
     pub tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
     last_ping_at_millis: u128,
-    pub player_id: u32,
+    pub player_entity: Entity,
+    pub entity_id_revision_map: HashMap<u32, u32>,
 }
 impl<'a> User<'a> {
     pub fn new(
         id: u32,
         enet_peer_id: u16,
         tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
-        player_id: u32,
+        player_entity: Entity,
     ) -> User<'a> {
         User {
             id,
             enet_peer_id,
             tx_enet_sender,
             last_ping_at_millis: get_timestamp_millis(),
-            player_id,
+            player_entity,
+            entity_id_revision_map: HashMap::new(),
         }
     }
 

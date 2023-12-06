@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use godot::{engine::ISprite2D, prelude::*};
 use rust_common::proto::udp_down::{UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate};
 
-use crate::entity::GameEntity;
+use crate::{entity::GameEntity, root::DEBUG, server_entity::GameServerEntity, utils::cart_to_iso};
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -12,6 +12,7 @@ pub struct PlayNode {
     base: Base<Node2D>,
 
     entities: HashMap<u32, Gd<GameEntity>>,
+    server_entities: HashMap<u32, Gd<GameServerEntity>>,
 }
 
 #[godot_api]
@@ -22,10 +23,32 @@ impl INode2D for PlayNode {
         Self {
             base,
             entities: HashMap::new(),
+            server_entities: HashMap::new(),
         }
     }
 
-    fn ready(&mut self) {}
+    fn draw(&mut self) {
+        self.base.draw_line(
+            cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
+            cart_to_iso(&Vector2::new(1024.0, -1024.0)),
+            Color::from_rgb(255.0, 0.0, 0.0),
+        );
+        self.base.draw_line(
+            cart_to_iso(&Vector2::new(1024.0, -1024.0)),
+            cart_to_iso(&Vector2::new(1024.0, 1024.0)),
+            Color::from_rgb(255.0, 0.0, 0.0),
+        );
+        self.base.draw_line(
+            cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
+            cart_to_iso(&Vector2::new(1024.0, 1024.0)),
+            Color::from_rgb(255.0, 0.0, 0.0),
+        );
+        self.base.draw_line(
+            cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
+            cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
+            Color::from_rgb(255.0, 0.0, 0.0),
+        );
+    }
 }
 
 impl PlayNode {
@@ -38,11 +61,27 @@ impl PlayNode {
             self.entities.insert(entity_update.id, entity.clone());
             self.base.add_child(entity.upcast());
         }
+        if DEBUG {
+            if let Some(entity) = self.server_entities.get_mut(&entity_update.id) {
+                entity.bind_mut().update_from_server(entity_update);
+            } else {
+                let mut entity = Gd::<GameServerEntity>::from_init_fn(GameServerEntity::init);
+                entity.bind_mut().set_init_state(entity_update);
+                self.server_entities
+                    .insert(entity_update.id, entity.clone());
+                self.base.add_child(entity.upcast());
+            }
+        }
     }
 
     pub fn remove_entity(&mut self, entity_removed: &UdpMsgDownGameEntityRemoved) {
         if let Some(mut entity) = self.entities.remove(&entity_removed.id) {
             entity.queue_free()
+        }
+        if DEBUG {
+            if let Some(mut entity) = self.server_entities.remove(&entity_removed.id) {
+                entity.queue_free()
+            }
         }
     }
 }

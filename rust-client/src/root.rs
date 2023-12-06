@@ -5,7 +5,9 @@ use rust_common::proto::{
     udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
 };
 
-use crate::{network::Network, play_node::PlayNode};
+use crate::{network::Network, play_node::PlayNode, utils::iso_to_cart};
+
+pub const DEBUG: bool = false;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -71,7 +73,7 @@ impl INode2D for Root {
     fn input(&mut self, event: Gd<InputEvent>) {
         if event.is_action_pressed("left_mouse_button".into()) {
             godot_print!("Left button pressed");
-            let mouse_position = self.base.get_global_mouse_position();
+            let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
             self.base
                 .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
             if let Some(network) = &self.network {
@@ -91,14 +93,14 @@ impl INode2D for Root {
             }
         } else if event.is_action_pressed("key_e".into()) {
             godot_print!("Key E pressed");
-            let mouse_position = self.base.get_global_mouse_position();
+            let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
             self.base
                 .emit_signal("player_throw_fireball_start".into(), &[]);
             if let Some(network) = &self.network {
                 network.bind().send(UdpMsgUpWrapper {
                     messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::PLAYER_THROW_PROJECTILE.into(),
-                        player_throw_projectile: Some(Point {
+                        _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                        player_throw_frozen_orb: Some(Point {
                             x: mouse_position.x,
                             y: mouse_position.y,
                             ..Default::default()
@@ -111,7 +113,7 @@ impl INode2D for Root {
             }
         } else if event.is_action_pressed("key_r".into()) {
             godot_print!("Key R pressed");
-            let mouse_position = self.base.get_global_mouse_position();
+            let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
             if let Some(network) = &self.network {
                 network.bind().send(UdpMsgUpWrapper {
                     messages: vec![UdpMsgUp {

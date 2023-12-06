@@ -1,4 +1,4 @@
-use std::{sync::atomic::AtomicU32, time::SystemTime};
+use std::sync::atomic::AtomicU32;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -15,18 +15,4 @@ pub fn get_game_time() -> u32 {
 
 pub fn inc_game_time_millis(v: u32) -> u32 {
     GAME_TIME.fetch_add(v, Ordering::Relaxed)
-}
-
-pub fn get_timestamp_millis() -> u128 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-}
-
-pub fn get_timestamp_nanos() -> u128 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos()
 }

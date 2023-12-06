@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use godot::builtin::Vector2;
 
 use crate::proto::common::Point;
@@ -14,4 +16,18 @@ pub fn point_to_vector2(point: &Point) -> Vector2 {
         x: point.x,
         y: point.y,
     }
+}
+
+pub fn get_timestamp_millis() -> u128 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
+
+pub fn get_timestamp_nanos() -> u128 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
 }

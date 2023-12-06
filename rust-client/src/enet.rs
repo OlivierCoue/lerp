@@ -80,6 +80,7 @@ pub fn enet_start(
                                     .expect("packet data too long for an `usize`"),
                             )
                         };
+                        // println!("{}", unsafe { (*event.packet).dataLength });
                         let udp_msg_down_wrapper: UdpMsgDownWrapper =
                             UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
                                 .expect("Failed to parse UdpMsgDownWrapper");
