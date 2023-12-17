@@ -26,12 +26,12 @@ impl EnemyBundle {
             },
             velocity: Velocity::new(Vector2::ZERO, 200.0, false),
             shape: Shape {
-                rect: Vector2 { x: 100.0, y: 104.0 },
+                rect: Vector2 { x: 50.0, y: 50.0 },
             },
             health: Health {
-                max: 100,
+                max: 10,
                 min: 0,
-                current: 100,
+                current: 10,
             },
         }
     }

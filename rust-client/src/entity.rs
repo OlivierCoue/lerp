@@ -1,7 +1,7 @@
 use godot::engine::global::HorizontalAlignment;
 use godot::engine::utilities::rad_to_deg;
 use godot::engine::{
-    AnimatedSprite2D, ISprite2D, Label, Panel, ResourceLoader, Sprite2D, StyleBoxFlat, Texture2D,
+    AnimatedSprite2D, ISprite2D, Label, Polygon2D, ResourceLoader, Sprite2D, Texture2D,
 };
 use godot::prelude::*;
 use rust_common::helper::point_to_vector2;
@@ -9,7 +9,10 @@ use rust_common::proto::common::GameEntityBaseType;
 use rust_common::proto::udp_down::UdpMsgDownGameEntityUpdate;
 
 use crate::root::{Root, DEBUG};
-use crate::utils::{cart_to_iso, iso_to_cart};
+use crate::utils::{
+    angle_to_direction, cart_to_iso, get_idle_animation_for_direction,
+    get_walk_animation_for_direction, iso_to_cart, Direction,
+};
 
 #[derive(GodotClass)]
 #[class(base=Sprite2D)]
@@ -24,7 +27,7 @@ pub struct GameEntity {
     animated_sprite_2d: Option<Gd<AnimatedSprite2D>>,
     #[base]
     base: Base<Sprite2D>,
-    current_sprite_animation: String,
+    direction: Direction,
 }
 
 #[godot_api]
@@ -40,7 +43,7 @@ impl ISprite2D for GameEntity {
             health_label: None,
             is_dead: false,
             animated_sprite_2d: None,
-            current_sprite_animation: String::from("right"),
+            direction: Direction::N,
         }
     }
 
@@ -49,10 +52,10 @@ impl ISprite2D for GameEntity {
         match self.base_type {
             GameEntityBaseType::CHARACTER => {
                 let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://character_anim_sprite.tscn");
+                    load::<PackedScene>("res://warrior_animated_sprite_2d.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
-                animated_sprite_2d.set_scale(Vector2::new(4.166_666_5, 4.166_666_5));
+                animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base.add_child(animated_sprite_2d.upcast());
             }
@@ -65,7 +68,7 @@ impl ISprite2D for GameEntity {
             }
             GameEntityBaseType::ENEMY => {
                 let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://skeleton_animated_sprite_2d.tscn");
+                    load::<PackedScene>("res://warrior_animated_sprite_2d.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
@@ -106,8 +109,12 @@ impl ISprite2D for GameEntity {
                 if !animated_sprite_2d.is_playing() {
                     animated_sprite_2d.play();
                 }
-            } else if animated_sprite_2d.is_playing() {
-                animated_sprite_2d.stop();
+            } else {
+                animated_sprite_2d.set_animation(
+                    get_idle_animation_for_direction(&self.direction)
+                        .as_str()
+                        .into(),
+                );
             }
         }
     }
@@ -116,18 +123,7 @@ impl ISprite2D for GameEntity {
 #[godot_api]
 impl GameEntity {
     #[func]
-    fn on_player_move_start(&mut self, _: Vector2) {
-
-        // if self.is_current_player && !self.is_dead {
-        //     // Reduce speed if player start to move
-        //     // this reduce the diff between server en client position
-        //     if self.base.get_position() == self.position_target {
-        //         self.speed /= 10.0;
-        //         self.start_moving_at = Some(get_timestamp_millis());
-        //     }
-        //     self.position_target = target;
-        // }
-    }
+    fn on_player_move_start(&mut self, _: Vector2) {}
     #[func]
     fn on_player_throw_fireball_start(&mut self) {
         if self.is_current_player {
@@ -160,25 +156,32 @@ impl GameEntity {
         }
 
         if DEBUG {
-            // Draw shape outline
-            let mut shape_pannel = Panel::new_alloc();
-            shape_pannel.set_size(point_to_vector2(&entity_update.location_shape));
-            shape_pannel.set_position(Vector2 {
-                x: -(&entity_update.location_shape.x / 2.0),
-                y: -(&entity_update.location_shape.y / 2.0),
-            });
-
-            let mut stylebox_outline: Gd<StyleBoxFlat> = shape_pannel
-                .get_theme_stylebox("panel".into())
-                .unwrap()
-                .cast();
-            stylebox_outline.set_draw_center(false);
-            stylebox_outline.set_border_width_all(2);
-            stylebox_outline.set_border_color(Color::from_rgb(255.0, 0.0, 0.0));
-
-            shape_pannel.add_theme_stylebox_override("panel".into(), stylebox_outline.upcast());
-
-            self.base.add_child(shape_pannel.upcast());
+            let a = Vector2::new(
+                -(entity_update.location_shape.x / 2.0),
+                -(entity_update.location_shape.y / 2.0),
+            );
+            let b = Vector2::new(
+                entity_update.location_shape.x / 2.0,
+                -(entity_update.location_shape.y / 2.0),
+            );
+            let c = Vector2::new(
+                entity_update.location_shape.x / 2.0,
+                entity_update.location_shape.y / 2.0,
+            );
+            let d = Vector2::new(
+                -(entity_update.location_shape.x / 2.0),
+                entity_update.location_shape.y / 2.0,
+            );
+            let mut polygon2d = Polygon2D::new_alloc();
+            let mut packed_vector2_array = PackedVector2Array::new();
+            packed_vector2_array.insert(0, cart_to_iso(&a));
+            packed_vector2_array.insert(1, cart_to_iso(&b));
+            packed_vector2_array.insert(2, cart_to_iso(&c));
+            packed_vector2_array.insert(3, cart_to_iso(&d));
+            polygon2d.set_polygon(packed_vector2_array);
+            polygon2d.set_color(Color::from_rgba(255.0, 0.0, 0.0, 0.5));
+            polygon2d.set_z_index(10);
+            self.base.add_child(polygon2d.upcast());
         }
     }
 
@@ -220,26 +223,13 @@ impl GameEntity {
             let angle_to_target =
                 rad_to_deg(location_current_cart.angle_to_point(self.position_target) as f64);
 
-            if (-22.5..22.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("bottom_right");
-            } else if (22.5..67.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("bottom");
-            } else if (67.5..112.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("bottom_left");
-            } else if (112.5..157.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("left");
-            } else if (157.5..180.0).contains(&angle_to_target)
-                || (-180.0..-157.5).contains(&angle_to_target)
-            {
-                self.current_sprite_animation = String::from("top_left");
-            } else if (-157.5..-112.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("top");
-            } else if (-112.5..-67.5).contains(&angle_to_target) {
-                self.current_sprite_animation = String::from("top_right");
-            } else {
-                self.current_sprite_animation = String::from("right");
-            }
-            animated_sprite_2d.set_animation(self.current_sprite_animation.as_str().into());
+            self.direction = angle_to_direction(angle_to_target as f32);
+
+            animated_sprite_2d.set_animation(
+                get_walk_animation_for_direction(&self.direction)
+                    .as_str()
+                    .into(),
+            );
         }
     }
 }

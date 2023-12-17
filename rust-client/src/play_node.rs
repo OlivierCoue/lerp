@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use godot::{engine::ISprite2D, prelude::*};
 use rust_common::proto::udp_down::{UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate};
 
-use crate::{entity::GameEntity, root::DEBUG, server_entity::GameServerEntity, utils::cart_to_iso};
+use crate::{
+    entity::GameEntity, root::DEBUG, server_entity::GameServerEntity, utils::draw_iso_rect,
+};
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -28,26 +30,7 @@ impl INode2D for PlayNode {
     }
 
     fn draw(&mut self) {
-        self.base.draw_line(
-            cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
-            cart_to_iso(&Vector2::new(1024.0, -1024.0)),
-            Color::from_rgb(255.0, 0.0, 0.0),
-        );
-        self.base.draw_line(
-            cart_to_iso(&Vector2::new(1024.0, -1024.0)),
-            cart_to_iso(&Vector2::new(1024.0, 1024.0)),
-            Color::from_rgb(255.0, 0.0, 0.0),
-        );
-        self.base.draw_line(
-            cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
-            cart_to_iso(&Vector2::new(1024.0, 1024.0)),
-            Color::from_rgb(255.0, 0.0, 0.0),
-        );
-        self.base.draw_line(
-            cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
-            cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
-            Color::from_rgb(255.0, 0.0, 0.0),
-        );
+        draw_iso_rect(&mut self.base.clone().upcast::<Node2D>());
     }
 }
 

@@ -24,9 +24,9 @@ impl PlayerBundle {
             position: Position {
                 current: Vector2::ZERO,
             },
-            velocity: Velocity::new(Vector2::ZERO, 600.0, false),
+            velocity: Velocity::new(Vector2::ZERO, 400.0, false),
             shape: Shape {
-                rect: Vector2 { x: 100.0, y: 200.0 },
+                rect: Vector2 { x: 50.0, y: 50.0 },
             },
             health: Health {
                 max: 100,
