@@ -1,32 +1,35 @@
-[gd_scene load_steps=6 format=3 uid="uid://b11w8u74qqq2u"]
+[gd_scene load_steps=4 format=3 uid="uid://b11w8u74qqq2u"]
 
-[ext_resource type="Texture2D" uid="uid://bx2h2u7vc0uai" path="res://map.jpg" id="1_206sn"]
+[ext_resource type="PackedScene" uid="uid://n7l6u6mr2dyw" path="res://animated_sprite_2d/warrior.tscn" id="2_kxhls"]
 [ext_resource type="PackedScene" uid="uid://damhif8xwmp6g" path="res://tile_map.tscn" id="2_nncp0"]
-[ext_resource type="Texture2D" uid="uid://c7mmdxcr35r8e" path="res://wizard.png" id="3_7bumu"]
-[ext_resource type="PackedScene" uid="uid://omjga7nqakdv" path="res://character_anim_sprite.tscn" id="4_s60xm"]
-[ext_resource type="PackedScene" uid="uid://7bh6tor7jpd0" path="res://skeleton_animated_sprite_2d.tscn" id="5_c0r7f"]
+[ext_resource type="PackedScene" uid="uid://7bh6tor7jpd0" path="res://animated_sprite_2d/skeleton.tscn" id="5_c0r7f"]
 
 [node name="Root" type="Root"]
-
-[node name="Map" type="Sprite2D" parent="."]
-visible = false
-texture = ExtResource("1_206sn")
-
-[node name="TileMap" parent="." instance=ExtResource("2_nncp0")]
-scale = Vector2(5, 5)
-
-[node name="Wizard" type="Sprite2D" parent="."]
-visible = false
-position = Vector2(-9, -8)
-texture = ExtResource("3_7bumu")
 
 [node name="Node2D" type="Node2D" parent="."]
 visible = false
 
-[node name="AnimatedSprite2D" parent="Node2D" instance=ExtResource("4_s60xm")]
-position = Vector2(51, -48)
-scale = Vector2(4.167, 4.167)
-
 [node name="AnimatedSprite2D2" parent="Node2D" instance=ExtResource("5_c0r7f")]
 position = Vector2(133, -16)
 scale = Vector2(2.99707, 2.99707)
+
+[node name="Node2D2" type="Node2D" parent="."]
+visible = false
+z_index = 2
+y_sort_enabled = true
+
+[node name="AnimatedSprite2D" parent="Node2D2" instance=ExtResource("2_kxhls")]
+y_sort_enabled = true
+position = Vector2(-877, -516)
+
+[node name="Node2D3" type="Node2D" parent="."]
+visible = false
+z_index = 2
+y_sort_enabled = true
+
+[node name="AnimatedSprite2D" parent="Node2D3" instance=ExtResource("2_kxhls")]
+y_sort_enabled = true
+position = Vector2(-1044, -504)
+
+[node name="TileMap" parent="." instance=ExtResource("2_nncp0")]
+scale = Vector2(5, 5)

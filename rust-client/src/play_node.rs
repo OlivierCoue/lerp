@@ -29,6 +29,10 @@ impl INode2D for PlayNode {
         }
     }
 
+    fn ready(&mut self) {
+        self.base.set_y_sort_enabled(true);
+    }
+
     fn draw(&mut self) {
         draw_iso_rect(&mut self.base.clone().upcast::<Node2D>());
     }

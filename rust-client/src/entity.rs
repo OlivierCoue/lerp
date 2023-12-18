@@ -15,7 +15,7 @@ use crate::utils::{
 };
 
 #[derive(GodotClass)]
-#[class(base=Sprite2D)]
+#[class(base=Node2D)]
 pub struct GameEntity {
     is_current_player: bool,
     position_init: Vector2,
@@ -26,13 +26,13 @@ pub struct GameEntity {
     is_dead: bool,
     animated_sprite_2d: Option<Gd<AnimatedSprite2D>>,
     #[base]
-    base: Base<Sprite2D>,
+    base: Base<Node2D>,
     direction: Direction,
 }
 
 #[godot_api]
 impl ISprite2D for GameEntity {
-    fn init(base: Base<Sprite2D>) -> Self {
+    fn init(base: Base<Node2D>) -> Self {
         Self {
             base,
             position_init: Vector2::ZERO,
@@ -48,11 +48,13 @@ impl ISprite2D for GameEntity {
     }
 
     fn ready(&mut self) {
+        self.base.set_z_index(2);
+        self.base.set_y_sort_enabled(true);
         self.base.set_position(cart_to_iso(&self.position_init));
         match self.base_type {
             GameEntityBaseType::CHARACTER => {
                 let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://warrior_animated_sprite_2d.tscn");
+                    load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
@@ -60,15 +62,17 @@ impl ISprite2D for GameEntity {
                 self.base.add_child(animated_sprite_2d.upcast());
             }
             GameEntityBaseType::PROJECTILE => {
+                let mut sprite_2d = Sprite2D::new_alloc();
                 let texture = ResourceLoader::singleton()
-                    .load("res://fireball.png".into())
+                    .load("res://sprite/fireball.png".into())
                     .unwrap()
                     .cast::<Texture2D>();
-                self.base.set_texture(texture);
+                sprite_2d.set_texture(texture);
+                self.base.add_child(sprite_2d.upcast());
             }
             GameEntityBaseType::ENEMY => {
                 let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://warrior_animated_sprite_2d.tscn");
+                    load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));

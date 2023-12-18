@@ -40,6 +40,8 @@ impl INode2D for Root {
         let play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(PlayNode::init);
         self.play_node = Some(play_node.clone());
         self.base.add_child(play_node.upcast());
+
+        self.base.set_y_sort_enabled(true);
     }
 
     fn process(&mut self, _: f64) {
