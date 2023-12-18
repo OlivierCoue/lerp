@@ -15,6 +15,7 @@ pub struct EnemyBundle {
     velocity: Velocity,
     shape: Shape,
     health: Health,
+    cannot_go_through: MovementCollider,
 }
 impl EnemyBundle {
     pub fn new(position_current: Vector2) -> Self {
@@ -24,7 +25,7 @@ impl EnemyBundle {
             position: Position {
                 current: position_current,
             },
-            velocity: Velocity::new(Vector2::ZERO, 200.0, false),
+            velocity: Velocity::new(Some(Vector2::ZERO), 200.0, false),
             shape: Shape {
                 rect: Vector2 { x: 50.0, y: 50.0 },
             },
@@ -33,6 +34,7 @@ impl EnemyBundle {
                 min: 0,
                 current: 10,
             },
+            cannot_go_through: MovementCollider {},
         }
     }
 }

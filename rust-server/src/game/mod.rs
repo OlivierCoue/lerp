@@ -32,6 +32,8 @@ const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
+const WITH_ENEMIES: bool = true;
+
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
     users_curr_id: u32,
@@ -65,11 +67,21 @@ impl<'a> Game<'a> {
 
         world_schedule.add_systems(movement.before(increase_game_entity_revision));
         world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
-        world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
 
-        world_schedule
-            .add_systems(on_update_position_current.before(increase_game_entity_revision));
-        world_schedule.add_systems(on_update_velocity_target.before(increase_game_entity_revision));
+        if WITH_ENEMIES {
+            world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
+        }
+
+        world_schedule.add_systems(
+            on_update_position_current
+                .before(increase_game_entity_revision)
+                .after(movement),
+        );
+        world_schedule.add_systems(
+            on_update_velocity_target
+                .before(increase_game_entity_revision)
+                .after(movement),
+        );
         world_schedule.add_systems(on_spawn_projectile.before(increase_game_entity_revision));
         world_schedule.add_systems(on_spawn_frozen_orb.before(increase_game_entity_revision));
         world_schedule.add_systems(
@@ -223,7 +235,7 @@ impl<'a> Game<'a> {
                             location_distance_to_target,
                         ) = match entity_ref.get::<Velocity>() {
                             Some(velocity) => (
-                                Some(vector2_to_point(velocity.get_target())),
+                                velocity.get_target().as_ref().map(vector2_to_point),
                                 Some(velocity.get_speed()),
                                 Some(velocity.get_timestamp_at_target()),
                                 Some(velocity.get_distance_to_target()),
@@ -294,10 +306,13 @@ impl<'a> Game<'a> {
                 UdpMsgUpType::PLAYER_MOVE => {
                     if let Some(ok_user) = user {
                         if let Some(ok_coord) = &udp_msg_up.player_move.0 {
-                            self.world.send_event(UpdateVelocityTarget {
-                                entity: ok_user.player_entity,
-                                target: Vector2::new(ok_coord.x, ok_coord.y),
-                            });
+                            let mut velocity = self
+                                .world
+                                .get_mut::<Velocity>(ok_user.player_entity)
+                                .unwrap();
+                            velocity.set_target(Some(world_bounded_vector2(Vector2::new(
+                                ok_coord.x, ok_coord.y,
+                            ))));
                         }
                     };
                 }
@@ -306,7 +321,10 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
                             self.world.send_event(UpdatePositionCurrent {
                                 entity: ok_user.player_entity,
-                                current: Vector2::new(ok_coord.x, ok_coord.y),
+                                current: world_bounded_vector2(Vector2::new(
+                                    ok_coord.x, ok_coord.y,
+                                )),
+                                force_update_velocity_target: true,
                             });
                         }
                     };

@@ -4,13 +4,14 @@ use godot::builtin::Vector2;
 #[derive(Event)]
 pub struct UpdateVelocityTarget {
     pub entity: Entity,
-    pub target: Vector2,
+    pub target: Option<Vector2>,
 }
 
 #[derive(Event)]
 pub struct UpdatePositionCurrent {
     pub entity: Entity,
     pub current: Vector2,
+    pub force_update_velocity_target: bool,
 }
 
 #[derive(Event)]

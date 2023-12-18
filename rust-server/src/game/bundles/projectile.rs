@@ -30,7 +30,7 @@ impl ProjectileBundle {
             position: Position {
                 current: position_current,
             },
-            velocity: Velocity::new(velocity_target, 1000.0, true),
+            velocity: Velocity::new(Some(velocity_target), 1000.0, true),
             shape: Shape {
                 rect: Vector2 { x: 50.0, y: 50.0 },
             },
@@ -67,7 +67,7 @@ impl FrozenOrbMainProjectileBundle {
             position: Position {
                 current: position_current,
             },
-            velocity: Velocity::new(velocity_target, 1000.0, false),
+            velocity: Velocity::new(Some(velocity_target), 1000.0, false),
             shape: Shape {
                 rect: Vector2 { x: 50.0, y: 50.0 },
             },

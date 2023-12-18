@@ -15,6 +15,7 @@ pub struct PlayerBundle {
     velocity: Velocity,
     shape: Shape,
     health: Health,
+    cannot_go_through: MovementCollider,
 }
 impl PlayerBundle {
     pub fn new() -> Self {
@@ -24,7 +25,7 @@ impl PlayerBundle {
             position: Position {
                 current: Vector2::ZERO,
             },
-            velocity: Velocity::new(Vector2::ZERO, 400.0, false),
+            velocity: Velocity::new(None, 400.0, false),
             shape: Shape {
                 rect: Vector2 { x: 50.0, y: 50.0 },
             },
@@ -33,6 +34,7 @@ impl PlayerBundle {
                 min: 0,
                 current: 100,
             },
+            cannot_go_through: MovementCollider {},
         }
     }
 }
