@@ -1,14 +1,14 @@
+mod collider_dmg_in;
+mod collider_mvt;
 mod damage_on_hit;
 mod game_entity;
 mod health;
-mod movement_collider;
 mod position;
-mod shape;
 mod velocity;
 
 pub mod prelude {
     pub use crate::game::components::{
-        damage_on_hit::*, game_entity::*, health::*, movement_collider::*, position::*, shape::*,
-        velocity::*,
+        collider_dmg_in::*, collider_mvt::*, damage_on_hit::*, game_entity::*, health::*,
+        position::*, velocity::*,
     };
 }

@@ -88,7 +88,10 @@ impl ISprite2D for GameEntity {
         }
 
         if let Some(position_target) = self.position_target {
-            self.set_position_target(iso_to_cart(&self.base.get_position()), position_target);
+            self.set_position_target_and_direction(
+                iso_to_cart(&self.base.get_position()),
+                position_target,
+            );
         }
 
         let mut root = self.base.get_node_as::<Root>("/root/Root");
@@ -147,11 +150,11 @@ impl GameEntity {
     pub fn set_init_state(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
         self.position_init = point_to_vector2(&entity_update.location_current);
         self.position_target = match &entity_update.location_target {
-            MessageField(Some(position_target)) => Some(point_to_vector2(&position_target)),
+            MessageField(Some(position_target)) => Some(point_to_vector2(position_target)),
             MessageField(None) => None,
         };
 
-        if let Some(speed) = entity_update.location_speed {
+        if let Some(speed) = entity_update.velocity_speed {
             self.speed = speed;
         }
         self.base_type = entity_update.object_type.unwrap();
@@ -164,28 +167,29 @@ impl GameEntity {
             health_label.set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
             health_label.set_position(Vector2 {
                 x: 0.0,
-                y: -(&entity_update.location_shape.y / 2.0 + 40.0),
+                y: -(&entity_update.collider_dmg_in_rect.y / 2.0 + 40.0),
             });
             self.health_label = Some(health_label.clone());
             self.base.add_child(health_label.upcast());
         }
 
         if DEBUG {
+            // Draw hitbox
             let a = Vector2::new(
-                -(entity_update.location_shape.x / 2.0),
-                -(entity_update.location_shape.y / 2.0),
+                -(entity_update.collider_dmg_in_rect.x / 2.0),
+                -(entity_update.collider_dmg_in_rect.y / 2.0),
             );
             let b = Vector2::new(
-                entity_update.location_shape.x / 2.0,
-                -(entity_update.location_shape.y / 2.0),
+                entity_update.collider_dmg_in_rect.x / 2.0,
+                -(entity_update.collider_dmg_in_rect.y / 2.0),
             );
             let c = Vector2::new(
-                entity_update.location_shape.x / 2.0,
-                entity_update.location_shape.y / 2.0,
+                entity_update.collider_dmg_in_rect.x / 2.0,
+                entity_update.collider_dmg_in_rect.y / 2.0,
             );
             let d = Vector2::new(
-                -(entity_update.location_shape.x / 2.0),
-                entity_update.location_shape.y / 2.0,
+                -(entity_update.collider_dmg_in_rect.x / 2.0),
+                entity_update.collider_dmg_in_rect.y / 2.0,
             );
             let mut polygon2d = Polygon2D::new_alloc();
             let mut packed_vector2_array = PackedVector2Array::new();
@@ -201,25 +205,24 @@ impl GameEntity {
     }
 
     pub fn update_from_server(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
+        self.speed = entity_update.velocity_speed.unwrap();
+
         let opt_new_position_target = match &entity_update.location_target {
-            MessageField(Some(a)) => Some(point_to_vector2(&a)),
+            MessageField(Some(location_target)) => Some(point_to_vector2(location_target)),
             MessageField(None) => None,
         };
-        let new_position_current = point_to_vector2(&entity_update.location_current);
-
-        self.speed = entity_update.location_speed.unwrap();
 
         match opt_new_position_target {
             Some(new_position_target) => {
                 if let Some(current_position_target) = self.position_target {
                     if current_position_target != new_position_target {
-                        self.set_position_target(
+                        self.set_position_target_and_direction(
                             iso_to_cart(&self.base.get_position()),
                             new_position_target,
                         );
                     }
                 } else {
-                    self.set_position_target(
+                    self.set_position_target_and_direction(
                         iso_to_cart(&self.base.get_position()),
                         new_position_target,
                     );
@@ -228,9 +231,11 @@ impl GameEntity {
             None => self.position_target = None,
         }
 
+        let new_position_current = point_to_vector2(&entity_update.location_current);
         if iso_to_cart(&self.base.get_position()).distance_to(new_position_current) > 300.0 {
             self.base.set_position(cart_to_iso(&new_position_current));
         }
+
         if let Some(health_label) = &mut self.health_label {
             if let Some(new_health_current) = entity_update.health_current {
                 health_label.set_text(new_health_current.to_string().into());
@@ -245,19 +250,18 @@ impl GameEntity {
         }
     }
 
-    fn set_position_target(
+    fn set_position_target_and_direction(
         &mut self,
         location_current_cart: Vector2,
         location_target_cart: Vector2,
     ) {
         self.position_target = Some(location_target_cart);
 
+        let angle_to_target =
+            rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
+        self.direction = angle_to_direction(angle_to_target as f32);
+
         if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
-            let angle_to_target =
-                rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
-
-            self.direction = angle_to_direction(angle_to_target as f32);
-
             animated_sprite_2d.set_animation(
                 get_walk_animation_for_direction(&self.direction)
                     .as_str()

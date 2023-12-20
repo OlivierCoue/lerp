@@ -15,7 +15,7 @@ pub struct ProjectileBundle {
     projectile: Projectile,
     position: Position,
     velocity: Velocity,
-    shape: Shape,
+    collider_dmg_in: ColliderDmgIn,
     damage_on_hit: DamageOnHit,
 }
 impl ProjectileBundle {
@@ -31,9 +31,7 @@ impl ProjectileBundle {
                 current: position_current,
             },
             velocity: Velocity::new(Some(velocity_target), 1000.0, true),
-            shape: Shape {
-                rect: Vector2 { x: 50.0, y: 50.0 },
-            },
+            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
@@ -52,7 +50,7 @@ pub struct FrozenOrbMainProjectileBundle {
     pub frozen_orb_main_projectile: FrozenOrbMainProjectile,
     pub position: Position,
     pub velocity: Velocity,
-    pub shape: Shape,
+    pub collider_dmg_in: ColliderDmgIn,
     pub damage_on_hit: DamageOnHit,
 }
 impl FrozenOrbMainProjectileBundle {
@@ -68,9 +66,7 @@ impl FrozenOrbMainProjectileBundle {
                 current: position_current,
             },
             velocity: Velocity::new(Some(velocity_target), 1000.0, false),
-            shape: Shape {
-                rect: Vector2 { x: 50.0, y: 50.0 },
-            },
+            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
                 damage_value: 5,
                 hitted_entities: HashMap::new(),

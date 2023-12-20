@@ -1,44 +1,38 @@
+use std::collections::VecDeque;
+
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
-use rust_common::helper::get_timestamp_millis;
 
 use crate::game::systems::prelude::world_bounded_vector2;
 
 #[derive(Component)]
 pub struct Velocity {
     revision: u32,
-    target: Option<Vector2>,
+    target_queue: VecDeque<Vector2>,
     speed: f32,
-    timestamp_at_target: u64,
-    distance_to_target: f32,
     despawn_at_target: bool,
 }
 impl Velocity {
     pub fn new(target: Option<Vector2>, speed: f32, despawn_at_target: bool) -> Self {
+        let target_queue = match target {
+            Some(t) => VecDeque::from_iter(Some(t)),
+            None => VecDeque::new(),
+        };
+
         Self {
             revision: 0,
-            target,
+            target_queue,
             speed,
-            timestamp_at_target: get_timestamp_millis() as u64,
-            distance_to_target: 0.0,
             despawn_at_target,
         }
     }
 
-    pub fn get_target(&self) -> &Option<Vector2> {
-        &self.target
+    pub fn get_target(&self) -> Option<&Vector2> {
+        self.target_queue.get(0)
     }
 
     pub fn get_speed(&self) -> f32 {
         self.speed
-    }
-
-    pub fn get_timestamp_at_target(&self) -> u64 {
-        self.timestamp_at_target
-    }
-
-    pub fn get_distance_to_target(&self) -> f32 {
-        self.distance_to_target
     }
 
     pub fn get_despawn_at_target(&self) -> bool {
@@ -47,10 +41,20 @@ impl Velocity {
 
     pub fn set_target(&mut self, new_target: Option<Vector2>) {
         if let Some(target) = new_target {
-            self.target = Some(world_bounded_vector2(target))
+            self.target_queue = VecDeque::from_iter(Some(world_bounded_vector2(target)))
         } else {
-            self.target = None;
+            self.target_queue = VecDeque::new();
         }
         self.revision += 1;
+    }
+
+    pub fn add_target(&mut self, new_target: Vector2) {
+        self.target_queue
+            .push_front(world_bounded_vector2(new_target));
+    }
+
+    pub fn remove_current_target(&mut self) -> bool {
+        self.target_queue.pop_front();
+        self.target_queue.is_empty()
     }
 }

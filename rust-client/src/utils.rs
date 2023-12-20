@@ -20,26 +20,29 @@ pub fn cart_to_iso(vect2: &Vector2) -> Vector2 {
 }
 
 pub fn draw_iso_rect(node2d: &mut Gd<Node2D>) {
-    node2d.draw_line(
+    let mut map_border = Node2D::new_alloc();
+    map_border.draw_line(
         cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
         cart_to_iso(&Vector2::new(1024.0, -1024.0)),
         Color::from_rgb(255.0, 0.0, 0.0),
     );
-    node2d.draw_line(
+    map_border.draw_line(
         cart_to_iso(&Vector2::new(1024.0, -1024.0)),
         cart_to_iso(&Vector2::new(1024.0, 1024.0)),
         Color::from_rgb(255.0, 0.0, 0.0),
     );
-    node2d.draw_line(
+    map_border.draw_line(
         cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
         cart_to_iso(&Vector2::new(1024.0, 1024.0)),
         Color::from_rgb(255.0, 0.0, 0.0),
     );
-    node2d.draw_line(
+    map_border.draw_line(
         cart_to_iso(&Vector2::new(-1024.0, -1024.0)),
         cart_to_iso(&Vector2::new(-1024.0, 1024.0)),
         Color::from_rgb(255.0, 0.0, 0.0),
     );
+    map_border.set_z_index(2);
+    node2d.add_child(map_border.upcast());
 }
 
 pub enum Direction {

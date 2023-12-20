@@ -37,14 +37,12 @@ pub struct UdpMsgDownGameEntityUpdate {
     pub location_current: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_target)
     pub location_target: ::protobuf::MessageField<super::common::Point>,
-    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_speed)
-    pub location_speed: ::std::option::Option<f32>,
-    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_timestamp_at_target)
-    pub location_timestamp_at_target: ::std::option::Option<u64>,
-    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_distance_to_target)
-    pub location_distance_to_target: ::std::option::Option<f32>,
-    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.location_shape)
-    pub location_shape: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.velocity_speed)
+    pub velocity_speed: ::std::option::Option<f32>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.collider_dmg_in_rect)
+    pub collider_dmg_in_rect: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.collider_mvt_rect)
+    pub collider_mvt_rect: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.health_current)
     pub health_current: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.is_self)
@@ -66,7 +64,7 @@ impl UdpMsgDownGameEntityUpdate {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(10);
+        let mut fields = ::std::vec::Vec::with_capacity(9);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "id",
@@ -89,24 +87,19 @@ impl UdpMsgDownGameEntityUpdate {
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_target },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "location_speed",
-            |m: &UdpMsgDownGameEntityUpdate| { &m.location_speed },
-            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_speed },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "location_timestamp_at_target",
-            |m: &UdpMsgDownGameEntityUpdate| { &m.location_timestamp_at_target },
-            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_timestamp_at_target },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "location_distance_to_target",
-            |m: &UdpMsgDownGameEntityUpdate| { &m.location_distance_to_target },
-            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_distance_to_target },
+            "velocity_speed",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.velocity_speed },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.velocity_speed },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
-            "location_shape",
-            |m: &UdpMsgDownGameEntityUpdate| { &m.location_shape },
-            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.location_shape },
+            "collider_dmg_in_rect",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.collider_dmg_in_rect },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.collider_dmg_in_rect },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
+            "collider_mvt_rect",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.collider_mvt_rect },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.collider_mvt_rect },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "health_current",
@@ -149,21 +142,18 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
                     ::protobuf::rt::read_singular_message_into_field(is, &mut self.location_target)?;
                 },
                 45 => {
-                    self.location_speed = ::std::option::Option::Some(is.read_float()?);
-                },
-                72 => {
-                    self.location_timestamp_at_target = ::std::option::Option::Some(is.read_uint64()?);
-                },
-                85 => {
-                    self.location_distance_to_target = ::std::option::Option::Some(is.read_float()?);
+                    self.velocity_speed = ::std::option::Option::Some(is.read_float()?);
                 },
                 50 => {
-                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.location_shape)?;
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.collider_dmg_in_rect)?;
                 },
-                56 => {
-                    self.health_current = ::std::option::Option::Some(is.read_uint32()?);
+                58 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.collider_mvt_rect)?;
                 },
                 64 => {
+                    self.health_current = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                72 => {
                     self.is_self = is.read_bool()?;
                 },
                 tag => {
@@ -192,21 +182,19 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
-        if let Some(v) = self.location_speed {
+        if let Some(v) = self.velocity_speed {
             my_size += 1 + 4;
         }
-        if let Some(v) = self.location_timestamp_at_target {
-            my_size += ::protobuf::rt::uint64_size(9, v);
+        if let Some(v) = self.collider_dmg_in_rect.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
-        if let Some(v) = self.location_distance_to_target {
-            my_size += 1 + 4;
-        }
-        if let Some(v) = self.location_shape.as_ref() {
+        if let Some(v) = self.collider_mvt_rect.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
         if let Some(v) = self.health_current {
-            my_size += ::protobuf::rt::uint32_size(7, v);
+            my_size += ::protobuf::rt::uint32_size(8, v);
         }
         if self.is_self != false {
             my_size += 1 + 1;
@@ -229,23 +217,20 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if let Some(v) = self.location_target.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(4, v, os)?;
         }
-        if let Some(v) = self.location_speed {
+        if let Some(v) = self.velocity_speed {
             os.write_float(5, v)?;
         }
-        if let Some(v) = self.location_timestamp_at_target {
-            os.write_uint64(9, v)?;
-        }
-        if let Some(v) = self.location_distance_to_target {
-            os.write_float(10, v)?;
-        }
-        if let Some(v) = self.location_shape.as_ref() {
+        if let Some(v) = self.collider_dmg_in_rect.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(6, v, os)?;
         }
+        if let Some(v) = self.collider_mvt_rect.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(7, v, os)?;
+        }
         if let Some(v) = self.health_current {
-            os.write_uint32(7, v)?;
+            os.write_uint32(8, v)?;
         }
         if self.is_self != false {
-            os.write_bool(8, self.is_self)?;
+            os.write_bool(9, self.is_self)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -268,10 +253,9 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         self.object_type = ::protobuf::EnumOrUnknown::new(super::common::GameEntityBaseType::CHARACTER);
         self.location_current.clear();
         self.location_target.clear();
-        self.location_speed = ::std::option::Option::None;
-        self.location_timestamp_at_target = ::std::option::Option::None;
-        self.location_distance_to_target = ::std::option::Option::None;
-        self.location_shape.clear();
+        self.velocity_speed = ::std::option::Option::None;
+        self.collider_dmg_in_rect.clear();
+        self.collider_mvt_rect.clear();
         self.health_current = ::std::option::Option::None;
         self.is_self = false;
         self.special_fields.clear();
@@ -283,10 +267,9 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             object_type: ::protobuf::EnumOrUnknown::from_i32(0),
             location_current: ::protobuf::MessageField::none(),
             location_target: ::protobuf::MessageField::none(),
-            location_speed: ::std::option::Option::None,
-            location_timestamp_at_target: ::std::option::Option::None,
-            location_distance_to_target: ::std::option::Option::None,
-            location_shape: ::protobuf::MessageField::none(),
+            velocity_speed: ::std::option::Option::None,
+            collider_dmg_in_rect: ::protobuf::MessageField::none(),
+            collider_mvt_rect: ::protobuf::MessageField::none(),
             health_current: ::std::option::Option::None,
             is_self: false,
             special_fields: ::protobuf::SpecialFields::new(),
@@ -798,22 +781,20 @@ impl UdpMsgDownType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xa2\x05\n\x1aUdpMsgDownGameEn\
+    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xb6\x04\n\x1aUdpMsgDownGameEn\
     tityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_ty\
     pe\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\x10l\
     ocation_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurrent\
     \x88\x01\x01\x124\n\x0flocation_target\x18\x04\x20\x01(\x0b2\x06.PointH\
-    \x01R\x0elocationTarget\x88\x01\x01\x12*\n\x0elocation_speed\x18\x05\x20\
-    \x01(\x02H\x02R\rlocationSpeed\x88\x01\x01\x12D\n\x1clocation_timestamp_\
-    at_target\x18\t\x20\x01(\x04H\x03R\x19locationTimestampAtTarget\x88\x01\
-    \x01\x12B\n\x1blocation_distance_to_target\x18\n\x20\x01(\x02H\x04R\x18l\
-    ocationDistanceToTarget\x88\x01\x01\x122\n\x0elocation_shape\x18\x06\x20\
-    \x01(\x0b2\x06.PointH\x05R\rlocationShape\x88\x01\x01\x12*\n\x0ehealth_c\
-    urrent\x18\x07\x20\x01(\rH\x06R\rhealthCurrent\x88\x01\x01\x12\x17\n\x07\
-    is_self\x18\x08\x20\x01(\x08R\x06isSelfB\x13\n\x11_location_currentB\x12\
-    \n\x10_location_targetB\x11\n\x0f_location_speedB\x1f\n\x1d_location_tim\
-    estamp_at_targetB\x1e\n\x1c_location_distance_to_targetB\x11\n\x0f_locat\
-    ion_shapeB\x11\n\x0f_health_current\"-\n\x1bUdpMsgDownGameEntityRemoved\
+    \x01R\x0elocationTarget\x88\x01\x01\x12*\n\x0evelocity_speed\x18\x05\x20\
+    \x01(\x02H\x02R\rvelocitySpeed\x88\x01\x01\x12<\n\x14collider_dmg_in_rec\
+    t\x18\x06\x20\x01(\x0b2\x06.PointH\x03R\x11colliderDmgInRect\x88\x01\x01\
+    \x127\n\x11collider_mvt_rect\x18\x07\x20\x01(\x0b2\x06.PointH\x04R\x0fco\
+    lliderMvtRect\x88\x01\x01\x12*\n\x0ehealth_current\x18\x08\x20\x01(\rH\
+    \x05R\rhealthCurrent\x88\x01\x01\x12\x17\n\x07is_self\x18\t\x20\x01(\x08\
+    R\x06isSelfB\x13\n\x11_location_currentB\x12\n\x10_location_targetB\x11\
+    \n\x0f_velocity_speedB\x17\n\x15_collider_dmg_in_rectB\x14\n\x12_collide\
+    r_mvt_rectB\x11\n\x0f_health_current\"-\n\x1bUdpMsgDownGameEntityRemoved\
     \x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\
     \n\x05_type\x18\x01\x20\x01(\x0e2\x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12\
     game_entity_update\x18\x02\x20\x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\

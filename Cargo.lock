@@ -310,6 +310,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "deprecate-until"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a3767f826efbbe5a5ae093920b58b43b01734202be697e1354914e862e8e704"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "semver",
+ "syn 2.0.39",
+]
+
+[[package]]
 name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -329,18 +341,6 @@ checksum = "762606817f81da90e3956d6e47064b6d07b86dd5f7fa47b4f50d786bae395e45"
 dependencies = [
  "bindgen",
  "cmake",
-]
-
-[[package]]
-name = "enum_dispatch"
-version = "0.3.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f33313078bb8d4d05a2733a94ac4c2d8a0df9a2b84424ebf4f33bfc224a890e"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "syn 2.0.39",
 ]
 
 [[package]]
@@ -635,10 +635,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "itoa"
-version = "1.0.9"
+name = "integer-sqrt"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
+checksum = "276ec31bcb4a9ee45f58bec6f9ec700ae4cf4f4f8f2fa7e06cb406bd5ffdd770"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "js-sys"
@@ -733,6 +736,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 
 [[package]]
+name = "num-traits"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39e3200413f237f41ab11ad6d161bc7239c84dcb631773ccd7de3dfe4b5c267c"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -749,6 +761,21 @@ name = "paste"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
+
+[[package]]
+name = "pathfinding"
+version = "4.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ea07a6e677e47d6a84724d4fdf88b1e37fcb49ac94e236d7caeefd8fee75c8a"
+dependencies = [
+ "deprecate-until",
+ "fixedbitset",
+ "indexmap 2.1.0",
+ "integer-sqrt",
+ "num-traits",
+ "rustc-hash",
+ "thiserror",
+]
 
 [[package]]
 name = "peeking_take_while"
@@ -989,15 +1016,13 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "enet-cs-sys",
- "enum_dispatch",
  "godot",
+ "pathfinding",
  "protobuf",
  "protobuf-codegen",
  "protoc-bin-vendored",
  "rand",
  "rust-common",
- "serde",
- "serde_json",
  "spin_sleep",
 ]
 
@@ -1021,10 +1046,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryu"
-version = "1.0.15"
+name = "semver"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
+checksum = "836fa6a3e1e547f9a2c4040802ec865b5d85f4014efe00555d7090a3dcaa1090"
 
 [[package]]
 name = "serde"
@@ -1044,17 +1069,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.39",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.108"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d1c7e3eac408d115102c4c24ad393e0821bb3a5df4d506a80f85f7a742a526b"
-dependencies = [
- "itoa",
- "ryu",
- "serde",
 ]
 
 [[package]]

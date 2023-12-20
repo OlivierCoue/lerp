@@ -4,22 +4,30 @@ use rust_common::collisions::collide_rect_to_rect;
 use crate::game::components::prelude::*;
 
 pub fn damage_on_hit(
-    mut query_damage_source: Query<(&mut DamageOnHit, &Position, &Shape)>,
-    mut query_damageable: Query<(Entity, &mut GameEntity, &mut Health, &Position, &Shape)>,
+    mut query_damage_source: Query<(&mut DamageOnHit, &Position, &ColliderDmgIn)>,
+    mut query_damageable: Query<(
+        Entity,
+        &mut GameEntity,
+        &mut Health,
+        &Position,
+        &ColliderDmgIn,
+    )>,
 ) {
-    for (mut dmg_on_hit, dmg_on_hit_position, dmg_on_hit_shape) in &mut query_damage_source {
+    for (mut dmg_on_hit, dmg_on_hit_position, dmg_on_hit_collider_dmg_in) in
+        &mut query_damage_source
+    {
         for (
             damageable_entity,
             mut damageable_game_entity,
             mut damageable_health,
             damageable_position,
-            damageable_shape,
+            damageable_collider_dmg_in,
         ) in &mut query_damageable
         {
             if collide_rect_to_rect(
-                &dmg_on_hit_shape.rect,
+                &dmg_on_hit_collider_dmg_in.rect,
                 &dmg_on_hit_position.current,
-                &damageable_shape.rect,
+                &damageable_collider_dmg_in.rect,
                 &damageable_position.current,
             ) && dmg_on_hit.ignored_entity != damageable_entity
                 && dmg_on_hit.hitted_entities.get(&damageable_entity).is_none()

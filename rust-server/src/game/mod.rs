@@ -53,6 +53,7 @@ impl<'a> Game<'a> {
         let mut world = World::new();
 
         world.init_resource::<Events<UpdateVelocityTarget>>();
+        world.init_resource::<Events<AddVelocityTarget>>();
         world.init_resource::<Events<UpdatePositionCurrent>>();
         world.init_resource::<Events<SpawnProjectile>>();
         world.init_resource::<Events<SpawnFrozenOrb>>();
@@ -79,6 +80,11 @@ impl<'a> Game<'a> {
         );
         world_schedule.add_systems(
             on_update_velocity_target
+                .before(increase_game_entity_revision)
+                .after(movement),
+        );
+        world_schedule.add_systems(
+            on_add_velocity_target
                 .before(increase_game_entity_revision)
                 .after(movement),
         );
@@ -228,23 +234,19 @@ impl<'a> Game<'a> {
                             .get::<Position>()
                             .map(|position| vector2_to_point(&position.current));
 
-                        let (
-                            location_target,
-                            location_speed,
-                            location_timestamp_at_target,
-                            location_distance_to_target,
-                        ) = match entity_ref.get::<Velocity>() {
+                        let (location_target, velocity_speed) = match entity_ref.get::<Velocity>() {
                             Some(velocity) => (
-                                velocity.get_target().as_ref().map(vector2_to_point),
+                                velocity.get_target().as_ref().map(|x| vector2_to_point(x)),
                                 Some(velocity.get_speed()),
-                                Some(velocity.get_timestamp_at_target()),
-                                Some(velocity.get_distance_to_target()),
                             ),
-                            None => (None, None, None, None),
+                            None => (None, None),
                         };
-                        let location_shape = entity_ref
-                            .get::<Shape>()
-                            .map(|shape| vector2_to_point(&shape.rect));
+                        let collider_dmg_in_rect = entity_ref
+                            .get::<ColliderDmgIn>()
+                            .map(|x| vector2_to_point(&x.rect));
+                        let collider_mvt_rect = entity_ref
+                            .get::<ColliderMvt>()
+                            .map(|x| vector2_to_point(&x.rect));
                         let health_current =
                             entity_ref.get::<Health>().map(|health| health.current);
 
@@ -255,10 +257,9 @@ impl<'a> Game<'a> {
                                 object_type: game_entity._type.into(),
                                 location_current: location_current.into(),
                                 location_target: location_target.into(),
-                                location_shape: location_shape.into(),
-                                location_speed,
-                                location_timestamp_at_target,
-                                location_distance_to_target,
+                                collider_dmg_in_rect: collider_dmg_in_rect.into(),
+                                collider_mvt_rect: collider_mvt_rect.into(),
+                                velocity_speed,
                                 health_current,
                                 is_self: entity_id == user_mut.player_entity,
                                 ..Default::default()

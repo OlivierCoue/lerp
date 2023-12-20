@@ -37,16 +37,16 @@ pub fn movement(
         Entity,
         &mut GameEntity,
         &Position,
-        &Shape,
         &Velocity,
-        Option<&MovementCollider>,
+        Option<&ColliderMvt>,
     )>,
-    query_entities_blocking: Query<(Entity, &Position, &Shape, &MovementCollider)>,
+    query_entities_blocking: Query<(Entity, &Position, &ColliderMvt)>,
     mut writer_update_position_current: EventWriter<UpdatePositionCurrent>,
     mut writer_update_velocity_target: EventWriter<UpdateVelocityTarget>,
+    // mut writer_add_velocity_target: EventWriter<AddVelocityTarget>,
     time: Res<Time>,
 ) {
-    for (entity, mut game_entity, position, shape, velocity, cannot_go_through) in
+    for (entity, mut game_entity, position, velocity, opt_collider_mvt) in
         &mut query_entities_to_move
     {
         if let Some(target) = velocity.get_target() {
@@ -62,15 +62,15 @@ pub fn movement(
 
             let mut collide_with_blocking_entity = false;
             // Only apply collision with others entities if the entity we attempt to move also have a collider
-            if cannot_go_through.is_some() {
-                for (entity_blocking, position_blocking, shape_blocking, _) in
+            if let Some(collider_mvt) = opt_collider_mvt {
+                for (entity_blocking, position_blocking, collider_mvt_blocking) in
                     &query_entities_blocking
                 {
                     if entity_blocking != entity
                         && collide_rect_to_rect(
-                            &shape.rect,
+                            &collider_mvt.rect,
                             &new_position_current,
-                            &shape_blocking.rect,
+                            &collider_mvt_blocking.rect,
                             &position_blocking.current,
                         )
                     {
@@ -111,6 +111,8 @@ pub fn despawn_if_velocity_at_target(
             {
                 game_entity.pending_despwan = true;
             }
+        } else if velocity.get_despawn_at_target() && !game_entity.pending_despwan {
+            game_entity.pending_despwan = true;
         }
     }
 }
@@ -143,6 +145,17 @@ pub fn on_update_velocity_target(
     }
 }
 
+pub fn on_add_velocity_target(
+    mut reader: EventReader<AddVelocityTarget>,
+    mut query: Query<&mut Velocity>,
+) {
+    for event in reader.read() {
+        if let Ok(mut velocity) = query.get_mut(event.entity) {
+            velocity.add_target(event.target);
+        }
+    }
+}
+
 pub fn on_update_position_current(
     mut reader: EventReader<UpdatePositionCurrent>,
     mut query: Query<(Entity, &mut Position, Option<&mut Velocity>)>,
@@ -162,7 +175,8 @@ pub fn on_update_position_current(
                         writer.send(VelocityReachedTarget {
                             entity,
                             target: *target,
-                        })
+                        });
+                        velocity.remove_current_target();
                     }
                 }
             }

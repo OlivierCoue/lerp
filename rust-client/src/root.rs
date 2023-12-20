@@ -7,7 +7,7 @@ use rust_common::proto::{
 
 use crate::{network::Network, play_node::PlayNode, utils::iso_to_cart};
 
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]

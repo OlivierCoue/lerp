@@ -34,10 +34,10 @@ impl GameServerEntity {
 
         // Draw shape outline
         let mut shape_pannel = Panel::new_alloc();
-        shape_pannel.set_size(point_to_vector2(&entity_update.location_shape));
+        shape_pannel.set_size(point_to_vector2(&entity_update.collider_dmg_in_rect));
         shape_pannel.set_position(Vector2 {
-            x: -(&entity_update.location_shape.x / 2.0),
-            y: -(&entity_update.location_shape.y / 2.0),
+            x: -(&entity_update.collider_dmg_in_rect.x / 2.0),
+            y: -(&entity_update.collider_dmg_in_rect.y / 2.0),
         });
 
         let mut stylebox_outline: Gd<StyleBoxFlat> = shape_pannel
