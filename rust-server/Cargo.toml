@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+arrayvec = "0.7.4"
 bevy_ecs = "0.12.1"
 enet-cs-sys = "0.1.1"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }

@@ -8,6 +8,12 @@ pub struct UpdateVelocityTarget {
 }
 
 #[derive(Event)]
+pub struct UpdateVelocityTargetWithPathFinder {
+    pub entity: Entity,
+    pub target: Vector2,
+}
+
+#[derive(Event)]
 pub struct AddVelocityTarget {
     pub entity: Entity,
     pub target: Vector2,

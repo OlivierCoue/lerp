@@ -11,7 +11,9 @@ use super::prelude::{GRID_SIZE_X_MAX, GRID_SIZE_X_MIN, GRID_SIZE_Y_MAX, GRID_SIZ
 
 pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Commands) {
     let current_game_time = get_game_time();
-    if enemies_state.last_spawn_at_millis + enemies_state.spwan_every_millis < current_game_time {
+    if enemies_state.last_spawn_at_millis == 0
+        || enemies_state.last_spawn_at_millis + enemies_state.spwan_every_millis < current_game_time
+    {
         enemies_state.last_spawn_at_millis = current_game_time;
         let random = rand::thread_rng().gen_range(GRID_SIZE_X_MIN..GRID_SIZE_X_MAX - 1.0);
         let position_current = match rand::thread_rng().gen_range(0..4) {

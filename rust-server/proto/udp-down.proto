@@ -10,7 +10,7 @@ message UdpMsgDownGameEntityUpdate {
     uint32 id = 1;
     GameEntityBaseType object_type = 2;
     optional Point location_current = 3;
-    optional Point location_target = 4;
+    repeated Point location_target_queue = 4;
     optional float velocity_speed = 5;
     optional Point collider_dmg_in_rect = 6;
     optional Point collider_mvt_rect = 7;

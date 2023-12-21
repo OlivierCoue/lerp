@@ -81,7 +81,7 @@ pub fn angle_to_direction(angle: f32) -> Direction {
         return Direction::SW;
     } else if (146.25..168.75).contains(&angle) {
         return Direction::SWW;
-    } else if (168.75..180.0).contains(&angle) || (-180.0..-168.75).contains(&angle) {
+    } else if (168.75..181.0).contains(&angle) || (-180.0..-168.75).contains(&angle) {
         return Direction::W;
     } else if (-168.75..-146.25).contains(&angle) {
         return Direction::NWW;

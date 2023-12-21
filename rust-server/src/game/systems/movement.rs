@@ -2,8 +2,13 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::collisions::collide_rect_to_rect;
 
-use crate::game::{components::prelude::*, events::prelude::*, resources::prelude::*};
+use crate::{
+    game::{components::prelude::*, events::prelude::*, resources::prelude::*},
+    utils::get_game_time,
+};
 
+pub const GRID_WIDTH: u32 = 2048;
+pub const GRID_HEIGHT: u32 = 2048;
 pub const GRID_SIZE_X_MIN: f32 = -1024.0;
 pub const GRID_SIZE_X_MAX: f32 = 1024.0;
 pub const GRID_SIZE_Y_MIN: f32 = -1024.0;
@@ -29,6 +34,22 @@ fn is_oob(position: &Vector2) -> bool {
         || position.x < GRID_SIZE_X_MIN
         || position.y > GRID_SIZE_Y_MAX
         || position.y < GRID_SIZE_Y_MIN
+}
+
+pub fn update_pathfinder_state(
+    query: Query<(&Position, &ColliderMvt)>,
+    mut pathfinder_state: ResMut<PathfinderState>,
+) {
+    let current_game_time = get_game_time();
+
+    if pathfinder_state.last_update_at_millis + pathfinder_state.update_every_millis
+        < current_game_time
+    {
+        pathfinder_state.reset();
+        for (position, collider_mvt) in &query {
+            pathfinder_state.remove_vertex_in_rect(&position.current, &collider_mvt.rect)
+        }
+    }
 }
 
 #[allow(clippy::type_complexity)]
@@ -90,7 +111,11 @@ pub fn movement(
                 writer_update_velocity_target.send(UpdateVelocityTarget {
                     entity,
                     target: None,
-                })
+                });
+                // writer_update_velocity_target.send(UpdateVelocityTargetWithPathFinder {
+                //     entity,
+                //     target: *target,
+                // });
             }
         }
     }
@@ -120,7 +145,12 @@ pub fn despawn_if_velocity_at_target(
 #[allow(clippy::type_complexity)]
 pub fn increase_game_entity_revision(
     mut query: Query<
-        &mut GameEntity,
+        (
+            &mut GameEntity,
+            Option<&mut Position>,
+            Option<&mut Velocity>,
+            Option<&mut Health>,
+        ),
         Or<(
             Changed<GameEntity>,
             Changed<Position>,
@@ -129,8 +159,29 @@ pub fn increase_game_entity_revision(
         )>,
     >,
 ) {
-    for mut game_entity in &mut query {
-        game_entity.revision += 1;
+    for (mut game_entity, opt_position, opt_velocity, opt_health) in &mut query {
+        let mut increase_revision = game_entity.pending_despwan;
+        if let Some(mut position) = opt_position {
+            if position.revision > position.revision_checkpoint {
+                position.revision_checkpoint = position.revision;
+                increase_revision = true;
+            }
+        }
+        if let Some(mut velocity) = opt_velocity {
+            if velocity.revision > velocity.revision_checkpoint {
+                velocity.revision_checkpoint = velocity.revision;
+                increase_revision = true;
+            }
+        }
+        if let Some(mut health) = opt_health {
+            if health.revision > health.revision_checkpoint {
+                health.revision_checkpoint = health.revision;
+                increase_revision = true;
+            }
+        }
+        if increase_revision {
+            game_entity.revision += 1;
+        }
     }
 }
 
@@ -141,6 +192,20 @@ pub fn on_update_velocity_target(
     for event in reader.read() {
         if let Ok(mut velocity) = query.get_mut(event.entity) {
             velocity.set_target(event.target);
+        }
+    }
+}
+
+pub fn on_update_velocity_target_with_pathfinder(
+    mut reader: EventReader<UpdateVelocityTargetWithPathFinder>,
+    mut query: Query<(&Position, &mut Velocity)>,
+    mut pathfinder_state: ResMut<PathfinderState>,
+) {
+    for event in reader.read() {
+        if let Ok((position, mut velocity)) = query.get_mut(event.entity) {
+            if let Some(targets) = pathfinder_state.get_path(&position.current, &event.target) {
+                velocity.set_targets(targets);
+            }
         }
     }
 }
@@ -167,7 +232,7 @@ pub fn on_update_position_current(
 
             if let Some(mut velocity) = opt_velocity {
                 if event.force_update_velocity_target {
-                    velocity.set_target(Some(event.current));
+                    velocity.set_target(None);
                 }
 
                 if let Some(target) = velocity.get_target() {

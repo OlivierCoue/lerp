@@ -22,17 +22,11 @@ impl PlayerBundle {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::CHARACTER),
             player: Player::default(),
-            position: Position {
-                current: Vector2::ZERO,
-            },
+            position: Position::new(Vector2::ZERO),
             velocity: Velocity::new(None, 400.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             collider_mvt: ColliderMvt::new(Vector2 { x: 10.0, y: 10.0 }),
-            health: Health {
-                max: 100,
-                min: 0,
-                current: 100,
-            },
+            health: Health::new(100),
         }
     }
 }

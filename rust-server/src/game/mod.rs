@@ -1,8 +1,10 @@
 mod bundles;
 mod components;
 mod events;
+pub mod pathfinder;
 mod resources;
 mod systems;
+
 pub mod user;
 
 use bevy_ecs::prelude::*;
@@ -53,6 +55,7 @@ impl<'a> Game<'a> {
         let mut world = World::new();
 
         world.init_resource::<Events<UpdateVelocityTarget>>();
+        world.init_resource::<Events<UpdateVelocityTargetWithPathFinder>>();
         world.init_resource::<Events<AddVelocityTarget>>();
         world.init_resource::<Events<UpdatePositionCurrent>>();
         world.init_resource::<Events<SpawnProjectile>>();
@@ -60,12 +63,23 @@ impl<'a> Game<'a> {
         world.init_resource::<Events<VelocityReachedTarget>>();
         world.insert_resource(Time::new());
         world.insert_resource(EnemiesState::new());
+        world.insert_resource(PathfinderState::new());
 
         let mut world_schedule = Schedule::default();
 
         world_schedule
             .add_systems(despawn_if_velocity_at_target.before(increase_game_entity_revision));
 
+        world_schedule.add_systems(
+            update_pathfinder_state
+                .before(movement)
+                .before(increase_game_entity_revision),
+        );
+        world_schedule.add_systems(
+            on_update_velocity_target_with_pathfinder
+                .before(increase_game_entity_revision)
+                .after(movement),
+        );
         world_schedule.add_systems(movement.before(increase_game_entity_revision));
         world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
 
@@ -234,13 +248,20 @@ impl<'a> Game<'a> {
                             .get::<Position>()
                             .map(|position| vector2_to_point(&position.current));
 
-                        let (location_target, velocity_speed) = match entity_ref.get::<Velocity>() {
-                            Some(velocity) => (
-                                velocity.get_target().as_ref().map(|x| vector2_to_point(x)),
-                                Some(velocity.get_speed()),
-                            ),
-                            None => (None, None),
-                        };
+                        let (location_target_queue, velocity_speed) =
+                            match entity_ref.get::<Velocity>() {
+                                Some(velocity) => (
+                                    Some(
+                                        velocity
+                                            .get_target_queue()
+                                            .into_iter()
+                                            .map(|x| vector2_to_point(&x))
+                                            .collect::<Vec<_>>(),
+                                    ),
+                                    Some(velocity.get_speed()),
+                                ),
+                                None => (None, None),
+                            };
                         let collider_dmg_in_rect = entity_ref
                             .get::<ColliderDmgIn>()
                             .map(|x| vector2_to_point(&x.rect));
@@ -256,7 +277,10 @@ impl<'a> Game<'a> {
                                 id: game_entity.id,
                                 object_type: game_entity._type.into(),
                                 location_current: location_current.into(),
-                                location_target: location_target.into(),
+                                location_target_queue: match location_target_queue {
+                                    Some(x) => x,
+                                    None => Vec::new(),
+                                },
                                 collider_dmg_in_rect: collider_dmg_in_rect.into(),
                                 collider_mvt_rect: collider_mvt_rect.into(),
                                 velocity_speed,
@@ -307,13 +331,17 @@ impl<'a> Game<'a> {
                 UdpMsgUpType::PLAYER_MOVE => {
                     if let Some(ok_user) = user {
                         if let Some(ok_coord) = &udp_msg_up.player_move.0 {
-                            let mut velocity = self
-                                .world
-                                .get_mut::<Velocity>(ok_user.player_entity)
-                                .unwrap();
-                            velocity.set_target(Some(world_bounded_vector2(Vector2::new(
-                                ok_coord.x, ok_coord.y,
-                            ))));
+                            self.world.send_event(UpdateVelocityTargetWithPathFinder {
+                                entity: ok_user.player_entity,
+                                target: world_bounded_vector2(Vector2::new(ok_coord.x, ok_coord.y)),
+                            });
+                            // let mut velocity = self
+                            //     .world
+                            //     .get_mut::<Velocity>(ok_user.player_entity)
+                            //     .unwrap();
+                            // velocity.set_target(Some(world_bounded_vector2(Vector2::new(
+                            //     ok_coord.x, ok_coord.y,
+                            // ))));
                         }
                     };
                 }
