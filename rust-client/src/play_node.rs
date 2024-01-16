@@ -4,7 +4,8 @@ use godot::{engine::ISprite2D, prelude::*};
 use rust_common::proto::udp_down::{UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate};
 
 use crate::{
-    entity::GameEntity, root::DEBUG, server_entity::GameServerEntity, utils::draw_iso_rect,
+    entity::GameEntity, play_node_debug::PlayNodeDebug, root::DEBUG,
+    server_entity::GameServerEntity,
 };
 
 #[derive(GodotClass)]
@@ -31,10 +32,8 @@ impl INode2D for PlayNode {
 
     fn ready(&mut self) {
         self.base.set_y_sort_enabled(true);
-    }
-
-    fn draw(&mut self) {
-        draw_iso_rect(&mut self.base.clone().upcast::<Node2D>());
+        let play_node_debug = Gd::<PlayNodeDebug>::from_init_fn(PlayNodeDebug::init);
+        self.base.add_child(play_node_debug.upcast());
     }
 }
 

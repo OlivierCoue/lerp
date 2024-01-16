@@ -23,7 +23,7 @@ impl EnemyBundle {
             game_entity: GameEntity::new(GameEntityBaseType::ENEMY),
             enemie: Enemie::default(),
             position: Position::new(position_current),
-            velocity: Velocity::new(Some(Vector2::ZERO), 200.0, false),
+            velocity: Velocity::new(Some(Vector2::new(1024.0, 1024.0)), 200.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             collider_mvt: ColliderMvt::new(Vector2 { x: 10.0, y: 10.0 }),
             health: Health::new(10),

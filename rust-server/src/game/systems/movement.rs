@@ -9,10 +9,10 @@ use crate::{
 
 pub const GRID_WIDTH: u32 = 2048;
 pub const GRID_HEIGHT: u32 = 2048;
-pub const GRID_SIZE_X_MIN: f32 = -1024.0;
-pub const GRID_SIZE_X_MAX: f32 = 1024.0;
-pub const GRID_SIZE_Y_MIN: f32 = -1024.0;
-pub const GRID_SIZE_Y_MAX: f32 = 1024.0;
+pub const GRID_SIZE_X_MIN: f32 = 0.0;
+pub const GRID_SIZE_X_MAX: f32 = 2048.0;
+pub const GRID_SIZE_Y_MIN: f32 = 0.0;
+pub const GRID_SIZE_Y_MAX: f32 = 2048.0;
 
 fn wolrd_bounded_x(x: f32) -> f32 {
     f32::min(f32::max(GRID_SIZE_X_MIN, x), GRID_SIZE_X_MAX)
@@ -37,7 +37,7 @@ fn is_oob(position: &Vector2) -> bool {
 }
 
 pub fn update_pathfinder_state(
-    query: Query<(&Position, &ColliderMvt)>,
+    query: Query<(Entity, &Position, &ColliderMvt)>,
     mut pathfinder_state: ResMut<PathfinderState>,
 ) {
     let current_game_time = get_game_time();
@@ -46,8 +46,8 @@ pub fn update_pathfinder_state(
         < current_game_time
     {
         pathfinder_state.reset();
-        for (position, collider_mvt) in &query {
-            pathfinder_state.remove_vertex_in_rect(&position.current, &collider_mvt.rect)
+        for (entity, position, collider_mvt) in &query {
+            pathfinder_state.block_nodes_in_rect(entity, &position.current, &collider_mvt.rect)
         }
     }
 }
@@ -198,12 +198,14 @@ pub fn on_update_velocity_target(
 
 pub fn on_update_velocity_target_with_pathfinder(
     mut reader: EventReader<UpdateVelocityTargetWithPathFinder>,
-    mut query: Query<(&Position, &mut Velocity)>,
+    mut query: Query<(Entity, &Position, &mut Velocity)>,
     mut pathfinder_state: ResMut<PathfinderState>,
 ) {
     for event in reader.read() {
-        if let Ok((position, mut velocity)) = query.get_mut(event.entity) {
-            if let Some(targets) = pathfinder_state.get_path(&position.current, &event.target) {
+        if let Ok((entity, position, mut velocity)) = query.get_mut(event.entity) {
+            if let Some(targets) =
+                pathfinder_state.get_path(entity, &position.current, &event.target)
+            {
                 velocity.set_targets(targets);
             }
         }

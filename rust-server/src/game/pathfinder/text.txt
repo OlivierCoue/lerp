@@ -1,167 +1,87 @@
 use std::{array, collections::HashMap};
 
-use bevy_ecs::entity::Entity;
 use godot::builtin::Vector2;
+use rust_common::helper::get_timestamp_millis;
 
-pub struct Node {
-    pub x: f32,
-    pub y: f32,
+struct Node {
     pub g: f32,
     pub h: f32,
     pub f: f32,
     pub is_open: bool,
     pub is_closed: bool,
-    is_blocked: bool,
-    blocked_by: Vec<Entity>,
+    pub is_path: bool,
+    pub is_blocked: bool,
     pub parent: Option<(usize, usize)>,
     pub previous_open: Option<(usize, usize)>,
     pub next_open: Option<(usize, usize)>,
-    pub is_path: bool,
-    pub display: Option<char>,
 }
 impl Node {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new() -> Self {
         Self {
-            x,
-            y,
             g: 0.0,
             h: 0.0,
             f: 0.0,
             is_open: false,
             is_closed: false,
+            is_path: false,
             is_blocked: false,
-            blocked_by: Vec::new(),
             parent: None,
             previous_open: None,
             next_open: None,
-            is_path: false,
-            display: None,
         }
-    }
-
-    pub fn new_blocked(x: f32, y: f32, blocked: bool, blocked_by: Vec<Entity>) -> Self {
-        Self {
-            x,
-            y,
-            g: 0.0,
-            h: 0.0,
-            f: 0.0,
-            is_open: false,
-            is_closed: false,
-            is_blocked: blocked,
-            blocked_by,
-            parent: None,
-            previous_open: None,
-            next_open: None,
-            is_path: false,
-            display: None,
-        }
-    }
-}
-impl Node {
-    pub fn is_blocked_for(&self, entity: &Entity) -> bool {
-        self.is_blocked && !self.blocked_by.contains(entity)
-    }
-    pub fn set_is_blocked(&mut self, is_blocked: bool) {
-        self.is_blocked = is_blocked
-    }
-    pub fn add_is_blocked_by(&mut self, entity: Entity) {
-        self.blocked_by.push(entity)
     }
 }
 
 const PATHFINDER_GRID_SIZE: usize = 60;
-pub const PATHFINDER_TILE_SIZE: f32 = 30.0;
-pub type Grid = [[Box<Node>; PATHFINDER_GRID_SIZE]; PATHFINDER_GRID_SIZE];
+const PATHFINDER_TILE_SIZE: f32 = 60.0;
+type Grid = [[Box<Node>; PATHFINDER_GRID_SIZE]; PATHFINDER_GRID_SIZE];
 
-pub fn pathfinder_get_path(
-    global_grid: &[Vec<Node>],
-    entity: Entity,
-    from: &Vector2,
-    to: &Vector2,
-) -> Option<Vec<Vector2>> {
-    // The global grid is the grid of the global map, in order to find a path we only work with a grid of PATHFINDER_GRID_SIZE * PATHFINDER_GRID_SIZE size (60x60)
-    // So we find the node between the from and to (center_node), and then we create the sub grid with the center_node in the center of the sub grid
-    let center_node = (
-        f32::ceil(((from.x + to.x) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
-        f32::ceil(((from.y + to.y) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
-    );
-    let top_left_node = (
-        i32::min(
-            i32::max(center_node.0 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-            PATHFINDER_GRID_SIZE as i32 - 1,
-        ) as usize,
-        i32::min(
-            i32::max(center_node.1 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-            PATHFINDER_GRID_SIZE as i32 - 1,
-        ) as usize,
-    );
+pub fn test_pathfinder() {
+    println!("Test pathfinder");
+    let mut grid: Grid = array::from_fn(|_| array::from_fn(|_| Box::new(Node::new())));
 
-    let mut grid: Grid = array::from_fn(|x| {
-        array::from_fn(|y| {
-            let mut opt_node = None;
-            if let Some(row) = global_grid.get(x + top_left_node.0) {
-                if let Some(n) = row.get(y + top_left_node.1) {
-                    opt_node = Some(n);
-                }
-            }
-            if let Some(node) = opt_node {
-                return Box::new(Node::new_blocked(
-                    node.x,
-                    node.y,
-                    node.is_blocked,
-                    node.blocked_by.clone(),
-                ));
-            }
+    grid[15][10].is_blocked = true;
+    grid[15][11].is_blocked = true;
+    grid[15][12].is_blocked = true;
+    grid[15][13].is_blocked = true;
+    grid[15][14].is_blocked = true;
+    grid[15][15].is_blocked = true;
+    grid[15][16].is_blocked = true;
+    grid[15][17].is_blocked = true;
+    grid[15][18].is_blocked = true;
+    grid[15][19].is_blocked = true;
 
-            Box::new(Node::new_blocked(0.0, 0.0, true, Vec::new()))
-        })
-    });
+    grid[14][19].is_blocked = true;
+    grid[13][19].is_blocked = true;
+    grid[12][19].is_blocked = true;
+    grid[11][19].is_blocked = true;
+    grid[10][19].is_blocked = true;
+    grid[9][19].is_blocked = true;
+    grid[8][19].is_blocked = true;
+    grid[7][19].is_blocked = true;
+    grid[6][19].is_blocked = true;
+    grid[5][19].is_blocked = true;
 
-    let unsafe_start = (
-        from.x as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.0 as i32,
-        from.y as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.1 as i32,
-    );
-    let unsafe_goal = (
-        to.x as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.0 as i32,
-        to.y as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.1 as i32,
-    );
-
-    if unsafe_start.0 < 0
-        || unsafe_start.0 > PATHFINDER_GRID_SIZE as i32 - 1
-        || unsafe_start.1 < 0
-        || unsafe_start.1 > PATHFINDER_GRID_SIZE as i32 - 1
-        || unsafe_goal.0 < 0
-        || unsafe_goal.0 > PATHFINDER_GRID_SIZE as i32 - 1
-        || unsafe_goal.1 < 0
-        || unsafe_goal.1 > PATHFINDER_GRID_SIZE as i32 - 1
-    {
-        return Some(vec![*to]);
-    }
-
-    let start = (unsafe_start.0 as usize, unsafe_start.1 as usize);
-    let goal = (unsafe_goal.0 as usize, unsafe_goal.1 as usize);
-
-    let goal_node = &mut grid[goal.0][goal.1];
-    goal_node.display = Some('G');
+    let start = (0, 0);
+    let goal = (13, 29);
 
     let start_node = &mut grid[start.0][start.1];
     start_node.is_open = true;
-    start_node.display = Some('S');
 
     let mut current_open;
     let mut opt_open_tail = Some(start);
 
-    let neighbours_coords: [(i32, i32); 4] = [
+    let neighbours_coords: [(i32, i32); 8] = [
         (0, -1),
         (0, 1),
         (-1, 0),
         (1, 0),
-        // (-1, -1),
-        // (-1, 1),
-        // (1, -1),
-        // (1, 1),
+        (-1, -1),
+        (-1, 1),
+        (1, -1),
+        (1, 1),
     ];
+    let t = get_timestamp_millis();
 
     loop {
         if let Some(open_tail) = opt_open_tail {
@@ -178,12 +98,11 @@ pub fn pathfinder_get_path(
                 opt_open_tail = grid[current_open.0][current_open.1].previous_open;
             }
         } else {
-            // If no path is found, we return only the destination as a path.
-            return Some(vec![*to]);
+            panic!("no path")
         }
 
-        // Stop if path is found
         if current_open == goal {
+            println!("Path found!");
             break;
         }
 
@@ -224,8 +143,7 @@ pub fn pathfinder_get_path(
 
         // Loop over neighbours
         for neighbour in neighbours {
-            if grid[neighbour.0][neighbour.1].is_closed
-                || grid[neighbour.0][neighbour.1].is_blocked_for(&entity)
+            if grid[neighbour.0][neighbour.1].is_closed || grid[neighbour.0][neighbour.1].is_blocked
             {
                 continue;
             }
@@ -237,7 +155,6 @@ pub fn pathfinder_get_path(
                 let dy = f32::abs(neighbour.1 as f32 - goal.1 as f32);
                 let d = 1.0;
                 let d2 = std::f32::consts::SQRT_2;
-
                 let mut h = d * (dx + dy) + (d2 - 2.0 * d) * f32::min(dx, dy);
 
                 let dx1 = (current_open.0 as i32 - goal.0 as i32) as f32;
@@ -245,7 +162,9 @@ pub fn pathfinder_get_path(
                 let dx2 = (start.0 as i32 - goal.0 as i32) as f32;
                 let dy2 = (start.1 as i32 - goal.1 as i32) as f32;
                 h += f32::abs(dx1 * dy2 - dx2 * dy1) * 0.001;
-
+                // let h = (neighbour.0.abs_diff(goal.0) + neighbour.1.abs_diff(goal.1)) as f32;
+                // let h = i32::pow(neighbour.0 as i32 - goal.0 as i32, 2) as f32
+                //     + i32::pow(neighbour.1 as i32 - goal.1 as i32, 2) as f32;
                 let f = g + h;
 
                 grid[neighbour.0][neighbour.1].g = g;
@@ -263,9 +182,9 @@ pub fn pathfinder_get_path(
                 }
             }
         }
+        // display_grid_open(&grid);
     }
 
-    // Create path in a hashmap
     let mut current_node = &grid[goal.0][goal.1];
     let mut path = HashMap::new();
     let mut i = 0;
@@ -276,13 +195,11 @@ pub fn pathfinder_get_path(
         path.insert(i, (x, y));
     }
 
-    // Smooth path (only keep required points)
     let mut check_point: usize = 0;
     let mut current_point: usize = 1;
     while path.get(&(current_point + 1)).is_some() {
         if is_walkable(
             &grid,
-            &entity,
             *path.get(&check_point).unwrap(),
             *path.get(&(current_point + 1)).unwrap(),
         ) {
@@ -295,43 +212,23 @@ pub fn pathfinder_get_path(
         }
     }
 
+    println!("{}", get_timestamp_millis() - t);
+
     for (x, y) in path.values() {
         grid[*x][*y].is_path = true;
     }
+
     display_grid_path(&grid);
-
-    // Remove the starting point
-    path.remove(&i);
-    // Transform hashmap path to vector (in the correct order)
-    let mut path_vec = path.iter().collect::<Vec<_>>();
-    path_vec.sort_by(|a, b| b.0.cmp(a.0));
-
-    let mut path_vec_vector_2d = path_vec
-        .iter()
-        .map(|(_, (x, y))| Vector2::new(grid[*x][*y].x, grid[*x][*y].y))
-        .collect::<Vec<_>>();
-    // Update the last point to the exact goal coordonate
-    let len = path_vec_vector_2d.len();
-    if len > 0 && path_vec_vector_2d.get(len - 1).is_some() {
-        path_vec_vector_2d[len - 1] = *to;
-    }
-
-    Some(path_vec_vector_2d)
 }
 
-fn is_walkable(
-    grid: &Grid,
-    entity: &Entity,
-    from_tile: (usize, usize),
-    to_tile: (usize, usize),
-) -> bool {
-    let from: Vector2 = Vector2::new(
-        (from_tile.0 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
-        (from_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
+fn is_walkable(grid: &Grid, from_tile: (usize, usize), to_tile: (usize, usize)) -> bool {
+    let from = Vector2::new(
+        (from_tile.0 as f32) * (PATHFINDER_TILE_SIZE - 1.0) + PATHFINDER_TILE_SIZE * 0.5,
+        (from_tile.1 as f32) * (PATHFINDER_TILE_SIZE - 1.0) + PATHFINDER_TILE_SIZE * 0.5,
     );
     let to = Vector2::new(
-        (to_tile.0 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
-        (to_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
+        (to_tile.0 as f32) * (PATHFINDER_TILE_SIZE - 1.0) + PATHFINDER_TILE_SIZE * 0.5,
+        (to_tile.1 as f32) * (PATHFINDER_TILE_SIZE - 1.0) + PATHFINDER_TILE_SIZE * 0.5,
     );
     let mut points = vec![from];
     while *points.last().unwrap() != to {
@@ -343,9 +240,9 @@ fn is_walkable(
         );
     }
     for point in points {
-        let x: usize = f32::floor(point.x / PATHFINDER_TILE_SIZE) as usize;
+        let x = f32::floor(point.x / PATHFINDER_TILE_SIZE) as usize;
         let y = f32::floor(point.y / PATHFINDER_TILE_SIZE) as usize;
-        if grid[x][y].is_blocked_for(entity) {
+        if grid[x][y].is_blocked {
             return false;
         }
     }
@@ -353,14 +250,11 @@ fn is_walkable(
     true
 }
 
-#[allow(dead_code)]
 fn display_grid_path(grid: &Grid) {
     let mut str_grid = String::new();
     for row in grid.iter().take(PATHFINDER_GRID_SIZE) {
         for cell in row.iter().take(PATHFINDER_GRID_SIZE) {
-            if let Some(display) = cell.display {
-                str_grid.push(display);
-            } else if cell.is_path {
+            if cell.is_path {
                 str_grid.push('░');
             } else if cell.is_blocked {
                 str_grid.push('▓');
@@ -372,3 +266,20 @@ fn display_grid_path(grid: &Grid) {
     }
     println!("{}", str_grid);
 }
+
+// fn display_grid_open(grid: &Grid) {
+//     let mut str_grid = String::new();
+//     for x in 0..PATHFINDER_GRID_SIZE {
+//         for y in 0..PATHFINDER_GRID_SIZE {
+//             if grid[x][y].is_open {
+//                 str_grid.push('▓');
+//             } else if grid[x][y].is_closed {
+//                 str_grid.push('░');
+//             } else {
+//                 str_grid.push(' ');
+//             }
+//         }
+//         str_grid.push('\n');
+//     }
+//     println!("{}", str_grid);
+// }

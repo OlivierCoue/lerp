@@ -81,10 +81,12 @@ impl ISprite2D for GameEntity {
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base.add_child(animated_sprite_2d.upcast());
             }
+            GameEntityBaseType::WALL => {}
         };
         if self.is_current_player {
             let mut camera = Camera2D::new_alloc();
             camera.set_enabled(true);
+            camera.set_zoom(Vector2::new(1.4, 1.4));
             self.base.add_child(camera.upcast());
         }
 

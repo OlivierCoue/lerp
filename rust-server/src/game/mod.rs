@@ -34,7 +34,7 @@ const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
-const WITH_ENEMIES: bool = true;
+const WITH_ENEMIES: bool = false;
 
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
@@ -109,6 +109,22 @@ impl<'a> Game<'a> {
         );
 
         world_schedule.add_systems(increase_game_entity_revision);
+
+        // Add Walls
+        let wall: WallBundle = WallBundle::new(
+            Vector2::new((GRID_WIDTH / 2) as f32, (GRID_HEIGHT / 2) as f32),
+            Vector2 {
+                x: 1020.0,
+                y: 100.0,
+            },
+        );
+        world.spawn(wall);
+        let wall2: WallBundle =
+            WallBundle::new(Vector2::new(500.0, 500.0), Vector2 { x: 300.0, y: 300.0 });
+        world.spawn(wall2);
+        let wall3: WallBundle =
+            WallBundle::new(Vector2::new(1000.0, 500.0), Vector2 { x: 300.0, y: 300.0 });
+        world.spawn(wall3);
 
         Game {
             users: HashMap::new(),

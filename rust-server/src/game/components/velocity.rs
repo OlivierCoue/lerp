@@ -56,7 +56,6 @@ impl Velocity {
 
     pub fn set_targets(&mut self, new_targets: Vec<Vector2>) {
         self.target_queue = VecDeque::from_iter(new_targets);
-        self.target_queue.pop_front();
         self.revision += 1;
     }
 

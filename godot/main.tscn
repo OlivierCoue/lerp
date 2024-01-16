@@ -32,4 +32,5 @@ y_sort_enabled = true
 position = Vector2(-1044, -504)
 
 [node name="TileMap" parent="." instance=ExtResource("2_nncp0")]
+position = Vector2(0, 1024)
 scale = Vector2(5, 5)

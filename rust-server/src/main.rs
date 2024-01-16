@@ -1,7 +1,6 @@
 mod game;
 mod network;
 mod utils;
-use game::pathfinder::test_pathfinder;
 use rust_common::proto::udp_up::UdpMsgUpWrapper;
 
 use crate::game::Game;
@@ -14,7 +13,8 @@ use std::sync::Mutex;
 use std::thread;
 
 fn main() {
-    test_pathfinder();
+    // let path = pathfinder_get_path();
+    // println!("{:#?}", path);
 
     let (tx_enet_sender, rx_enet_sender) = mpsc::channel();
 
