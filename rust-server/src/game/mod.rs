@@ -82,6 +82,7 @@ impl<'a> Game<'a> {
         world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
 
         world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
+        world_schedule.add_systems(enemies_ai.before(increase_game_entity_revision));
 
         world_schedule.add_systems(
             on_update_position_current

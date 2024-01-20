@@ -1,4 +1,4 @@
-use std::{array, collections::HashMap};
+use std::collections::HashMap;
 
 use bevy_ecs::entity::Entity;
 use godot::builtin::Vector2;
@@ -11,8 +11,8 @@ pub struct Node {
     pub f: f32,
     pub is_open: bool,
     pub is_closed: bool,
-    is_blocked: bool,
-    blocked_by: Vec<Entity>,
+    pub is_blocked: bool,
+    pub blocked_by: Vec<Entity>,
     pub parent: Option<(usize, usize)>,
     pub previous_open: Option<(usize, usize)>,
     pub next_open: Option<(usize, usize)>,
@@ -70,61 +70,24 @@ impl Node {
     }
 }
 
-const PATHFINDER_GRID_SIZE: usize = 60;
+pub const PATHFINDER_GRID_SIZE: usize = 40;
 pub const PATHFINDER_TILE_SIZE: f32 = 30.0;
 pub type Grid = [[Box<Node>; PATHFINDER_GRID_SIZE]; PATHFINDER_GRID_SIZE];
 
 pub fn pathfinder_get_path(
-    global_grid: &[Vec<Node>],
+    mut grid: Grid,
     entity: Entity,
-    from: &Vector2,
-    to: &Vector2,
+    from: Vector2,
+    to: Vector2,
+    grid_to_left_node: (usize, usize),
 ) -> Option<Vec<Vector2>> {
-    // The global grid is the grid of the global map, in order to find a path we only work with a grid of PATHFINDER_GRID_SIZE * PATHFINDER_GRID_SIZE size (60x60)
-    // So we find the node between the from and to (center_node), and then we create the sub grid with the center_node in the center of the sub grid
-    let center_node = (
-        f32::ceil(((from.x + to.x) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
-        f32::ceil(((from.y + to.y) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
-    );
-    let top_left_node = (
-        i32::min(
-            i32::max(center_node.0 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-            PATHFINDER_GRID_SIZE as i32 - 1,
-        ) as usize,
-        i32::min(
-            i32::max(center_node.1 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-            PATHFINDER_GRID_SIZE as i32 - 1,
-        ) as usize,
-    );
-
-    let mut grid: Grid = array::from_fn(|x| {
-        array::from_fn(|y| {
-            let mut opt_node = None;
-            if let Some(row) = global_grid.get(x + top_left_node.0) {
-                if let Some(n) = row.get(y + top_left_node.1) {
-                    opt_node = Some(n);
-                }
-            }
-            if let Some(node) = opt_node {
-                return Box::new(Node::new_blocked(
-                    node.x,
-                    node.y,
-                    node.is_blocked,
-                    node.blocked_by.clone(),
-                ));
-            }
-
-            Box::new(Node::new_blocked(0.0, 0.0, true, Vec::new()))
-        })
-    });
-
     let unsafe_start = (
-        from.x as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.0 as i32,
-        from.y as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.1 as i32,
+        from.x as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
+        from.y as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
     );
     let unsafe_goal = (
-        to.x as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.0 as i32,
-        to.y as i32 / PATHFINDER_TILE_SIZE as i32 - top_left_node.1 as i32,
+        to.x as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
+        to.y as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
     );
 
     if unsafe_start.0 < 0
@@ -136,7 +99,7 @@ pub fn pathfinder_get_path(
         || unsafe_goal.1 < 0
         || unsafe_goal.1 > PATHFINDER_GRID_SIZE as i32 - 1
     {
-        return Some(vec![*to]);
+        return Some(vec![to]);
     }
 
     let start = (unsafe_start.0 as usize, unsafe_start.1 as usize);
@@ -179,7 +142,7 @@ pub fn pathfinder_get_path(
             }
         } else {
             // If no path is found, we return only the destination as a path.
-            return Some(vec![*to]);
+            return Some(vec![to]);
         }
 
         // Stop if path is found
@@ -313,7 +276,7 @@ pub fn pathfinder_get_path(
     // Update the last point to the exact goal coordonate
     let len = path_vec_vector_2d.len();
     if len > 0 && path_vec_vector_2d.get(len - 1).is_some() {
-        path_vec_vector_2d[len - 1] = *to;
+        path_vec_vector_2d[len - 1] = to;
     }
 
     Some(path_vec_vector_2d)

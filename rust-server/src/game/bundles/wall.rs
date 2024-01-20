@@ -4,9 +4,6 @@ use rust_common::proto::common::GameEntityBaseType;
 
 use crate::game::components::prelude::*;
 
-#[derive(Component, Default)]
-pub struct Enemie {}
-
 #[derive(Bundle)]
 pub struct WallBundle {
     game_entity: GameEntity,

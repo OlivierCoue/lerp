@@ -3,7 +3,9 @@ use godot::builtin::Vector2;
 use rand::Rng;
 
 use crate::{
-    game::{bundles::prelude::*, resources::prelude::*},
+    game::{
+        bundles::prelude::*, resources::prelude::*, Position, UpdateVelocityTargetWithPathFinder,
+    },
     utils::get_game_time,
 };
 
@@ -28,5 +30,45 @@ pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Com
             _ => panic!("Unexpected value"),
         };
         command.spawn(EnemyBundle::new(position_current));
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn enemies_ai(
+    mut query_enemies: Query<(Entity, &Enemie, &Position), (With<Enemie>, Without<Player>)>,
+    query_players: Query<&Position, (With<Player>, Without<Enemie>)>,
+    mut writer_update_velocity_target_with_pathfinder: EventWriter<
+        UpdateVelocityTargetWithPathFinder,
+    >,
+) {
+    let aggro_range = 500.0;
+    for (enemy_entity, enemy, enemy_position) in &mut query_enemies {
+        let current_game_time = get_game_time();
+        if enemy.last_action_at_millis != 0
+            && enemy.last_action_at_millis + 1000 > current_game_time
+        {
+            continue;
+        }
+
+        let mut opt_closest_player_location = None;
+        let mut closest_player_distance = 0.0;
+
+        for player_position in &query_players {
+            let player_distance = enemy_position.current.distance_to(player_position.current);
+            if player_distance <= aggro_range
+                && (opt_closest_player_location.is_none()
+                    || player_distance < closest_player_distance)
+            {
+                opt_closest_player_location = Some(player_position.current);
+                closest_player_distance = player_distance;
+            }
+        }
+
+        if let Some(closest_player_location) = opt_closest_player_location {
+            writer_update_velocity_target_with_pathfinder.send(UpdateVelocityTargetWithPathFinder {
+                entity: enemy_entity,
+                target: closest_player_location,
+            })
+        }
     }
 }

@@ -5,7 +5,9 @@ use rust_common::proto::common::GameEntityBaseType;
 use crate::game::components::prelude::*;
 
 #[derive(Component, Default)]
-pub struct Enemie {}
+pub struct Enemie {
+    pub last_action_at_millis: u32,
+}
 
 #[derive(Bundle)]
 pub struct EnemyBundle {

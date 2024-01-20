@@ -1,9 +1,14 @@
+use std::{
+    array,
+    thread::{self, JoinHandle},
+};
+
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
 use crate::{
     game::{
-        pathfinder::{pathfinder_get_path, Node, PATHFINDER_TILE_SIZE},
+        pathfinder::{pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE},
         systems::prelude::{GRID_HEIGHT, GRID_WIDTH},
     },
     utils::get_game_time,
@@ -20,7 +25,7 @@ impl PathfinderState {
         Self {
             grid: PathfinderState::create_grid(),
             last_update_at_millis: 0,
-            update_every_millis: 300,
+            update_every_millis: 1000,
         }
     }
 
@@ -70,12 +75,50 @@ impl PathfinderState {
         }
     }
 
-    pub fn get_path(
+    pub fn get_path_async(
         &mut self,
         entity: Entity,
-        from: &Vector2,
-        to: &Vector2,
-    ) -> Option<Vec<Vector2>> {
-        pathfinder_get_path(&self.grid, entity, from, to)
+        from: Vector2,
+        to: Vector2,
+    ) -> JoinHandle<Option<Vec<Vector2>>> {
+        // The global grid is the grid of the global map, in order to find a path we only work with a grid of PATHFINDER_GRID_SIZE * PATHFINDER_GRID_SIZE size (60x60)
+        // So we find the node between the from and to (center_node), and then we create the sub grid with the center_node in the center of the sub grid
+        let center_node = (
+            f32::ceil(((from.x + to.x) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
+            f32::ceil(((from.y + to.y) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
+        );
+        let top_left_node = (
+            i32::min(
+                i32::max(center_node.0 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
+                PATHFINDER_GRID_SIZE as i32 - 1,
+            ) as usize,
+            i32::min(
+                i32::max(center_node.1 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
+                PATHFINDER_GRID_SIZE as i32 - 1,
+            ) as usize,
+        );
+
+        let grid: Grid = array::from_fn(|x| {
+            array::from_fn(|y| {
+                let mut opt_node = None;
+                if let Some(row) = self.grid.get(x + top_left_node.0) {
+                    if let Some(n) = row.get(y + top_left_node.1) {
+                        opt_node = Some(n);
+                    }
+                }
+                if let Some(node) = opt_node {
+                    return Box::new(Node::new_blocked(
+                        node.x,
+                        node.y,
+                        node.is_blocked,
+                        node.blocked_by.clone(),
+                    ));
+                }
+
+                Box::new(Node::new_blocked(0.0, 0.0, true, Vec::new()))
+            })
+        });
+
+        thread::spawn(move || pathfinder_get_path(grid, entity, from, to, top_left_node))
     }
 }

@@ -201,11 +201,20 @@ pub fn on_update_velocity_target_with_pathfinder(
     mut query: Query<(Entity, &Position, &mut Velocity)>,
     mut pathfinder_state: ResMut<PathfinderState>,
 ) {
+    let mut handlers_per_entities = Vec::new();
     for event in reader.read() {
-        if let Ok((entity, position, mut velocity)) = query.get_mut(event.entity) {
-            if let Some(targets) =
-                pathfinder_state.get_path(entity, &position.current, &event.target)
-            {
+        if let Ok((entity, position, _)) = query.get(event.entity) {
+            handlers_per_entities.push((
+                pathfinder_state.get_path_async(entity, position.current, event.target),
+                entity,
+            ));
+        }
+    }
+
+    for (handler, entity) in handlers_per_entities {
+        let opt_targets = handler.join();
+        if let Ok((_, _, mut velocity)) = query.get_mut(entity) {
+            if let Ok(Some(targets)) = opt_targets {
                 velocity.set_targets(targets);
             }
         }
