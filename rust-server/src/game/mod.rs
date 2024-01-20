@@ -34,8 +34,6 @@ const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
-const WITH_ENEMIES: bool = false;
-
 pub struct Game<'a> {
     users: HashMap<u32, User<'a>>,
     users_curr_id: u32,
@@ -83,9 +81,7 @@ impl<'a> Game<'a> {
         world_schedule.add_systems(movement.before(increase_game_entity_revision));
         world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
 
-        if WITH_ENEMIES {
-            world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
-        }
+        world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
 
         world_schedule.add_systems(
             on_update_position_current
@@ -112,18 +108,18 @@ impl<'a> Game<'a> {
 
         // Add Walls
         let wall: WallBundle = WallBundle::new(
-            Vector2::new((GRID_WIDTH / 2) as f32, (GRID_HEIGHT / 2) as f32),
+            Vector2::new(1050.0, 1080.0),
             Vector2 {
                 x: 1020.0,
-                y: 100.0,
+                y: 120.0,
             },
         );
         world.spawn(wall);
         let wall2: WallBundle =
-            WallBundle::new(Vector2::new(500.0, 500.0), Vector2 { x: 300.0, y: 300.0 });
+            WallBundle::new(Vector2::new(510.0, 510.0), Vector2 { x: 300.0, y: 300.0 });
         world.spawn(wall2);
         let wall3: WallBundle =
-            WallBundle::new(Vector2::new(1000.0, 500.0), Vector2 { x: 300.0, y: 300.0 });
+            WallBundle::new(Vector2::new(1050.0, 510.0), Vector2 { x: 300.0, y: 300.0 });
         world.spawn(wall3);
 
         Game {
@@ -284,8 +280,9 @@ impl<'a> Game<'a> {
                         let collider_mvt_rect = entity_ref
                             .get::<ColliderMvt>()
                             .map(|x| vector2_to_point(&x.rect));
-                        let health_current =
-                            entity_ref.get::<Health>().map(|health| health.current);
+                        let health_current = entity_ref
+                            .get::<Health>()
+                            .map(|health| health.get_current());
 
                         udp_msg_down_wrapper.messages.push(UdpMsgDown {
                             _type: UdpMsgDownType::GAME_ENTITY_UPDATE.into(),
@@ -351,13 +348,6 @@ impl<'a> Game<'a> {
                                 entity: ok_user.player_entity,
                                 target: world_bounded_vector2(Vector2::new(ok_coord.x, ok_coord.y)),
                             });
-                            // let mut velocity = self
-                            //     .world
-                            //     .get_mut::<Velocity>(ok_user.player_entity)
-                            //     .unwrap();
-                            // velocity.set_target(Some(world_bounded_vector2(Vector2::new(
-                            //     ok_coord.x, ok_coord.y,
-                            // ))));
                         }
                     };
                 }
@@ -414,6 +404,10 @@ impl<'a> Game<'a> {
                     if let Some(ok_player) = user {
                         ok_player.user_ping()
                     }
+                }
+                UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES => {
+                    let mut enemmies_state = self.world.get_resource_mut::<EnemiesState>().unwrap();
+                    enemmies_state.toggle_enable();
                 }
                 // UdpMsgUpType::PLAYER_TOGGLE_HIDDEN => {
                 //     if let Some(ok_user) = user {

@@ -24,7 +24,8 @@ impl ISprite2D for GameServerEntity {
     }
 
     fn ready(&mut self) {
-        self.base.set_position(cart_to_iso(&self.position_init));
+        let potision_init = self.position_init;
+        self.base_mut().set_position(cart_to_iso(&potision_init));
     }
 }
 
@@ -50,12 +51,13 @@ impl GameServerEntity {
 
         shape_pannel.add_theme_stylebox_override("panel".into(), stylebox_outline.upcast());
 
-        self.base.add_child(shape_pannel.upcast());
+        self.base_mut().add_child(shape_pannel.upcast());
     }
 
     pub fn update_from_server(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
         let new_position_current = point_to_vector2(&entity_update.location_current);
 
-        self.base.set_position(cart_to_iso(&new_position_current));
+        self.base_mut()
+            .set_position(cart_to_iso(&new_position_current));
     }
 }

@@ -32,12 +32,13 @@ pub fn damage_on_hit(
             ) && dmg_on_hit.ignored_entity != damageable_entity
                 && dmg_on_hit.hitted_entities.get(&damageable_entity).is_none()
             {
-                if dmg_on_hit.damage_value < damageable_health.current {
-                    damageable_health.current -= dmg_on_hit.damage_value;
+                if dmg_on_hit.damage_value < damageable_health.get_current() {
+                    let current = damageable_health.get_current();
+                    damageable_health.set_current(current - dmg_on_hit.damage_value);
                 } else {
-                    damageable_health.current = 0;
+                    damageable_health.set_current(0);
                 }
-                if damageable_health.current == 0 {
+                if damageable_health.get_current() == 0 {
                     damageable_game_entity.pending_despwan = true;
                 }
                 dmg_on_hit.hitted_entities.insert(damageable_entity, true);

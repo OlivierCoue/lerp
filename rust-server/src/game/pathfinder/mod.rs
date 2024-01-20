@@ -298,7 +298,7 @@ pub fn pathfinder_get_path(
     for (x, y) in path.values() {
         grid[*x][*y].is_path = true;
     }
-    display_grid_path(&grid);
+    // display_grid_path(&grid);
 
     // Remove the starting point
     path.remove(&i);

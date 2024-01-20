@@ -18,6 +18,8 @@ unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
 const ADDRESS: &str = "127.0.0.1";
+// const ADDRESS: &str = "35.181.43.91";
+
 const PORT: u16 = 34254;
 
 pub fn enet_start(
@@ -80,7 +82,7 @@ pub fn enet_start(
                                     .expect("packet data too long for an `usize`"),
                             )
                         };
-                        println!("{}", unsafe { (*event.packet).dataLength });
+                        // println!("{}", unsafe { (*event.packet).dataLength });
                         let udp_msg_down_wrapper: UdpMsgDownWrapper =
                             UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
                                 .expect("Failed to parse UdpMsgDownWrapper");

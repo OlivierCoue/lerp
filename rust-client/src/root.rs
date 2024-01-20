@@ -7,9 +7,9 @@ use rust_common::proto::{
 
 use crate::{network::Network, play_node::PlayNode, utils::iso_to_cart};
 
-pub const DEBUG: bool = true;
+pub const DEBUG: bool = false;
 
-const SEND_INPUT_TICK_SEC: f64 = 0.01;
+const SEND_INPUT_TICK_SEC: f64 = 0.1;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -39,21 +39,19 @@ impl INode2D for Root {
         let mut network = Gd::<Network>::from_init_fn(Network::init);
         network.set_name("Network".into());
         self.network = Some(network.clone());
-        self.base.add_child(network.upcast());
+        self.base_mut().add_child(network.upcast());
 
         let play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(PlayNode::init);
         self.play_node = Some(play_node.clone());
-        self.base.add_child(play_node.upcast());
+        self.base_mut().add_child(play_node.upcast());
 
-        self.base.set_y_sort_enabled(true);
+        self.base_mut().set_y_sort_enabled(true);
     }
 
     fn process(&mut self, delta: f64) {
         if let Some(network) = &mut self.network {
             if let Ok(mut udp_msg_down_wrappers) = network.bind_mut().udp_msg_down_wrappers.lock() {
                 while let Some(udp_msg_down_wrapper) = udp_msg_down_wrappers.pop_front() {
-                    self.base.emit_signal("udp_msg_down_received".into(), &[]);
-
                     if let Some(play_node) = &mut self.play_node {
                         for udp_msg_down in udp_msg_down_wrapper.messages {
                             match udp_msg_down._type.unwrap() {
@@ -80,8 +78,8 @@ impl INode2D for Root {
             self.time_since_last_input_sent = 0.0;
             if Input::singleton().is_action_pressed("left_mouse_button".into()) {
                 println!("left_mouse_button down");
-                let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
-                self.base
+                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
+                self.base_mut()
                     .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
                 if let Some(network) = &self.network {
                     network.bind().send(UdpMsgUpWrapper {
@@ -105,28 +103,28 @@ impl INode2D for Root {
     fn input(&mut self, event: Gd<InputEvent>) {
         if event.is_action_pressed("left_mouse_button".into()) {
             godot_print!("Left button pressed");
-            // let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
-            // self.base
-            //     .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
-            // if let Some(network) = &self.network {
-            //     network.bind().send(UdpMsgUpWrapper {
-            //         messages: vec![UdpMsgUp {
-            //             _type: UdpMsgUpType::PLAYER_MOVE.into(),
-            //             player_move: Some(Point {
-            //                 x: mouse_position.x,
-            //                 y: mouse_position.y,
-            //                 ..Default::default()
-            //             })
-            //             .into(),
-            //             ..Default::default()
-            //         }],
-            //         ..Default::default()
-            //     })
-            // }
+            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
+            self.base_mut()
+                .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
+            if let Some(network) = &self.network {
+                network.bind().send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::PLAYER_MOVE.into(),
+                        player_move: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
+            }
         } else if event.is_action_pressed("key_e".into()) {
             godot_print!("Key E pressed");
-            let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
-            self.base
+            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
+            self.base_mut()
                 .emit_signal("player_throw_fireball_start".into(), &[]);
             if let Some(network) = &self.network {
                 network.bind().send(UdpMsgUpWrapper {
@@ -145,7 +143,7 @@ impl INode2D for Root {
             }
         } else if event.is_action_pressed("key_r".into()) {
             godot_print!("Key R pressed");
-            let mouse_position = iso_to_cart(&self.base.get_global_mouse_position());
+            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
             if let Some(network) = &self.network {
                 network.bind().send(UdpMsgUpWrapper {
                     messages: vec![UdpMsgUp {
@@ -156,6 +154,17 @@ impl INode2D for Root {
                             ..Default::default()
                         })
                         .into(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })
+            }
+        } else if event.is_action_pressed("key_n".into()) {
+            godot_print!("Key N pressed");
+            if let Some(network) = &self.network {
+                network.bind().send(UdpMsgUpWrapper {
+                    messages: vec![UdpMsgUp {
+                        _type: UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
                         ..Default::default()
                     }],
                     ..Default::default()

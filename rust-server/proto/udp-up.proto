@@ -10,6 +10,7 @@ enum UdpMsgUpType {
     PLAYER_TOGGLE_HIDDEN = 5;
     PLAYER_THROW_PROJECTILE = 6;
     PLAYER_THROW_FROZEN_ORB = 7;
+    SETTINGS_TOGGLE_ENEMIES = 8;
 }
 
 message UdpMsgUp {

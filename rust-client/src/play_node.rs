@@ -31,9 +31,11 @@ impl INode2D for PlayNode {
     }
 
     fn ready(&mut self) {
-        self.base.set_y_sort_enabled(true);
-        let play_node_debug = Gd::<PlayNodeDebug>::from_init_fn(PlayNodeDebug::init);
-        self.base.add_child(play_node_debug.upcast());
+        self.base_mut().set_y_sort_enabled(true);
+        if DEBUG {
+            let play_node_debug = Gd::<PlayNodeDebug>::from_init_fn(PlayNodeDebug::init);
+            self.base_mut().add_child(play_node_debug.upcast());
+        }
     }
 }
 
@@ -45,7 +47,7 @@ impl PlayNode {
             let mut entity = Gd::<GameEntity>::from_init_fn(GameEntity::init);
             entity.bind_mut().set_init_state(entity_update);
             self.entities.insert(entity_update.id, entity.clone());
-            self.base.add_child(entity.upcast());
+            self.base_mut().add_child(entity.upcast());
         }
         if DEBUG {
             if let Some(entity) = self.server_entities.get_mut(&entity_update.id) {
@@ -55,7 +57,7 @@ impl PlayNode {
                 entity.bind_mut().set_init_state(entity_update);
                 self.server_entities
                     .insert(entity_update.id, entity.clone());
-                self.base.add_child(entity.upcast());
+                self.base_mut().add_child(entity.upcast());
             }
         }
     }

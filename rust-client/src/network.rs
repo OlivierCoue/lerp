@@ -12,7 +12,7 @@ use godot::{
     bind::{godot_api, GodotClass},
     engine::{INode, Node},
     log::godot_print,
-    obj::Base,
+    obj::{Base, WithBaseField},
 };
 use rust_common::proto::{
     udp_down::UdpMsgDownWrapper,
@@ -42,7 +42,7 @@ impl INode for Network {
     }
 
     fn ready(&mut self) {
-        godot_print!("Network ready with path {}", self.base.get_path());
+        godot_print!("Network ready with path {}", self.base_mut().get_path());
 
         let udp_msg_down_wrappers_clone = Arc::clone(&self.udp_msg_down_wrappers);
         let (tx_enet_sender, rx_enet_sender) = mpsc::channel();

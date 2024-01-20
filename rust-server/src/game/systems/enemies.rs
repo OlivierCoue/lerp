@@ -10,6 +10,10 @@ use crate::{
 use super::prelude::{GRID_SIZE_X_MAX, GRID_SIZE_X_MIN, GRID_SIZE_Y_MAX, GRID_SIZE_Y_MIN};
 
 pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Commands) {
+    if !enemies_state.is_enable() {
+        return;
+    }
+
     let current_game_time = get_game_time();
     if enemies_state.last_spawn_at_millis == 0
         || enemies_state.last_spawn_at_millis + enemies_state.spwan_every_millis < current_game_time
