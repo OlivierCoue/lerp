@@ -55,18 +55,22 @@ pub fn update_pathfinder_state(
 #[allow(clippy::type_complexity)]
 #[allow(unused_mut)] // mut is actually used on query_entities_to_move with get_component_unchecked_mut
 pub fn movement(
+    mut commands: Commands,
     mut query_entities_to_move: Query<(
         Entity,
         &mut GameEntity,
         &mut Position,
         Option<&mut Velocity>,
         Option<&ColliderMvt>,
+        Option<&Cast>,
     )>,
     mut writer_update_velocity_target: EventWriter<UpdateVelocityTarget>,
     mut writer: EventWriter<VelocityReachedTarget>,
     time: Res<Time>,
 ) {
-    for (entity, game_entity, position, opt_velocity, opt_collider_mvt) in &query_entities_to_move {
+    for (entity, game_entity, position, opt_velocity, opt_collider_mvt, opt_cast) in
+        &query_entities_to_move
+    {
         if let Some(mut velocity) = opt_velocity {
             if let Some(target) = velocity.get_target() {
                 if is_oob(&position.current) && !game_entity.pending_despwan {
@@ -87,7 +91,7 @@ pub fn movement(
                 let mut collide_with_blocking_entity = false;
                 // Only apply collision with others entities if the entity we attempt to move also have a collider
                 if let Some(collider_mvt) = opt_collider_mvt {
-                    for (entity_blocking, _, position_blocking, _, opt_collider_mvt_blocking) in
+                    for (entity_blocking, _, position_blocking, _, opt_collider_mvt_blocking, _) in
                         &query_entities_to_move
                     {
                         if let Some(collider_mvt_blocking) = opt_collider_mvt_blocking {
@@ -126,6 +130,9 @@ pub fn movement(
                             };
                             velocity_mut.remove_current_target();
                         }
+                    }
+                    if opt_cast.is_some() {
+                        commands.entity(entity).remove::<Cast>();
                     }
                 } else {
                     writer_update_velocity_target.send(UpdateVelocityTarget {

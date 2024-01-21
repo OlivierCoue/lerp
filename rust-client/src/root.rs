@@ -76,23 +76,46 @@ impl INode2D for Root {
         self.time_since_last_input_sent += delta;
         if self.time_since_last_input_sent >= SEND_INPUT_TICK_SEC {
             self.time_since_last_input_sent = 0.0;
-            if Input::singleton().is_action_pressed("left_mouse_button".into()) {
-                println!("left_mouse_button down");
+            let mut actions = Vec::new();
+
+            if Input::singleton().is_action_pressed("key_e".into()) {
+                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
+                self.base_mut()
+                    .emit_signal("player_throw_fireball_start".into(), &[]);
+                actions.push(UdpMsgUp {
+                    _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                    player_throw_frozen_orb: Some(Point {
+                        x: mouse_position.x,
+                        y: mouse_position.y,
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..Default::default()
+                });
+            }
+
+            if actions.is_empty()
+                && Input::singleton().is_action_pressed("left_mouse_button".into())
+            {
                 let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
                 self.base_mut()
                     .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
-                if let Some(network) = &self.network {
+                actions.push(UdpMsgUp {
+                    _type: UdpMsgUpType::PLAYER_MOVE.into(),
+                    player_move: Some(Point {
+                        x: mouse_position.x,
+                        y: mouse_position.y,
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..Default::default()
+                });
+            }
+
+            if let Some(network) = &self.network {
+                if !actions.is_empty() {
                     network.bind().send(UdpMsgUpWrapper {
-                        messages: vec![UdpMsgUp {
-                            _type: UdpMsgUpType::PLAYER_MOVE.into(),
-                            player_move: Some(Point {
-                                x: mouse_position.x,
-                                y: mouse_position.y,
-                                ..Default::default()
-                            })
-                            .into(),
-                            ..Default::default()
-                        }],
+                        messages: actions,
                         ..Default::default()
                     })
                 }

@@ -304,4 +304,5 @@ animations = [{
 texture_filter = 1
 position = Vector2(0, -9)
 sprite_frames = SubResource("SpriteFrames_mxqdk")
-animation = &"bottom_right"
+animation = &"bottom"
+frame_progress = 0.0065776

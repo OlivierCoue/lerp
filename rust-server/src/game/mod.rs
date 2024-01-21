@@ -56,8 +56,7 @@ impl<'a> Game<'a> {
         world.init_resource::<Events<UpdateVelocityTargetWithPathFinder>>();
         world.init_resource::<Events<AddVelocityTarget>>();
         world.init_resource::<Events<UpdatePositionCurrent>>();
-        world.init_resource::<Events<SpawnProjectile>>();
-        world.init_resource::<Events<SpawnFrozenOrb>>();
+        world.init_resource::<Events<CastSpell>>();
         world.init_resource::<Events<VelocityReachedTarget>>();
         world.insert_resource(Time::new());
         world.insert_resource(EnemiesState::new());
@@ -80,6 +79,7 @@ impl<'a> Game<'a> {
         );
         world_schedule.add_systems(movement.before(increase_game_entity_revision));
         world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
+        world_schedule.add_systems(create_casted_spells.before(increase_game_entity_revision));
 
         world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
         world_schedule.add_systems(enemies_ai.before(increase_game_entity_revision));
@@ -99,8 +99,7 @@ impl<'a> Game<'a> {
                 .before(increase_game_entity_revision)
                 .after(movement),
         );
-        world_schedule.add_systems(on_spawn_projectile.before(increase_game_entity_revision));
-        world_schedule.add_systems(on_spawn_frozen_orb.before(increase_game_entity_revision));
+        world_schedule.add_systems(on_cast_spell.before(increase_game_entity_revision));
         world_schedule.add_systems(
             on_frozen_orb_velocity_reached_target.before(increase_game_entity_revision),
         );
@@ -370,15 +369,18 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
                             let player_position =
                                 self.world.get::<Position>(ok_user.player_entity).unwrap();
-                            self.world.send_event(SpawnFrozenOrb {
+                            self.world.send_event(CastSpell {
                                 from_entity: ok_user.player_entity,
-                                from_position: player_position.current,
-                                to_target: get_point_from_points_and_distance(
+                                spell: Spell::FrozenOrb(
+                                    ok_user.player_entity,
                                     player_position.current,
-                                    Vector2::new(ok_coord.x, ok_coord.y),
-                                    600.0,
+                                    get_point_from_points_and_distance(
+                                        player_position.current,
+                                        Vector2::new(ok_coord.x, ok_coord.y),
+                                        600.0,
+                                    ),
+                                    ok_user.player_entity,
                                 ),
-                                ignored_entity: ok_user.player_entity,
                             });
                         }
                     };
@@ -388,15 +390,18 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
                             let player_position =
                                 self.world.get::<Position>(ok_user.player_entity).unwrap();
-                            self.world.send_event(SpawnProjectile {
+                            self.world.send_event(CastSpell {
                                 from_entity: ok_user.player_entity,
-                                from_position: player_position.current,
-                                to_target: get_point_from_points_and_distance(
+                                spell: Spell::Projectile(
+                                    ok_user.player_entity,
                                     player_position.current,
-                                    Vector2::new(ok_coord.x, ok_coord.y),
-                                    600.0,
+                                    get_point_from_points_and_distance(
+                                        player_position.current,
+                                        Vector2::new(ok_coord.x, ok_coord.y),
+                                        600.0,
+                                    ),
+                                    ok_user.player_entity,
                                 ),
-                                ignored_entity: ok_user.player_entity,
                             });
                         }
                     };
