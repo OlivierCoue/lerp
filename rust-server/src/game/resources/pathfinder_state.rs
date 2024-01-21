@@ -52,10 +52,10 @@ impl PathfinderState {
 
     pub fn block_nodes_in_rect(&mut self, entity: Entity, position: &Vector2, rect: &Vector2) {
         // To take in account the size of the entity moving in the grid, we enlarge every rect by the size of the moving entity
-        let extra = 10;
-        let rx = (f32::ceil(((position.x) - (rect.x) / 2.0 - extra as f32) / PATHFINDER_TILE_SIZE)
+        let extra = 20;
+        let rx = (f32::floor(((position.x) - (rect.x) / 2.0 - extra as f32) / PATHFINDER_TILE_SIZE)
             * PATHFINDER_TILE_SIZE) as i32;
-        let ry = (f32::ceil(((position.y) - (rect.y) / 2.0 - extra as f32) / PATHFINDER_TILE_SIZE)
+        let ry = (f32::floor(((position.y) - (rect.y) / 2.0 - extra as f32) / PATHFINDER_TILE_SIZE)
             * PATHFINDER_TILE_SIZE) as i32;
         let rw = rect.x.round() as i32 + 2 * extra;
         let rh = rect.y.round() as i32 + 2 * extra;

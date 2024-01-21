@@ -26,6 +26,7 @@ impl ISprite2D for GameServerEntity {
     fn ready(&mut self) {
         let potision_init = self.position_init;
         self.base_mut().set_position(cart_to_iso(&potision_init));
+        self.base_mut().set_z_index(10);
     }
 }
 

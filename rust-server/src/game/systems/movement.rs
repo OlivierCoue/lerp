@@ -53,69 +53,86 @@ pub fn update_pathfinder_state(
 }
 
 #[allow(clippy::type_complexity)]
+#[allow(unused_mut)] // mut is actually used on query_entities_to_move with get_component_unchecked_mut
 pub fn movement(
     mut query_entities_to_move: Query<(
         Entity,
         &mut GameEntity,
-        &Position,
-        &Velocity,
+        &mut Position,
+        Option<&mut Velocity>,
         Option<&ColliderMvt>,
     )>,
-    query_entities_blocking: Query<(Entity, &Position, &ColliderMvt)>,
-    mut writer_update_position_current: EventWriter<UpdatePositionCurrent>,
     mut writer_update_velocity_target: EventWriter<UpdateVelocityTarget>,
-    // mut writer_add_velocity_target: EventWriter<AddVelocityTarget>,
+    mut writer: EventWriter<VelocityReachedTarget>,
     time: Res<Time>,
 ) {
-    for (entity, mut game_entity, position, velocity, opt_collider_mvt) in
-        &mut query_entities_to_move
-    {
-        if let Some(target) = velocity.get_target() {
-            if is_oob(&position.current) && !game_entity.pending_despwan {
-                game_entity.pending_despwan = true;
-            } else if position.current == *target {
-                continue;
-            }
+    for (entity, game_entity, position, opt_velocity, opt_collider_mvt) in &query_entities_to_move {
+        if let Some(mut velocity) = opt_velocity {
+            if let Some(target) = velocity.get_target() {
+                if is_oob(&position.current) && !game_entity.pending_despwan {
+                    let mut game_entity_mut = unsafe {
+                        query_entities_to_move
+                            .get_component_unchecked_mut::<GameEntity>(entity)
+                            .unwrap()
+                    };
+                    game_entity_mut.pending_despwan = true;
+                } else if position.current == *target {
+                    continue;
+                }
 
-            let new_position_current = position
-                .current
-                .move_toward(*target, velocity.get_speed() * time.delta);
+                let new_position_current = position
+                    .current
+                    .move_toward(*target, velocity.get_speed() * time.delta);
 
-            let mut collide_with_blocking_entity = false;
-            // Only apply collision with others entities if the entity we attempt to move also have a collider
-            if let Some(collider_mvt) = opt_collider_mvt {
-                for (entity_blocking, position_blocking, collider_mvt_blocking) in
-                    &query_entities_blocking
-                {
-                    if entity_blocking != entity
-                        && collide_rect_to_rect(
-                            &collider_mvt.rect,
-                            &new_position_current,
-                            &collider_mvt_blocking.rect,
-                            &position_blocking.current,
-                        )
+                let mut collide_with_blocking_entity = false;
+                // Only apply collision with others entities if the entity we attempt to move also have a collider
+                if let Some(collider_mvt) = opt_collider_mvt {
+                    for (entity_blocking, _, position_blocking, _, opt_collider_mvt_blocking) in
+                        &query_entities_to_move
                     {
-                        collide_with_blocking_entity = true;
-                        break;
+                        if let Some(collider_mvt_blocking) = opt_collider_mvt_blocking {
+                            if entity_blocking != entity
+                                && collide_rect_to_rect(
+                                    &collider_mvt.rect,
+                                    &new_position_current,
+                                    &collider_mvt_blocking.rect,
+                                    &position_blocking.current,
+                                )
+                            {
+                                collide_with_blocking_entity = true;
+                                break;
+                            }
+                        }
                     }
                 }
-            }
 
-            if !collide_with_blocking_entity {
-                writer_update_position_current.send(UpdatePositionCurrent {
-                    entity,
-                    current: new_position_current,
-                    force_update_velocity_target: false,
-                })
-            } else {
-                writer_update_velocity_target.send(UpdateVelocityTarget {
-                    entity,
-                    target: None,
-                });
-                // writer_update_velocity_target.send(UpdateVelocityTargetWithPathFinder {
-                //     entity,
-                //     target: *target,
-                // });
+                if !collide_with_blocking_entity {
+                    let mut position_mut = unsafe {
+                        query_entities_to_move
+                            .get_component_unchecked_mut::<Position>(entity)
+                            .unwrap()
+                    };
+                    position_mut.current = new_position_current;
+                    if let Some(target) = velocity.get_target() {
+                        if position.current == *target {
+                            writer.send(VelocityReachedTarget {
+                                entity,
+                                target: *target,
+                            });
+                            let mut velocity_mut = unsafe {
+                                query_entities_to_move
+                                    .get_component_unchecked_mut::<Velocity>(entity)
+                                    .unwrap()
+                            };
+                            velocity_mut.remove_current_target();
+                        }
+                    }
+                } else {
+                    writer_update_velocity_target.send(UpdateVelocityTarget {
+                        entity,
+                        target: None,
+                    });
+                }
             }
         }
     }

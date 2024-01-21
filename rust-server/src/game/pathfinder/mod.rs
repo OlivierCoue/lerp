@@ -126,6 +126,10 @@ pub fn pathfinder_get_path(
         // (1, 1),
     ];
 
+    let mut closest_to_goal = start;
+    let mut clostest_to_goal_h = 99999.0;
+
+    #[allow(clippy::while_let_loop)]
     loop {
         if let Some(open_tail) = opt_open_tail {
             current_open = open_tail;
@@ -142,7 +146,7 @@ pub fn pathfinder_get_path(
             }
         } else {
             // If no path is found, we return only the destination as a path.
-            return Some(vec![to]);
+            break;
         }
 
         // Stop if path is found
@@ -223,16 +227,20 @@ pub fn pathfinder_get_path(
                         grid[open_tail.0][open_tail.1].next_open = Some(neighbour);
                     }
                     opt_open_tail = Some(neighbour);
+                    if h < clostest_to_goal_h {
+                        clostest_to_goal_h = h;
+                        closest_to_goal = neighbour;
+                    }
                 }
             }
         }
     }
 
     // Create path in a hashmap
-    let mut current_node = &grid[goal.0][goal.1];
+    let mut current_node = &grid[closest_to_goal.0][closest_to_goal.1];
     let mut path = HashMap::new();
     let mut i = 0;
-    path.insert(i, goal);
+    path.insert(i, closest_to_goal);
     while let Some((x, y)) = current_node.parent {
         i += 1;
         current_node = &grid[x][y];

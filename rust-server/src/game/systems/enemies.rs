@@ -35,14 +35,14 @@ pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Com
 
 #[allow(clippy::type_complexity)]
 pub fn enemies_ai(
-    mut query_enemies: Query<(Entity, &Enemie, &Position), (With<Enemie>, Without<Player>)>,
+    mut query_enemies: Query<(Entity, &mut Enemie, &Position), (With<Enemie>, Without<Player>)>,
     query_players: Query<&Position, (With<Player>, Without<Enemie>)>,
     mut writer_update_velocity_target_with_pathfinder: EventWriter<
         UpdateVelocityTargetWithPathFinder,
     >,
 ) {
     let aggro_range = 500.0;
-    for (enemy_entity, enemy, enemy_position) in &mut query_enemies {
+    for (enemy_entity, mut enemy, enemy_position) in &mut query_enemies {
         let current_game_time = get_game_time();
         if enemy.last_action_at_millis != 0
             && enemy.last_action_at_millis + 1000 > current_game_time
@@ -50,6 +50,7 @@ pub fn enemies_ai(
             continue;
         }
 
+        enemy.last_action_at_millis = current_game_time;
         let mut opt_closest_player_location = None;
         let mut closest_player_distance = 0.0;
 
