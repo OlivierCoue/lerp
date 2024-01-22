@@ -406,6 +406,26 @@ impl<'a> Game<'a> {
                         }
                     };
                 }
+                UdpMsgUpType::PLAYER_MELEE_ATTACK => {
+                    if let Some(ok_user) = user {
+                        if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+                            let player_position =
+                                self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            self.world.send_event(CastSpell {
+                                from_entity: ok_user.player_entity,
+                                spell: Spell::MeleeAttack(
+                                    ok_user.player_entity,
+                                    get_point_from_points_and_distance(
+                                        player_position.current,
+                                        Vector2::new(ok_coord.x, ok_coord.y),
+                                        40.0,
+                                    ),
+                                    ok_user.player_entity,
+                                ),
+                            });
+                        }
+                    };
+                }
                 UdpMsgUpType::PLAYER_PING => {
                     if let Some(ok_player) = user {
                         ok_player.user_ping()

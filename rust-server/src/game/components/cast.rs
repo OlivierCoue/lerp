@@ -5,6 +5,7 @@ use godot::builtin::Vector2;
 pub enum Spell {
     FrozenOrb(Entity, Vector2, Vector2, Entity),
     Projectile(Entity, Vector2, Vector2, Entity),
+    MeleeAttack(Entity, Vector2, Entity),
 }
 
 #[derive(Component)]

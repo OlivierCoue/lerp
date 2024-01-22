@@ -40,6 +40,9 @@ pub fn create_casted_spells(mut command: Commands, query: Query<(Entity, &Cast),
             Spell::Projectile(_, _, _, _) => {
                 println!("unsupported")
             }
+            Spell::MeleeAttack(_, from_position, ignored_entity) => {
+                command.spawn(MeleeAttackBundle::new(from_position, ignored_entity));
+            }
         }
         command.entity(entity).remove::<Cast>();
     }

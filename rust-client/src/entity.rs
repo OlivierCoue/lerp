@@ -13,8 +13,8 @@ use rust_common::proto::udp_down::UdpMsgDownGameEntityUpdate;
 
 use crate::root::{Root, DEBUG};
 use crate::utils::{
-    angle_to_direction, cart_to_iso, get_idle_animation_for_direction,
-    get_walk_animation_for_direction, iso_to_cart, Direction,
+    angle_to_direction, cart_to_iso, get_attack_animation_for_direction,
+    get_idle_animation_for_direction, get_walk_animation_for_direction, iso_to_cart, Direction,
 };
 
 #[derive(GodotClass)]
@@ -31,6 +31,8 @@ pub struct GameEntity {
     #[base]
     base: Base<CharacterBody2D>,
     direction: Direction,
+    is_attacking: bool,
+    attack_duration_remaining: f64,
 }
 
 #[godot_api]
@@ -47,6 +49,8 @@ impl ISprite2D for GameEntity {
             is_dead: false,
             animated_sprite_2d: None,
             direction: Direction::N,
+            is_attacking: false,
+            attack_duration_remaining: 0.0,
         }
     }
 
@@ -84,6 +88,7 @@ impl ISprite2D for GameEntity {
                 self.base_mut().add_child(animated_sprite_2d.upcast());
             }
             GameEntityBaseType::WALL => {}
+            GameEntityBaseType::MELEE_ATTACK => {}
         };
         if self.is_current_player {
             let mut camera = Camera2D::new_alloc();
@@ -106,6 +111,12 @@ impl ISprite2D for GameEntity {
     }
 
     fn process(&mut self, delta: f64) {
+        if self.attack_duration_remaining > 0.0 {
+            self.attack_duration_remaining -= delta;
+        } else if self.is_attacking {
+            self.is_attacking = false;
+        }
+
         if let Some(position_target) = self.position_target_queue.get(0) {
             let vd = *position_target - iso_to_cart(&self.base().get_position());
             let len = vd.length();
@@ -130,12 +141,17 @@ impl ISprite2D for GameEntity {
             }
         }
 
+        if is_moving {
+            self.attack_duration_remaining = 0.0;
+            self.is_attacking = false;
+        }
+
         if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
             if is_moving {
                 if !animated_sprite_2d.is_playing() {
                     animated_sprite_2d.play();
                 }
-            } else {
+            } else if !self.is_attacking {
                 animated_sprite_2d.set_animation(
                     get_idle_animation_for_direction(&self.direction)
                         .as_str()
@@ -154,6 +170,22 @@ impl GameEntity {
     fn on_player_throw_fireball_start(&mut self) {
         if self.is_current_player {
             self.position_target_queue.clear();
+
+            self.is_attacking = true;
+            self.attack_duration_remaining = 0.3;
+            let location_current_cart = iso_to_cart(&self.base().get_position());
+            let location_target_cart = iso_to_cart(&self.base().get_global_mouse_position());
+
+            let angle_to_target =
+                rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
+
+            if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
+                animated_sprite_2d.set_animation(
+                    get_attack_animation_for_direction(&angle_to_direction(angle_to_target as f32))
+                        .as_str()
+                        .into(),
+                );
+            }
         }
     }
 }

@@ -10,4 +10,5 @@ enum GameEntityBaseType {
     PROJECTILE = 1;
     ENEMY = 2;
     WALL = 3;
+    MELEE_ATTACK = 4;
 }

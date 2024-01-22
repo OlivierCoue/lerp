@@ -94,6 +94,22 @@ impl INode2D for Root {
                 });
             }
 
+            if Input::singleton().is_action_pressed("right_mouse_button".into()) {
+                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
+                self.base_mut()
+                    .emit_signal("player_throw_fireball_start".into(), &[]);
+                actions.push(UdpMsgUp {
+                    _type: UdpMsgUpType::PLAYER_MELEE_ATTACK.into(),
+                    player_throw_frozen_orb: Some(Point {
+                        x: mouse_position.x,
+                        y: mouse_position.y,
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..Default::default()
+                });
+            }
+
             if actions.is_empty()
                 && Input::singleton().is_action_pressed("left_mouse_button".into())
             {

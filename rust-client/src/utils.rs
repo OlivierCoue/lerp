@@ -113,3 +113,24 @@ pub fn get_idle_animation_for_direction(direction: &Direction) -> String {
         Direction::NNE => String::from("idle_nee"),
     }
 }
+
+pub fn get_attack_animation_for_direction(direction: &Direction) -> String {
+    match direction {
+        Direction::NE => String::from("attack_e"),
+        Direction::NEE => String::from("attack_see"),
+        Direction::E => String::from("attack_se"),
+        Direction::SEE => String::from("attack_sse"),
+        Direction::SE => String::from("attack_s"),
+        Direction::SSE => String::from("attack_ssw"),
+        Direction::S => String::from("attack_sw"),
+        Direction::SSW => String::from("attack_sww"),
+        Direction::SW => String::from("attack_w"),
+        Direction::SWW => String::from("attack_nww"),
+        Direction::W => String::from("attack_nw"),
+        Direction::NWW => String::from("attack_nnw"),
+        Direction::NW => String::from("attack_n"),
+        Direction::NNW => String::from("attack_nne"),
+        Direction::N => String::from("attack_ne"),
+        Direction::NNE => String::from("attack_nee"),
+    }
+}

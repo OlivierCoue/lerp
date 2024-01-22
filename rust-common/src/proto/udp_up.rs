@@ -365,8 +365,10 @@ pub enum UdpMsgUpType {
     PLAYER_THROW_PROJECTILE = 6,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_THROW_FROZEN_ORB)
     PLAYER_THROW_FROZEN_ORB = 7,
+    // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_MELEE_ATTACK)
+    PLAYER_MELEE_ATTACK = 8,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.SETTINGS_TOGGLE_ENEMIES)
-    SETTINGS_TOGGLE_ENEMIES = 8,
+    SETTINGS_TOGGLE_ENEMIES = 9,
 }
 
 impl ::protobuf::Enum for UdpMsgUpType {
@@ -386,7 +388,8 @@ impl ::protobuf::Enum for UdpMsgUpType {
             5 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TOGGLE_HIDDEN),
             6 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_PROJECTILE),
             7 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_FROZEN_ORB),
-            8 => ::std::option::Option::Some(UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES),
+            8 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MELEE_ATTACK),
+            9 => ::std::option::Option::Some(UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES),
             _ => ::std::option::Option::None
         }
     }
@@ -401,6 +404,7 @@ impl ::protobuf::Enum for UdpMsgUpType {
             "PLAYER_TOGGLE_HIDDEN" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TOGGLE_HIDDEN),
             "PLAYER_THROW_PROJECTILE" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_PROJECTILE),
             "PLAYER_THROW_FROZEN_ORB" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_FROZEN_ORB),
+            "PLAYER_MELEE_ATTACK" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MELEE_ATTACK),
             "SETTINGS_TOGGLE_ENEMIES" => ::std::option::Option::Some(UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES),
             _ => ::std::option::Option::None
         }
@@ -415,6 +419,7 @@ impl ::protobuf::Enum for UdpMsgUpType {
         UdpMsgUpType::PLAYER_TOGGLE_HIDDEN,
         UdpMsgUpType::PLAYER_THROW_PROJECTILE,
         UdpMsgUpType::PLAYER_THROW_FROZEN_ORB,
+        UdpMsgUpType::PLAYER_MELEE_ATTACK,
         UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES,
     ];
 }
@@ -454,12 +459,13 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     enOrb\x88\x01\x01B\x0e\n\x0c_player_moveB\x12\n\x10_player_teleportB\x1a\
     \n\x18_player_throw_projectileB\x1a\n\x18_player_throw_frozen_orb\"8\n\
     \x0fUdpMsgUpWrapper\x12%\n\x08messages\x18\x01\x20\x03(\x0b2\t.UdpMsgUpR\
-    \x08messages*\xd7\x01\n\x0cUdpMsgUpType\x12\x0e\n\nGAME_PAUSE\x10\0\x12\
+    \x08messages*\xf0\x01\n\x0cUdpMsgUpType\x12\x0e\n\nGAME_PAUSE\x10\0\x12\
     \x0f\n\x0bPLAYER_INIT\x10\x01\x12\x0f\n\x0bPLAYER_PING\x10\x02\x12\x0f\n\
     \x0bPLAYER_MOVE\x10\x03\x12\x13\n\x0fPLAYER_TELEPORT\x10\x04\x12\x18\n\
     \x14PLAYER_TOGGLE_HIDDEN\x10\x05\x12\x1b\n\x17PLAYER_THROW_PROJECTILE\
-    \x10\x06\x12\x1b\n\x17PLAYER_THROW_FROZEN_ORB\x10\x07\x12\x1b\n\x17SETTI\
-    NGS_TOGGLE_ENEMIES\x10\x08b\x06proto3\
+    \x10\x06\x12\x1b\n\x17PLAYER_THROW_FROZEN_ORB\x10\x07\x12\x17\n\x13PLAYE\
+    R_MELEE_ATTACK\x10\x08\x12\x1b\n\x17SETTINGS_TOGGLE_ENEMIES\x10\tb\x06pr\
+    oto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

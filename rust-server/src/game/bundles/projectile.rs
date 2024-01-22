@@ -31,6 +31,7 @@ impl ProjectileBundle {
             velocity: Velocity::new(Some(velocity_target), 1000.0, true),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
+                despawn_after_first_apply: false,
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
                 ignored_entity,
@@ -64,6 +65,30 @@ impl FrozenOrbMainProjectileBundle {
             velocity: Velocity::new(Some(velocity_target), 1000.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
+                despawn_after_first_apply: false,
+                damage_value: 5,
+                hitted_entities: HashMap::new(),
+                ignored_entity,
+            },
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct MeleeAttackBundle {
+    pub game_entity: GameEntity,
+    pub position: Position,
+    pub damage_on_hit: DamageOnHit,
+    pub collider_dmg_in: ColliderDmgIn,
+}
+impl MeleeAttackBundle {
+    pub fn new(position_current: Vector2, ignored_entity: Entity) -> Self {
+        Self {
+            game_entity: GameEntity::new(GameEntityBaseType::MELEE_ATTACK),
+            position: Position::new(position_current),
+            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 30.0, y: 30.0 }),
+            damage_on_hit: DamageOnHit {
+                despawn_after_first_apply: true,
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
                 ignored_entity,

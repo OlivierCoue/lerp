@@ -176,6 +176,8 @@ pub enum GameEntityBaseType {
     ENEMY = 2,
     // @@protoc_insertion_point(enum_value:GameEntityBaseType.WALL)
     WALL = 3,
+    // @@protoc_insertion_point(enum_value:GameEntityBaseType.MELEE_ATTACK)
+    MELEE_ATTACK = 4,
 }
 
 impl ::protobuf::Enum for GameEntityBaseType {
@@ -191,6 +193,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
             1 => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
             2 => ::std::option::Option::Some(GameEntityBaseType::ENEMY),
             3 => ::std::option::Option::Some(GameEntityBaseType::WALL),
+            4 => ::std::option::Option::Some(GameEntityBaseType::MELEE_ATTACK),
             _ => ::std::option::Option::None
         }
     }
@@ -201,6 +204,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
             "PROJECTILE" => ::std::option::Option::Some(GameEntityBaseType::PROJECTILE),
             "ENEMY" => ::std::option::Option::Some(GameEntityBaseType::ENEMY),
             "WALL" => ::std::option::Option::Some(GameEntityBaseType::WALL),
+            "MELEE_ATTACK" => ::std::option::Option::Some(GameEntityBaseType::MELEE_ATTACK),
             _ => ::std::option::Option::None
         }
     }
@@ -210,6 +214,7 @@ impl ::protobuf::Enum for GameEntityBaseType {
         GameEntityBaseType::PROJECTILE,
         GameEntityBaseType::ENEMY,
         GameEntityBaseType::WALL,
+        GameEntityBaseType::MELEE_ATTACK,
     ];
 }
 
@@ -239,9 +244,10 @@ impl GameEntityBaseType {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0ccommon.proto\"#\n\x05Point\x12\x0c\n\x01x\x18\x01\x20\x01(\x02R\
-    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*H\n\x12GameEntityBaseTyp\
+    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*Z\n\x12GameEntityBaseTyp\
     e\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01\x12\t\n\x05ENEM\
-    Y\x10\x02\x12\x08\n\x04WALL\x10\x03b\x06proto3\
+    Y\x10\x02\x12\x08\n\x04WALL\x10\x03\x12\x10\n\x0cMELEE_ATTACK\x10\x04b\
+    \x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
