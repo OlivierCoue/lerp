@@ -167,7 +167,7 @@ pub fn despawn_if_velocity_at_target(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn increase_game_entity_revision(
+pub fn inc_revision_updated_component(
     mut query: Query<
         (
             &mut GameEntity,
@@ -204,6 +204,18 @@ pub fn increase_game_entity_revision(
             }
         }
         if increase_revision {
+            game_entity.revision += 1;
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn inc_revision_removed_component(
+    mut cast_removed: RemovedComponents<Cast>,
+    mut query: Query<&mut GameEntity>,
+) {
+    for entity in cast_removed.read() {
+        if let Ok(mut game_entity) = query.get_mut(entity) {
             game_entity.revision += 1;
         }
     }

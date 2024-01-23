@@ -31,8 +31,8 @@ pub struct GameEntity {
     #[base]
     base: Base<CharacterBody2D>,
     direction: Direction,
-    is_attacking: bool,
-    attack_duration_remaining: f64,
+    is_casting: bool,
+    casting_target: Option<Vector2>,
 }
 
 #[godot_api]
@@ -49,8 +49,8 @@ impl ISprite2D for GameEntity {
             is_dead: false,
             animated_sprite_2d: None,
             direction: Direction::N,
-            is_attacking: false,
-            attack_duration_remaining: 0.0,
+            is_casting: false,
+            casting_target: None,
         }
     }
 
@@ -65,6 +65,7 @@ impl ISprite2D for GameEntity {
                     load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
+                animated_sprite_2d.play();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base_mut().add_child(animated_sprite_2d.upcast());
@@ -83,6 +84,7 @@ impl ISprite2D for GameEntity {
                     load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
                 let mut animated_sprite_2d =
                     animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
+                animated_sprite_2d.play();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base_mut().add_child(animated_sprite_2d.upcast());
@@ -97,7 +99,7 @@ impl ISprite2D for GameEntity {
             self.base_mut().add_child(camera.upcast());
         }
 
-        self.update_animated_sprite_direction();
+        self.update_animated_sprite();
 
         let mut root = self.base().get_node_as::<Root>("/root/Root");
         root.connect(
@@ -111,25 +113,17 @@ impl ISprite2D for GameEntity {
     }
 
     fn process(&mut self, delta: f64) {
-        if self.attack_duration_remaining > 0.0 {
-            self.attack_duration_remaining -= delta;
-        } else if self.is_attacking {
-            self.is_attacking = false;
-        }
-
         if let Some(position_target) = self.position_target_queue.get(0) {
             let vd = *position_target - iso_to_cart(&self.base().get_position());
             let len = vd.length();
             if len <= self.speed * delta as f32 || len < real::CMP_EPSILON {
                 self.position_target_queue.pop_front();
-                self.update_animated_sprite_direction();
+                self.update_animated_sprite();
             }
         }
 
-        let mut is_moving = false;
-
         if let Some(position_target) = self.position_target_queue.get(0) {
-            is_moving = *position_target != iso_to_cart(&self.base().get_position());
+            let is_moving = *position_target != iso_to_cart(&self.base().get_position());
 
             if is_moving {
                 let velocity = iso_to_cart(&self.base().get_position())
@@ -138,25 +132,6 @@ impl ISprite2D for GameEntity {
                     * delta as f32;
 
                 self.base_mut().move_and_collide(cart_to_iso(&velocity));
-            }
-        }
-
-        if is_moving {
-            self.attack_duration_remaining = 0.0;
-            self.is_attacking = false;
-        }
-
-        if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
-            if is_moving {
-                if !animated_sprite_2d.is_playing() {
-                    animated_sprite_2d.play();
-                }
-            } else if !self.is_attacking {
-                animated_sprite_2d.set_animation(
-                    get_idle_animation_for_direction(&self.direction)
-                        .as_str()
-                        .into(),
-                );
             }
         }
     }
@@ -170,22 +145,6 @@ impl GameEntity {
     fn on_player_throw_fireball_start(&mut self) {
         if self.is_current_player {
             self.position_target_queue.clear();
-
-            self.is_attacking = true;
-            self.attack_duration_remaining = 0.3;
-            let location_current_cart = iso_to_cart(&self.base().get_position());
-            let location_target_cart = iso_to_cart(&self.base().get_global_mouse_position());
-
-            let angle_to_target =
-                rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
-
-            if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
-                animated_sprite_2d.set_animation(
-                    get_attack_animation_for_direction(&angle_to_direction(angle_to_target as f32))
-                        .as_str()
-                        .into(),
-                );
-            }
         }
     }
 }
@@ -279,7 +238,15 @@ impl GameEntity {
                 .collect::<Vec<_>>(),
         );
 
-        self.update_animated_sprite_direction();
+        if entity_update.cast.is_some() {
+            self.casting_target = Some(point_to_vector2(&entity_update.cast.target));
+            self.is_casting = true;
+        } else {
+            self.casting_target = None;
+            self.is_casting = false;
+        }
+
+        self.update_animated_sprite();
 
         let new_position_current = point_to_vector2(&entity_update.location_current);
         if iso_to_cart(&self.base().get_position()).distance_to(new_position_current) > 300.0 {
@@ -301,25 +268,40 @@ impl GameEntity {
         }
     }
 
-    fn update_animated_sprite_direction(&mut self) {
+    fn update_animated_sprite(&mut self) {
         if let Some(target) = self.position_target_queue.get(0) {
-            let location_current_cart = iso_to_cart(&self.base().get_position());
-            let location_target_cart = *target;
-
-            let angle_to_target =
-                rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
-            self.direction = angle_to_direction(angle_to_target as f32);
-
+            self.direction = self.get_direction(target);
             if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
                 animated_sprite_2d.set_animation(
                     get_walk_animation_for_direction(&self.direction)
                         .as_str()
                         .into(),
                 );
-                // let current_frame = animated_sprite_2d.get_frame();
-                // let current_progress = animated_sprite_2d.get_frame_progress();
-                // animated_sprite_2d.set_frame_and_progress(current_frame, current_progress);
             }
+        } else if let Some(target) = self.casting_target {
+            self.direction = self.get_direction(&target);
+            if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
+                animated_sprite_2d.set_animation(
+                    get_attack_animation_for_direction(&self.direction)
+                        .as_str()
+                        .into(),
+                );
+            }
+        } else if let Some(animated_sprite_2d) = self.animated_sprite_2d.as_mut() {
+            animated_sprite_2d.set_animation(
+                get_idle_animation_for_direction(&self.direction)
+                    .as_str()
+                    .into(),
+            );
         }
+    }
+
+    fn get_direction(&self, target: &Vector2) -> Direction {
+        let location_current_cart = iso_to_cart(&self.base().get_position());
+        let location_target_cart = *target;
+
+        let angle_to_target =
+            rad_to_deg(location_current_cart.angle_to_point(location_target_cart) as f64);
+        angle_to_direction(angle_to_target as f32)
     }
 }

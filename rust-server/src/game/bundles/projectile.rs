@@ -17,13 +17,10 @@ pub struct ProjectileBundle {
     velocity: Velocity,
     collider_dmg_in: ColliderDmgIn,
     damage_on_hit: DamageOnHit,
+    team: Team,
 }
 impl ProjectileBundle {
-    pub fn new(
-        position_current: Vector2,
-        velocity_target: Vector2,
-        ignored_entity: Entity,
-    ) -> Self {
+    pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::PROJECTILE),
             projectile: Projectile::default(),
@@ -34,8 +31,8 @@ impl ProjectileBundle {
                 despawn_after_first_apply: false,
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
-                ignored_entity,
             },
+            team,
         }
     }
 }
@@ -51,13 +48,10 @@ pub struct FrozenOrbMainProjectileBundle {
     pub velocity: Velocity,
     pub collider_dmg_in: ColliderDmgIn,
     pub damage_on_hit: DamageOnHit,
+    pub team: Team,
 }
 impl FrozenOrbMainProjectileBundle {
-    pub fn new(
-        position_current: Vector2,
-        velocity_target: Vector2,
-        ignored_entity: Entity,
-    ) -> Self {
+    pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::PROJECTILE),
             frozen_orb_main_projectile: FrozenOrbMainProjectile::default(),
@@ -68,8 +62,8 @@ impl FrozenOrbMainProjectileBundle {
                 despawn_after_first_apply: false,
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
-                ignored_entity,
             },
+            team,
         }
     }
 }
@@ -80,9 +74,10 @@ pub struct MeleeAttackBundle {
     pub position: Position,
     pub damage_on_hit: DamageOnHit,
     pub collider_dmg_in: ColliderDmgIn,
+    pub team: Team,
 }
 impl MeleeAttackBundle {
-    pub fn new(position_current: Vector2, ignored_entity: Entity) -> Self {
+    pub fn new(position_current: Vector2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::MELEE_ATTACK),
             position: Position::new(position_current),
@@ -91,8 +86,8 @@ impl MeleeAttackBundle {
                 despawn_after_first_apply: true,
                 damage_value: 5,
                 hitted_entities: HashMap::new(),
-                ignored_entity,
             },
+            team,
         }
     }
 }

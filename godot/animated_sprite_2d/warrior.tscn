@@ -1335,5 +1335,5 @@ animations = [{
 [node name="AnimatedSprite2D" type="AnimatedSprite2D"]
 position = Vector2(0, -1)
 sprite_frames = SubResource("SpriteFrames_pyerm")
-animation = &"attack_n"
-frame_progress = 0.245598
+animation = &"attack_nnw"
+frame_progress = 0.418794

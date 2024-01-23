@@ -10,12 +10,12 @@ pub fn on_frozen_orb_velocity_reached_target(
         &FrozenOrbMainProjectile,
         &mut GameEntity,
         &Position,
-        &DamageOnHit,
+        &Team,
     )>,
     mut reader: EventReader<VelocityReachedTarget>,
 ) {
     for event in reader.read() {
-        if let Ok((_, _, mut game_entity, position, damage_on_hit)) = query.get_mut(event.entity) {
+        if let Ok((_, _, mut game_entity, position, team)) = query.get_mut(event.entity) {
             commands.spawn_batch(vec![
                 ProjectileBundle::new(
                     event.target,
@@ -23,7 +23,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x + 200.0,
                         y: position.current.y,
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -31,7 +31,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x - 200.0,
                         y: position.current.y,
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -39,7 +39,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x,
                         y: position.current.y + 200.0,
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -47,7 +47,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x,
                         y: position.current.y - 200.0,
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -55,7 +55,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x + (200.0 * 0.75),
                         y: position.current.y - (200.0 * 0.75),
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -63,7 +63,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x + (200.0 * 0.75),
                         y: position.current.y + (200.0 * 0.75),
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -71,7 +71,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x - (200.0 * 0.75),
                         y: position.current.y + (200.0 * 0.75),
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
                 ProjectileBundle::new(
                     event.target,
@@ -79,7 +79,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                         x: position.current.x - (200.0 * 0.75),
                         y: position.current.y - (200.0 * 0.75),
                     },
-                    damage_on_hit.ignored_entity,
+                    *team,
                 ),
             ]);
             game_entity.pending_despwan = true;

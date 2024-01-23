@@ -16,6 +16,7 @@ pub struct PlayerBundle {
     collider_dmg_in: ColliderDmgIn,
     collider_mvt: ColliderMvt,
     health: Health,
+    team: Team,
 }
 impl PlayerBundle {
     pub fn new() -> Self {
@@ -26,7 +27,8 @@ impl PlayerBundle {
             velocity: Velocity::new(None, 400.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
             collider_mvt: ColliderMvt::new(Vector2 { x: 20.0, y: 20.0 }),
-            health: Health::new(100),
+            health: Health::new(900),
+            team: Team::Player,
         }
     }
 }

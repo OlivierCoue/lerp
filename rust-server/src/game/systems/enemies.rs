@@ -1,10 +1,12 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rand::Rng;
+use rust_common::math::get_point_from_points_and_distance;
 
 use crate::{
     game::{
-        bundles::prelude::*, resources::prelude::*, Position, UpdateVelocityTargetWithPathFinder,
+        bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
+        UpdateVelocityTargetWithPathFinder,
     },
     utils::get_game_time,
 };
@@ -29,20 +31,25 @@ pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Com
             3 => Vector2::new(random, GRID_SIZE_Y_MAX),
             _ => panic!("Unexpected value"),
         };
-        command.spawn(EnemyBundle::new(position_current));
+        let is_wizard: u32 = rand::thread_rng().gen_range(0..2);
+        command.spawn(EnemyBundle::new(position_current, is_wizard == 1));
     }
 }
 
 #[allow(clippy::type_complexity)]
 pub fn enemies_ai(
-    mut query_enemies: Query<(Entity, &mut Enemie, &Position), (With<Enemie>, Without<Player>)>,
+    mut query_enemies: Query<
+        (Entity, &mut Enemie, &Position, &Team),
+        (With<Enemie>, Without<Player>),
+    >,
     query_players: Query<&Position, (With<Player>, Without<Enemie>)>,
     mut writer_update_velocity_target_with_pathfinder: EventWriter<
         UpdateVelocityTargetWithPathFinder,
     >,
+    mut writer_cast_spell: EventWriter<CastSpell>,
 ) {
-    let aggro_range = 500.0;
-    for (enemy_entity, mut enemy, enemy_position) in &mut query_enemies {
+    let aggro_range = 700.0;
+    for (enemy_entity, mut enemy, enemy_position, team) in &mut query_enemies {
         let current_game_time = get_game_time();
         if enemy.last_action_at_millis != 0
             && enemy.last_action_at_millis + 1000 > current_game_time
@@ -66,10 +73,54 @@ pub fn enemies_ai(
         }
 
         if let Some(closest_player_location) = opt_closest_player_location {
-            writer_update_velocity_target_with_pathfinder.send(UpdateVelocityTargetWithPathFinder {
-                entity: enemy_entity,
-                target: closest_player_location,
-            })
+            if !enemy.is_wizard {
+                if closest_player_distance <= 40.0 {
+                    writer_cast_spell.send(CastSpell {
+                        from_entity: enemy_entity,
+                        spell: Spell::MeleeAttack(
+                            enemy_entity,
+                            get_point_from_points_and_distance(
+                                enemy_position.current,
+                                closest_player_location,
+                                40.0,
+                            ),
+                            *team,
+                        ),
+                    })
+                } else {
+                    writer_update_velocity_target_with_pathfinder.send(
+                        UpdateVelocityTargetWithPathFinder {
+                            entity: enemy_entity,
+                            target: closest_player_location,
+                        },
+                    )
+                }
+            } else if closest_player_distance <= 400.0 {
+                writer_cast_spell.send(CastSpell {
+                    from_entity: enemy_entity,
+                    spell: Spell::Projectile(
+                        enemy_entity,
+                        enemy_position.current,
+                        get_point_from_points_and_distance(
+                            enemy_position.current,
+                            closest_player_location,
+                            400.0,
+                        ),
+                        *team,
+                    ),
+                })
+            } else {
+                writer_update_velocity_target_with_pathfinder.send(
+                    UpdateVelocityTargetWithPathFinder {
+                        entity: enemy_entity,
+                        target: get_point_from_points_and_distance(
+                            closest_player_location,
+                            enemy_position.current,
+                            350.0,
+                        ),
+                    },
+                )
+            }
         }
     }
 }

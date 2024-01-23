@@ -65,46 +65,48 @@ impl<'a> Game<'a> {
         let mut world_schedule = Schedule::default();
 
         world_schedule
-            .add_systems(despawn_if_velocity_at_target.before(increase_game_entity_revision));
+            .add_systems(despawn_if_velocity_at_target.before(inc_revision_updated_component));
 
         world_schedule.add_systems(
             update_pathfinder_state
                 .before(movement)
-                .before(increase_game_entity_revision),
+                .before(inc_revision_updated_component),
         );
         world_schedule.add_systems(
             on_update_velocity_target_with_pathfinder
-                .before(increase_game_entity_revision)
+                .before(inc_revision_updated_component)
                 .after(movement),
         );
-        world_schedule.add_systems(movement.before(increase_game_entity_revision));
-        world_schedule.add_systems(damage_on_hit.before(increase_game_entity_revision));
-        world_schedule.add_systems(create_casted_spells.before(increase_game_entity_revision));
+        world_schedule.add_systems(movement.before(inc_revision_updated_component));
+        world_schedule.add_systems(damage_on_hit.before(inc_revision_updated_component));
+        world_schedule.add_systems(create_casted_spells.before(inc_revision_updated_component));
 
-        world_schedule.add_systems(enemies_spawner.before(increase_game_entity_revision));
-        world_schedule.add_systems(enemies_ai.before(increase_game_entity_revision));
+        world_schedule.add_systems(enemies_spawner.before(inc_revision_updated_component));
+        world_schedule.add_systems(enemies_ai.before(inc_revision_updated_component));
 
         world_schedule.add_systems(
             on_update_position_current
-                .before(increase_game_entity_revision)
+                .before(inc_revision_updated_component)
                 .after(movement),
         );
         world_schedule.add_systems(
             on_update_velocity_target
-                .before(increase_game_entity_revision)
+                .before(inc_revision_updated_component)
                 .after(movement),
         );
         world_schedule.add_systems(
             on_add_velocity_target
-                .before(increase_game_entity_revision)
+                .before(inc_revision_updated_component)
                 .after(movement),
         );
-        world_schedule.add_systems(on_cast_spell.before(increase_game_entity_revision));
+        world_schedule.add_systems(on_cast_spell.before(inc_revision_updated_component));
         world_schedule.add_systems(
-            on_frozen_orb_velocity_reached_target.before(increase_game_entity_revision),
+            on_frozen_orb_velocity_reached_target.before(inc_revision_updated_component),
         );
 
-        world_schedule.add_systems(increase_game_entity_revision);
+        world_schedule
+            .add_systems(inc_revision_updated_component.before(inc_revision_removed_component));
+        world_schedule.add_systems(inc_revision_removed_component);
 
         // Add Walls
         let wall: WallBundle = WallBundle::new(
@@ -217,6 +219,7 @@ impl<'a> Game<'a> {
         }
 
         self.world_schedule.run(&mut self.world);
+        self.world.clear_trackers();
         inc_game_time_millis(GAME_TIME_TICK_DURATION_MILLIS);
 
         let mut player_udp_msg_down_wrapper_map = HashMap::new();
@@ -283,6 +286,7 @@ impl<'a> Game<'a> {
                         let health_current = entity_ref
                             .get::<Health>()
                             .map(|health| health.get_current());
+                        let cast = entity_ref.get::<Cast>().map(|cast| cast.to_proto());
 
                         udp_msg_down_wrapper.messages.push(UdpMsgDown {
                             _type: UdpMsgDownType::GAME_ENTITY_UPDATE.into(),
@@ -299,6 +303,7 @@ impl<'a> Game<'a> {
                                 velocity_speed,
                                 health_current,
                                 is_self: entity_id == user_mut.player_entity,
+                                cast: cast.into(),
                                 ..Default::default()
                             }))
                             .into(),
@@ -369,6 +374,8 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
                             let player_position =
                                 self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            let player_team =
+                                self.world.get::<Team>(ok_user.player_entity).unwrap();
                             self.world.send_event(CastSpell {
                                 from_entity: ok_user.player_entity,
                                 spell: Spell::FrozenOrb(
@@ -379,7 +386,7 @@ impl<'a> Game<'a> {
                                         Vector2::new(ok_coord.x, ok_coord.y),
                                         600.0,
                                     ),
-                                    ok_user.player_entity,
+                                    *player_team,
                                 ),
                             });
                         }
@@ -390,6 +397,8 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
                             let player_position =
                                 self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            let player_team =
+                                self.world.get::<Team>(ok_user.player_entity).unwrap();
                             self.world.send_event(CastSpell {
                                 from_entity: ok_user.player_entity,
                                 spell: Spell::Projectile(
@@ -400,7 +409,7 @@ impl<'a> Game<'a> {
                                         Vector2::new(ok_coord.x, ok_coord.y),
                                         600.0,
                                     ),
-                                    ok_user.player_entity,
+                                    *player_team,
                                 ),
                             });
                         }
@@ -411,6 +420,8 @@ impl<'a> Game<'a> {
                         if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
                             let player_position =
                                 self.world.get::<Position>(ok_user.player_entity).unwrap();
+                            let player_team =
+                                self.world.get::<Team>(ok_user.player_entity).unwrap();
                             self.world.send_event(CastSpell {
                                 from_entity: ok_user.player_entity,
                                 spell: Spell::MeleeAttack(
@@ -420,7 +431,7 @@ impl<'a> Game<'a> {
                                         Vector2::new(ok_coord.x, ok_coord.y),
                                         40.0,
                                     ),
-                                    ok_user.player_entity,
+                                    *player_team,
                                 ),
                             });
                         }

@@ -242,12 +242,80 @@ impl GameEntityBaseType {
     }
 }
 
+#[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
+// @@protoc_insertion_point(enum:UdpSpell)
+pub enum UdpSpell {
+    // @@protoc_insertion_point(enum_value:UdpSpell.SPELL_PROJECTILE)
+    SPELL_PROJECTILE = 0,
+    // @@protoc_insertion_point(enum_value:UdpSpell.SPELL_FROZEN_ORB)
+    SPELL_FROZEN_ORB = 1,
+    // @@protoc_insertion_point(enum_value:UdpSpell.SPELL_MELEE_ATTACK)
+    SPELL_MELEE_ATTACK = 2,
+}
+
+impl ::protobuf::Enum for UdpSpell {
+    const NAME: &'static str = "UdpSpell";
+
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<UdpSpell> {
+        match value {
+            0 => ::std::option::Option::Some(UdpSpell::SPELL_PROJECTILE),
+            1 => ::std::option::Option::Some(UdpSpell::SPELL_FROZEN_ORB),
+            2 => ::std::option::Option::Some(UdpSpell::SPELL_MELEE_ATTACK),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    fn from_str(str: &str) -> ::std::option::Option<UdpSpell> {
+        match str {
+            "SPELL_PROJECTILE" => ::std::option::Option::Some(UdpSpell::SPELL_PROJECTILE),
+            "SPELL_FROZEN_ORB" => ::std::option::Option::Some(UdpSpell::SPELL_FROZEN_ORB),
+            "SPELL_MELEE_ATTACK" => ::std::option::Option::Some(UdpSpell::SPELL_MELEE_ATTACK),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    const VALUES: &'static [UdpSpell] = &[
+        UdpSpell::SPELL_PROJECTILE,
+        UdpSpell::SPELL_FROZEN_ORB,
+        UdpSpell::SPELL_MELEE_ATTACK,
+    ];
+}
+
+impl ::protobuf::EnumFull for UdpSpell {
+    fn enum_descriptor() -> ::protobuf::reflect::EnumDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().enum_by_package_relative_name("UdpSpell").unwrap()).clone()
+    }
+
+    fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
+        let index = *self as usize;
+        Self::enum_descriptor().value_by_index(index)
+    }
+}
+
+impl ::std::default::Default for UdpSpell {
+    fn default() -> Self {
+        UdpSpell::SPELL_PROJECTILE
+    }
+}
+
+impl UdpSpell {
+    fn generated_enum_descriptor_data() -> ::protobuf::reflect::GeneratedEnumDescriptorData {
+        ::protobuf::reflect::GeneratedEnumDescriptorData::new::<UdpSpell>("UdpSpell")
+    }
+}
+
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0ccommon.proto\"#\n\x05Point\x12\x0c\n\x01x\x18\x01\x20\x01(\x02R\
     \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*Z\n\x12GameEntityBaseTyp\
     e\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01\x12\t\n\x05ENEM\
-    Y\x10\x02\x12\x08\n\x04WALL\x10\x03\x12\x10\n\x0cMELEE_ATTACK\x10\x04b\
-    \x06proto3\
+    Y\x10\x02\x12\x08\n\x04WALL\x10\x03\x12\x10\n\x0cMELEE_ATTACK\x10\x04*N\
+    \n\x08UdpSpell\x12\x14\n\x10SPELL_PROJECTILE\x10\0\x12\x14\n\x10SPELL_FR\
+    OZEN_ORB\x10\x01\x12\x16\n\x12SPELL_MELEE_ATTACK\x10\x02b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -267,8 +335,9 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             let mut deps = ::std::vec::Vec::with_capacity(0);
             let mut messages = ::std::vec::Vec::with_capacity(1);
             messages.push(Point::generated_message_descriptor_data());
-            let mut enums = ::std::vec::Vec::with_capacity(1);
+            let mut enums = ::std::vec::Vec::with_capacity(2);
             enums.push(GameEntityBaseType::generated_enum_descriptor_data());
+            enums.push(UdpSpell::generated_enum_descriptor_data());
             ::protobuf::reflect::GeneratedFileDescriptor::new_generated(
                 file_descriptor_proto(),
                 deps,

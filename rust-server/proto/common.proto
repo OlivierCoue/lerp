@@ -12,3 +12,9 @@ enum GameEntityBaseType {
     WALL = 3;
     MELEE_ATTACK = 4;
 }
+
+enum UdpSpell {
+    SPELL_PROJECTILE = 0;
+    SPELL_FROZEN_ORB = 1;
+    SPELL_MELEE_ATTACK = 2;
+}

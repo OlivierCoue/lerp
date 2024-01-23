@@ -47,6 +47,8 @@ pub struct UdpMsgDownGameEntityUpdate {
     pub health_current: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.is_self)
     pub is_self: bool,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.cast)
+    pub cast: ::protobuf::MessageField<UdpCast>,
     // special fields
     // @@protoc_insertion_point(special_field:UdpMsgDownGameEntityUpdate.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -64,7 +66,7 @@ impl UdpMsgDownGameEntityUpdate {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(9);
+        let mut fields = ::std::vec::Vec::with_capacity(10);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "id",
@@ -111,6 +113,11 @@ impl UdpMsgDownGameEntityUpdate {
             |m: &UdpMsgDownGameEntityUpdate| { &m.is_self },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.is_self },
         ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpCast>(
+            "cast",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.cast },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.cast },
+        ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDownGameEntityUpdate>(
             "UdpMsgDownGameEntityUpdate",
             fields,
@@ -156,6 +163,9 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
                 72 => {
                     self.is_self = is.read_bool()?;
                 },
+                82 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.cast)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -199,6 +209,10 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if self.is_self != false {
             my_size += 1 + 1;
         }
+        if let Some(v) = self.cast.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -232,6 +246,9 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if self.is_self != false {
             os.write_bool(9, self.is_self)?;
         }
+        if let Some(v) = self.cast.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(10, v, os)?;
+        }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -258,6 +275,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         self.collider_mvt_rect.clear();
         self.health_current = ::std::option::Option::None;
         self.is_self = false;
+        self.cast.clear();
         self.special_fields.clear();
     }
 
@@ -272,6 +290,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             collider_mvt_rect: ::protobuf::MessageField::none(),
             health_current: ::std::option::Option::None,
             is_self: false,
+            cast: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -292,6 +311,165 @@ impl ::std::fmt::Display for UdpMsgDownGameEntityUpdate {
 }
 
 impl ::protobuf::reflect::ProtobufValue for UdpMsgDownGameEntityUpdate {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:UdpCast)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpCast {
+    // message fields
+    // @@protoc_insertion_point(field:UdpCast.spell)
+    pub spell: ::protobuf::EnumOrUnknown<super::common::UdpSpell>,
+    // @@protoc_insertion_point(field:UdpCast.target)
+    pub target: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpCast.duration)
+    pub duration: u32,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpCast.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpCast {
+    fn default() -> &'a UdpCast {
+        <UdpCast as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpCast {
+    pub fn new() -> UdpCast {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "spell",
+            |m: &UdpCast| { &m.spell },
+            |m: &mut UdpCast| { &mut m.spell },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
+            "target",
+            |m: &UdpCast| { &m.target },
+            |m: &mut UdpCast| { &mut m.target },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "duration",
+            |m: &UdpCast| { &m.duration },
+            |m: &mut UdpCast| { &mut m.duration },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpCast>(
+            "UdpCast",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpCast {
+    const NAME: &'static str = "UdpCast";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.spell = is.read_enum_or_unknown()?;
+                },
+                18 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.target)?;
+                },
+                24 => {
+                    self.duration = is.read_uint32()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.spell != ::protobuf::EnumOrUnknown::new(super::common::UdpSpell::SPELL_PROJECTILE) {
+            my_size += ::protobuf::rt::int32_size(1, self.spell.value());
+        }
+        if let Some(v) = self.target.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
+        if self.duration != 0 {
+            my_size += ::protobuf::rt::uint32_size(3, self.duration);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.spell != ::protobuf::EnumOrUnknown::new(super::common::UdpSpell::SPELL_PROJECTILE) {
+            os.write_enum(1, ::protobuf::EnumOrUnknown::value(&self.spell))?;
+        }
+        if let Some(v) = self.target.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
+        }
+        if self.duration != 0 {
+            os.write_uint32(3, self.duration)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpCast {
+        UdpCast::new()
+    }
+
+    fn clear(&mut self) {
+        self.spell = ::protobuf::EnumOrUnknown::new(super::common::UdpSpell::SPELL_PROJECTILE);
+        self.target.clear();
+        self.duration = 0;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpCast {
+        static instance: UdpCast = UdpCast {
+            spell: ::protobuf::EnumOrUnknown::from_i32(0),
+            target: ::protobuf::MessageField::none(),
+            duration: 0,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpCast {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpCast").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpCast {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpCast {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -781,7 +959,7 @@ impl UdpMsgDownType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xa8\x04\n\x1aUdpMsgDownGameEn\
+    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xd4\x04\n\x1aUdpMsgDownGameEn\
     tityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_ty\
     pe\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\x10l\
     ocation_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurrent\
@@ -792,10 +970,14 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x11collider_mvt_rect\x18\x07\x20\x01(\x0b2\x06.PointH\x03R\x0fcollide\
     rMvtRect\x88\x01\x01\x12*\n\x0ehealth_current\x18\x08\x20\x01(\rH\x04R\r\
     healthCurrent\x88\x01\x01\x12\x17\n\x07is_self\x18\t\x20\x01(\x08R\x06is\
-    SelfB\x13\n\x11_location_currentB\x11\n\x0f_velocity_speedB\x17\n\x15_co\
-    llider_dmg_in_rectB\x14\n\x12_collider_mvt_rectB\x11\n\x0f_health_curren\
-    t\"-\n\x1bUdpMsgDownGameEntityRemoved\x12\x0e\n\x02id\x18\x01\x20\x01(\r\
-    R\x02id\"\x84\x02\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\x01(\x0e2\
+    Self\x12!\n\x04cast\x18\n\x20\x01(\x0b2\x08.UdpCastH\x05R\x04cast\x88\
+    \x01\x01B\x13\n\x11_location_currentB\x11\n\x0f_velocity_speedB\x17\n\
+    \x15_collider_dmg_in_rectB\x14\n\x12_collider_mvt_rectB\x11\n\x0f_health\
+    _currentB\x07\n\x05_cast\"f\n\x07UdpCast\x12\x1f\n\x05spell\x18\x01\x20\
+    \x01(\x0e2\t.UdpSpellR\x05spell\x12\x1e\n\x06target\x18\x02\x20\x01(\x0b\
+    2\x06.PointR\x06target\x12\x1a\n\x08duration\x18\x03\x20\x01(\rR\x08dura\
+    tion\"-\n\x1bUdpMsgDownGameEntityRemoved\x12\x0e\n\x02id\x18\x01\x20\x01\
+    (\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\x01(\x0e2\
     \x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12game_entity_update\x18\x02\x20\
     \x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\0R\x10gameEntityUpdate\x88\
     \x01\x01\x12Q\n\x13game_entity_removed\x18\x03\x20\x01(\x0b2\x1c.UdpMsgD\
@@ -823,8 +1005,9 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::common::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(4);
+            let mut messages = ::std::vec::Vec::with_capacity(5);
             messages.push(UdpMsgDownGameEntityUpdate::generated_message_descriptor_data());
+            messages.push(UdpCast::generated_message_descriptor_data());
             messages.push(UdpMsgDownGameEntityRemoved::generated_message_descriptor_data());
             messages.push(UdpMsgDown::generated_message_descriptor_data());
             messages.push(UdpMsgDownWrapper::generated_message_descriptor_data());

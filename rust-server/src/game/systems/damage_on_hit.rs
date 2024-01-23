@@ -5,7 +5,13 @@ use crate::game::components::prelude::*;
 
 pub fn damage_on_hit(
     mut query_damage_source: Query<
-        (&mut GameEntity, &mut DamageOnHit, &Position, &ColliderDmgIn),
+        (
+            &mut GameEntity,
+            &mut DamageOnHit,
+            &Position,
+            &ColliderDmgIn,
+            &Team,
+        ),
         With<DamageOnHit>,
     >,
     mut query_damageable: Query<
@@ -15,11 +21,12 @@ pub fn damage_on_hit(
             &mut Health,
             &Position,
             &ColliderDmgIn,
+            &Team,
         ),
         Without<DamageOnHit>,
     >,
 ) {
-    for (mut game_entity, mut dmg_on_hit, dmg_on_hit_position, dmg_on_hit_collider_dmg_in) in
+    for (mut game_entity, mut dmg_on_hit, dmg_on_hit_position, dmg_on_hit_collider_dmg_in, team) in
         &mut query_damage_source
     {
         for (
@@ -28,6 +35,7 @@ pub fn damage_on_hit(
             mut damageable_health,
             damageable_position,
             damageable_collider_dmg_in,
+            damageable_team,
         ) in &mut query_damageable
         {
             if collide_rect_to_rect(
@@ -35,7 +43,7 @@ pub fn damage_on_hit(
                 &dmg_on_hit_position.current,
                 &damageable_collider_dmg_in.rect,
                 &damageable_position.current,
-            ) && dmg_on_hit.ignored_entity != damageable_entity
+            ) && team != damageable_team
                 && dmg_on_hit.hitted_entities.get(&damageable_entity).is_none()
             {
                 if dmg_on_hit.damage_value < damageable_health.get_current() {

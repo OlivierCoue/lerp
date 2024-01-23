@@ -1,23 +1,47 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
+use protobuf::MessageField;
+use rust_common::{
+    helper::vector2_to_point,
+    proto::{common::UdpSpell, udp_down::UdpCast},
+};
+
+use crate::{game::Team, utils::get_game_time};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Spell {
-    FrozenOrb(Entity, Vector2, Vector2, Entity),
-    Projectile(Entity, Vector2, Vector2, Entity),
-    MeleeAttack(Entity, Vector2, Entity),
+    FrozenOrb(Entity, Vector2, Vector2, Team),
+    Projectile(Entity, Vector2, Vector2, Team),
+    MeleeAttack(Entity, Vector2, Team),
 }
 
 #[derive(Component)]
 pub struct Cast {
     pub spell: Spell,
     pub end_at_millis: u32,
+    pub duration_millis: u32,
 }
 impl Cast {
-    pub fn new(spell: Spell, end_at_millis: u32) -> Self {
+    pub fn new(spell: Spell, duration_millis: u32) -> Self {
         Self {
             spell,
-            end_at_millis,
+            end_at_millis: get_game_time() + duration_millis,
+            duration_millis,
+        }
+    }
+
+    pub fn to_proto(&self) -> UdpCast {
+        let target = match self.spell {
+            Spell::FrozenOrb(_, _, target, _) => target,
+            Spell::Projectile(_, _, target, _) => target,
+            Spell::MeleeAttack(_, target, _) => target,
+        };
+
+        UdpCast {
+            spell: UdpSpell::SPELL_MELEE_ATTACK.into(),
+            target: MessageField::from(Some(vector2_to_point(&target))),
+            duration: self.duration_millis,
+            ..Default::default()
         }
     }
 }

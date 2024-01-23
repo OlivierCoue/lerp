@@ -13,7 +13,7 @@ pub fn on_cast_spell(
         if let Ok((_, opt_velocity)) = query.get_mut(event.from_entity) {
             command
                 .entity(event.from_entity)
-                .insert(Cast::new(event.spell, get_game_time() + 200));
+                .insert(Cast::new(event.spell, 200));
 
             if let Some(mut velocity) = opt_velocity {
                 velocity.set_target(None);
@@ -30,18 +30,18 @@ pub fn create_casted_spells(mut command: Commands, query: Query<(Entity, &Cast),
         }
 
         match cast.spell {
-            Spell::FrozenOrb(_, from_position, to_target, ignored_entity) => {
+            Spell::FrozenOrb(_, from_position, to_target, team) => {
                 command.spawn(FrozenOrbMainProjectileBundle::new(
                     from_position,
                     to_target,
-                    ignored_entity,
+                    team,
                 ));
             }
-            Spell::Projectile(_, _, _, _) => {
-                println!("unsupported")
+            Spell::Projectile(_, from_position, to_target, team) => {
+                command.spawn(ProjectileBundle::new(from_position, to_target, team));
             }
-            Spell::MeleeAttack(_, from_position, ignored_entity) => {
-                command.spawn(MeleeAttackBundle::new(from_position, ignored_entity));
+            Spell::MeleeAttack(_, from_position, team) => {
+                command.spawn(MeleeAttackBundle::new(from_position, team));
             }
         }
         command.entity(entity).remove::<Cast>();

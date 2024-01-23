@@ -16,6 +16,13 @@ message UdpMsgDownGameEntityUpdate {
     optional Point collider_mvt_rect = 7;
     optional uint32 health_current = 8;
     bool is_self = 9;
+    optional UdpCast cast = 10;
+}
+
+message UdpCast {
+    UdpSpell spell = 1;
+    Point target = 2;
+    uint32 duration = 3;
 }
 
 message UdpMsgDownGameEntityRemoved {
