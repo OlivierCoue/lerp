@@ -4,14 +4,20 @@ import "common.proto";
 enum UdpMsgUpType {
     GAME_PAUSE = 0;
     PLAYER_INIT = 1;
-    PLAYER_PING = 2;
     PLAYER_MOVE = 3;
     PLAYER_TELEPORT = 4;
-    PLAYER_TOGGLE_HIDDEN = 5;
     PLAYER_THROW_PROJECTILE = 6;
     PLAYER_THROW_FROZEN_ORB = 7;
     PLAYER_MELEE_ATTACK = 8;
     SETTINGS_TOGGLE_ENEMIES = 9;
+    USER_CONNECT = 10;
+    USER_DISCONNECT = 11;
+    USER_CREATE_WORLD_INSTANCE = 12;
+    USER_JOIN_WOLD_INSTANCE = 13;
+}
+
+message UdpMsgUpUserJoinWorldInstance {
+    string id = 1;
 }
 
 message UdpMsgUp {
@@ -20,6 +26,8 @@ message UdpMsgUp {
     optional Point player_teleport = 3;
     optional Point player_throw_projectile = 4;
     optional Point player_throw_frozen_orb = 5;
+    optional string user_connect_username = 6;
+    optional UdpMsgUpUserJoinWorldInstance user_join_world_instance = 7;
 }
 
 message UdpMsgUpWrapper {

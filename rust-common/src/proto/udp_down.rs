@@ -595,6 +595,432 @@ impl ::protobuf::reflect::ProtobufValue for UdpMsgDownGameEntityRemoved {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
+// @@protoc_insertion_point(message:UdpMsgDownUserConnectFailed)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpMsgDownUserConnectFailed {
+    // message fields
+    // @@protoc_insertion_point(field:UdpMsgDownUserConnectFailed.error_message)
+    pub error_message: ::std::string::String,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpMsgDownUserConnectFailed.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpMsgDownUserConnectFailed {
+    fn default() -> &'a UdpMsgDownUserConnectFailed {
+        <UdpMsgDownUserConnectFailed as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpMsgDownUserConnectFailed {
+    pub fn new() -> UdpMsgDownUserConnectFailed {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "error_message",
+            |m: &UdpMsgDownUserConnectFailed| { &m.error_message },
+            |m: &mut UdpMsgDownUserConnectFailed| { &mut m.error_message },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDownUserConnectFailed>(
+            "UdpMsgDownUserConnectFailed",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpMsgDownUserConnectFailed {
+    const NAME: &'static str = "UdpMsgDownUserConnectFailed";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.error_message = is.read_string()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.error_message.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.error_message);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.error_message.is_empty() {
+            os.write_string(1, &self.error_message)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpMsgDownUserConnectFailed {
+        UdpMsgDownUserConnectFailed::new()
+    }
+
+    fn clear(&mut self) {
+        self.error_message.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpMsgDownUserConnectFailed {
+        static instance: UdpMsgDownUserConnectFailed = UdpMsgDownUserConnectFailed {
+            error_message: ::std::string::String::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpMsgDownUserConnectFailed {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpMsgDownUserConnectFailed").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpMsgDownUserConnectFailed {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpMsgDownUserConnectFailed {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:UdpMsgDownUserCreateWorldInstanceSuccess)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpMsgDownUserCreateWorldInstanceSuccess {
+    // message fields
+    // @@protoc_insertion_point(field:UdpMsgDownUserCreateWorldInstanceSuccess.id)
+    pub id: ::std::string::String,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpMsgDownUserCreateWorldInstanceSuccess.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpMsgDownUserCreateWorldInstanceSuccess {
+    fn default() -> &'a UdpMsgDownUserCreateWorldInstanceSuccess {
+        <UdpMsgDownUserCreateWorldInstanceSuccess as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpMsgDownUserCreateWorldInstanceSuccess {
+    pub fn new() -> UdpMsgDownUserCreateWorldInstanceSuccess {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "id",
+            |m: &UdpMsgDownUserCreateWorldInstanceSuccess| { &m.id },
+            |m: &mut UdpMsgDownUserCreateWorldInstanceSuccess| { &mut m.id },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDownUserCreateWorldInstanceSuccess>(
+            "UdpMsgDownUserCreateWorldInstanceSuccess",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpMsgDownUserCreateWorldInstanceSuccess {
+    const NAME: &'static str = "UdpMsgDownUserCreateWorldInstanceSuccess";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.id = is.read_string()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.id.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.id);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.id.is_empty() {
+            os.write_string(1, &self.id)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpMsgDownUserCreateWorldInstanceSuccess {
+        UdpMsgDownUserCreateWorldInstanceSuccess::new()
+    }
+
+    fn clear(&mut self) {
+        self.id.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpMsgDownUserCreateWorldInstanceSuccess {
+        static instance: UdpMsgDownUserCreateWorldInstanceSuccess = UdpMsgDownUserCreateWorldInstanceSuccess {
+            id: ::std::string::String::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpMsgDownUserCreateWorldInstanceSuccess {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpMsgDownUserCreateWorldInstanceSuccess").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpMsgDownUserCreateWorldInstanceSuccess {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpMsgDownUserCreateWorldInstanceSuccess {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:UdpMsgDownAreaInit)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpMsgDownAreaInit {
+    // message fields
+    // @@protoc_insertion_point(field:UdpMsgDownAreaInit.width)
+    pub width: f32,
+    // @@protoc_insertion_point(field:UdpMsgDownAreaInit.height)
+    pub height: f32,
+    // @@protoc_insertion_point(field:UdpMsgDownAreaInit.walkable_x)
+    pub walkable_x: ::std::vec::Vec<u32>,
+    // @@protoc_insertion_point(field:UdpMsgDownAreaInit.walkable_y)
+    pub walkable_y: ::std::vec::Vec<u32>,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpMsgDownAreaInit.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpMsgDownAreaInit {
+    fn default() -> &'a UdpMsgDownAreaInit {
+        <UdpMsgDownAreaInit as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpMsgDownAreaInit {
+    pub fn new() -> UdpMsgDownAreaInit {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "width",
+            |m: &UdpMsgDownAreaInit| { &m.width },
+            |m: &mut UdpMsgDownAreaInit| { &mut m.width },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "height",
+            |m: &UdpMsgDownAreaInit| { &m.height },
+            |m: &mut UdpMsgDownAreaInit| { &mut m.height },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "walkable_x",
+            |m: &UdpMsgDownAreaInit| { &m.walkable_x },
+            |m: &mut UdpMsgDownAreaInit| { &mut m.walkable_x },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "walkable_y",
+            |m: &UdpMsgDownAreaInit| { &m.walkable_y },
+            |m: &mut UdpMsgDownAreaInit| { &mut m.walkable_y },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDownAreaInit>(
+            "UdpMsgDownAreaInit",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpMsgDownAreaInit {
+    const NAME: &'static str = "UdpMsgDownAreaInit";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                13 => {
+                    self.width = is.read_float()?;
+                },
+                21 => {
+                    self.height = is.read_float()?;
+                },
+                26 => {
+                    is.read_repeated_packed_uint32_into(&mut self.walkable_x)?;
+                },
+                24 => {
+                    self.walkable_x.push(is.read_uint32()?);
+                },
+                34 => {
+                    is.read_repeated_packed_uint32_into(&mut self.walkable_y)?;
+                },
+                32 => {
+                    self.walkable_y.push(is.read_uint32()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.width != 0. {
+            my_size += 1 + 4;
+        }
+        if self.height != 0. {
+            my_size += 1 + 4;
+        }
+        for value in &self.walkable_x {
+            my_size += ::protobuf::rt::uint32_size(3, *value);
+        };
+        for value in &self.walkable_y {
+            my_size += ::protobuf::rt::uint32_size(4, *value);
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.width != 0. {
+            os.write_float(1, self.width)?;
+        }
+        if self.height != 0. {
+            os.write_float(2, self.height)?;
+        }
+        for v in &self.walkable_x {
+            os.write_uint32(3, *v)?;
+        };
+        for v in &self.walkable_y {
+            os.write_uint32(4, *v)?;
+        };
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpMsgDownAreaInit {
+        UdpMsgDownAreaInit::new()
+    }
+
+    fn clear(&mut self) {
+        self.width = 0.;
+        self.height = 0.;
+        self.walkable_x.clear();
+        self.walkable_y.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpMsgDownAreaInit {
+        static instance: UdpMsgDownAreaInit = UdpMsgDownAreaInit {
+            width: 0.,
+            height: 0.,
+            walkable_x: ::std::vec::Vec::new(),
+            walkable_y: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpMsgDownAreaInit {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpMsgDownAreaInit").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpMsgDownAreaInit {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpMsgDownAreaInit {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
 // @@protoc_insertion_point(message:UdpMsgDown)
 #[derive(PartialEq,Clone,Default,Debug)]
 pub struct UdpMsgDown {
@@ -605,6 +1031,12 @@ pub struct UdpMsgDown {
     pub game_entity_update: ::protobuf::MessageField<UdpMsgDownGameEntityUpdate>,
     // @@protoc_insertion_point(field:UdpMsgDown.game_entity_removed)
     pub game_entity_removed: ::protobuf::MessageField<UdpMsgDownGameEntityRemoved>,
+    // @@protoc_insertion_point(field:UdpMsgDown.user_connect_failed)
+    pub user_connect_failed: ::protobuf::MessageField<UdpMsgDownUserConnectFailed>,
+    // @@protoc_insertion_point(field:UdpMsgDown.user_create_world_instance_success)
+    pub user_create_world_instance_success: ::protobuf::MessageField<UdpMsgDownUserCreateWorldInstanceSuccess>,
+    // @@protoc_insertion_point(field:UdpMsgDown.area_init)
+    pub area_init: ::protobuf::MessageField<UdpMsgDownAreaInit>,
     // special fields
     // @@protoc_insertion_point(special_field:UdpMsgDown.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -622,7 +1054,7 @@ impl UdpMsgDown {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut fields = ::std::vec::Vec::with_capacity(6);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "_type",
@@ -638,6 +1070,21 @@ impl UdpMsgDown {
             "game_entity_removed",
             |m: &UdpMsgDown| { &m.game_entity_removed },
             |m: &mut UdpMsgDown| { &mut m.game_entity_removed },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpMsgDownUserConnectFailed>(
+            "user_connect_failed",
+            |m: &UdpMsgDown| { &m.user_connect_failed },
+            |m: &mut UdpMsgDown| { &mut m.user_connect_failed },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpMsgDownUserCreateWorldInstanceSuccess>(
+            "user_create_world_instance_success",
+            |m: &UdpMsgDown| { &m.user_create_world_instance_success },
+            |m: &mut UdpMsgDown| { &mut m.user_create_world_instance_success },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpMsgDownAreaInit>(
+            "area_init",
+            |m: &UdpMsgDown| { &m.area_init },
+            |m: &mut UdpMsgDown| { &mut m.area_init },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDown>(
             "UdpMsgDown",
@@ -666,6 +1113,15 @@ impl ::protobuf::Message for UdpMsgDown {
                 26 => {
                     ::protobuf::rt::read_singular_message_into_field(is, &mut self.game_entity_removed)?;
                 },
+                34 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.user_connect_failed)?;
+                },
+                42 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.user_create_world_instance_success)?;
+                },
+                50 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.area_init)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -689,6 +1145,18 @@ impl ::protobuf::Message for UdpMsgDown {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
+        if let Some(v) = self.user_connect_failed.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
+        if let Some(v) = self.user_create_world_instance_success.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
+        if let Some(v) = self.area_init.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -703,6 +1171,15 @@ impl ::protobuf::Message for UdpMsgDown {
         }
         if let Some(v) = self.game_entity_removed.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(3, v, os)?;
+        }
+        if let Some(v) = self.user_connect_failed.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(4, v, os)?;
+        }
+        if let Some(v) = self.user_create_world_instance_success.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(5, v, os)?;
+        }
+        if let Some(v) = self.area_init.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(6, v, os)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -724,6 +1201,9 @@ impl ::protobuf::Message for UdpMsgDown {
         self._type = ::protobuf::EnumOrUnknown::new(UdpMsgDownType::GAME_ENTITY_UPDATE);
         self.game_entity_update.clear();
         self.game_entity_removed.clear();
+        self.user_connect_failed.clear();
+        self.user_create_world_instance_success.clear();
+        self.area_init.clear();
         self.special_fields.clear();
     }
 
@@ -732,6 +1212,9 @@ impl ::protobuf::Message for UdpMsgDown {
             _type: ::protobuf::EnumOrUnknown::from_i32(0),
             game_entity_update: ::protobuf::MessageField::none(),
             game_entity_removed: ::protobuf::MessageField::none(),
+            user_connect_failed: ::protobuf::MessageField::none(),
+            user_create_world_instance_success: ::protobuf::MessageField::none(),
+            area_init: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -903,6 +1386,18 @@ pub enum UdpMsgDownType {
     GAME_ENTITY_UPDATE = 0,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.GAME_ENTITY_REMOVED)
     GAME_ENTITY_REMOVED = 1,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_CONNECT_SUCCESS)
+    USER_CONNECT_SUCCESS = 3,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_CONNECT_FAILED)
+    USER_CONNECT_FAILED = 4,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_DISCONNECT_SUCCESS)
+    USER_DISCONNECT_SUCCESS = 5,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_CREATE_WORDL_INSTANCE_SUCCESS)
+    USER_CREATE_WORDL_INSTANCE_SUCCESS = 6,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_JOIN_WORDL_INSTANCE_SUCCESS)
+    USER_JOIN_WORDL_INSTANCE_SUCCESS = 7,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.AREA_INIT)
+    AREA_INIT = 8,
 }
 
 impl ::protobuf::Enum for UdpMsgDownType {
@@ -916,6 +1411,12 @@ impl ::protobuf::Enum for UdpMsgDownType {
         match value {
             0 => ::std::option::Option::Some(UdpMsgDownType::GAME_ENTITY_UPDATE),
             1 => ::std::option::Option::Some(UdpMsgDownType::GAME_ENTITY_REMOVED),
+            3 => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_SUCCESS),
+            4 => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_FAILED),
+            5 => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
+            6 => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
+            7 => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
+            8 => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
         }
     }
@@ -924,6 +1425,12 @@ impl ::protobuf::Enum for UdpMsgDownType {
         match str {
             "GAME_ENTITY_UPDATE" => ::std::option::Option::Some(UdpMsgDownType::GAME_ENTITY_UPDATE),
             "GAME_ENTITY_REMOVED" => ::std::option::Option::Some(UdpMsgDownType::GAME_ENTITY_REMOVED),
+            "USER_CONNECT_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_SUCCESS),
+            "USER_CONNECT_FAILED" => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_FAILED),
+            "USER_DISCONNECT_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
+            "USER_CREATE_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
+            "USER_JOIN_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
+            "AREA_INIT" => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
         }
     }
@@ -931,6 +1438,12 @@ impl ::protobuf::Enum for UdpMsgDownType {
     const VALUES: &'static [UdpMsgDownType] = &[
         UdpMsgDownType::GAME_ENTITY_UPDATE,
         UdpMsgDownType::GAME_ENTITY_REMOVED,
+        UdpMsgDownType::USER_CONNECT_SUCCESS,
+        UdpMsgDownType::USER_CONNECT_FAILED,
+        UdpMsgDownType::USER_DISCONNECT_SUCCESS,
+        UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS,
+        UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS,
+        UdpMsgDownType::AREA_INIT,
     ];
 }
 
@@ -941,7 +1454,16 @@ impl ::protobuf::EnumFull for UdpMsgDownType {
     }
 
     fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
-        let index = *self as usize;
+        let index = match self {
+            UdpMsgDownType::GAME_ENTITY_UPDATE => 0,
+            UdpMsgDownType::GAME_ENTITY_REMOVED => 1,
+            UdpMsgDownType::USER_CONNECT_SUCCESS => 2,
+            UdpMsgDownType::USER_CONNECT_FAILED => 3,
+            UdpMsgDownType::USER_DISCONNECT_SUCCESS => 4,
+            UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS => 5,
+            UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS => 6,
+            UdpMsgDownType::AREA_INIT => 7,
+        };
         Self::enum_descriptor().value_by_index(index)
     }
 }
@@ -977,16 +1499,32 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x01(\x0e2\t.UdpSpellR\x05spell\x12\x1e\n\x06target\x18\x02\x20\x01(\x0b\
     2\x06.PointR\x06target\x12\x1a\n\x08duration\x18\x03\x20\x01(\rR\x08dura\
     tion\"-\n\x1bUdpMsgDownGameEntityRemoved\x12\x0e\n\x02id\x18\x01\x20\x01\
-    (\rR\x02id\"\x84\x02\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\x01(\x0e2\
-    \x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12game_entity_update\x18\x02\x20\
-    \x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\0R\x10gameEntityUpdate\x88\
-    \x01\x01\x12Q\n\x13game_entity_removed\x18\x03\x20\x01(\x0b2\x1c.UdpMsgD\
-    ownGameEntityRemovedH\x01R\x11gameEntityRemoved\x88\x01\x01B\x15\n\x13_g\
-    ame_entity_updateB\x16\n\x14_game_entity_removed\"]\n\x11UdpMsgDownWrapp\
-    er\x12\x1f\n\x0bserver_time\x18\x01\x20\x01(\x04R\nserverTime\x12'\n\x08\
-    messages\x18\x02\x20\x03(\x0b2\x0b.UdpMsgDownR\x08messages*A\n\x0eUdpMsg\
-    DownType\x12\x16\n\x12GAME_ENTITY_UPDATE\x10\0\x12\x17\n\x13GAME_ENTITY_\
-    REMOVED\x10\x01b\x06proto3\
+    (\rR\x02id\"B\n\x1bUdpMsgDownUserConnectFailed\x12#\n\rerror_message\x18\
+    \x01\x20\x01(\tR\x0cerrorMessage\":\n(UdpMsgDownUserCreateWorldInstanceS\
+    uccess\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\"\x80\x01\n\x12UdpMsgDo\
+    wnAreaInit\x12\x14\n\x05width\x18\x01\x20\x01(\x02R\x05width\x12\x16\n\
+    \x06height\x18\x02\x20\x01(\x02R\x06height\x12\x1d\n\nwalkable_x\x18\x03\
+    \x20\x03(\rR\twalkableX\x12\x1d\n\nwalkable_y\x18\x04\x20\x03(\rR\twalka\
+    bleY\"\xd7\x04\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\x01(\x0e2\x0f.U\
+    dpMsgDownTypeR\x04Type\x12N\n\x12game_entity_update\x18\x02\x20\x01(\x0b\
+    2\x1b.UdpMsgDownGameEntityUpdateH\0R\x10gameEntityUpdate\x88\x01\x01\x12\
+    Q\n\x13game_entity_removed\x18\x03\x20\x01(\x0b2\x1c.UdpMsgDownGameEntit\
+    yRemovedH\x01R\x11gameEntityRemoved\x88\x01\x01\x12Q\n\x13user_connect_f\
+    ailed\x18\x04\x20\x01(\x0b2\x1c.UdpMsgDownUserConnectFailedH\x02R\x11use\
+    rConnectFailed\x88\x01\x01\x12z\n\"user_create_world_instance_success\
+    \x18\x05\x20\x01(\x0b2).UdpMsgDownUserCreateWorldInstanceSuccessH\x03R\
+    \x1euserCreateWorldInstanceSuccess\x88\x01\x01\x125\n\tarea_init\x18\x06\
+    \x20\x01(\x0b2\x13.UdpMsgDownAreaInitH\x04R\x08areaInit\x88\x01\x01B\x15\
+    \n\x13_game_entity_updateB\x16\n\x14_game_entity_removedB\x16\n\x14_user\
+    _connect_failedB%\n#_user_create_world_instance_successB\x0c\n\n_area_in\
+    it\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\x18\x01\x20\x01(\
+    \x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\x0b2\x0b.UdpMsgDow\
+    nR\x08messages*\xee\x01\n\x0eUdpMsgDownType\x12\x16\n\x12GAME_ENTITY_UPD\
+    ATE\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01\x12\x18\n\x14USER_CON\
+    NECT_SUCCESS\x10\x03\x12\x17\n\x13USER_CONNECT_FAILED\x10\x04\x12\x1b\n\
+    \x17USER_DISCONNECT_SUCCESS\x10\x05\x12&\n\"USER_CREATE_WORDL_INSTANCE_S\
+    UCCESS\x10\x06\x12$\n\x20USER_JOIN_WORDL_INSTANCE_SUCCESS\x10\x07\x12\r\
+    \n\tAREA_INIT\x10\x08b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -1005,10 +1543,13 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::common::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(5);
+            let mut messages = ::std::vec::Vec::with_capacity(8);
             messages.push(UdpMsgDownGameEntityUpdate::generated_message_descriptor_data());
             messages.push(UdpCast::generated_message_descriptor_data());
             messages.push(UdpMsgDownGameEntityRemoved::generated_message_descriptor_data());
+            messages.push(UdpMsgDownUserConnectFailed::generated_message_descriptor_data());
+            messages.push(UdpMsgDownUserCreateWorldInstanceSuccess::generated_message_descriptor_data());
+            messages.push(UdpMsgDownAreaInit::generated_message_descriptor_data());
             messages.push(UdpMsgDown::generated_message_descriptor_data());
             messages.push(UdpMsgDownWrapper::generated_message_descriptor_data());
             let mut enums = ::std::vec::Vec::with_capacity(1);

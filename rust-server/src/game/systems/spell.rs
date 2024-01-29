@@ -1,29 +1,35 @@
 use crate::game::bundles::prelude::*;
 use crate::game::components::prelude::*;
 use crate::game::events::prelude::*;
-use crate::utils::get_game_time;
+use crate::game::resources::prelude::*;
 use bevy_ecs::prelude::*;
 
 pub fn on_cast_spell(
     mut command: Commands,
     mut reader: EventReader<CastSpell>,
     mut query: Query<(Entity, Option<&mut Velocity>), Without<Cast>>,
+    area_config: Res<AreaConfig>,
+    time: Res<Time>,
 ) {
     for event in reader.read() {
         if let Ok((_, opt_velocity)) = query.get_mut(event.from_entity) {
             command
                 .entity(event.from_entity)
-                .insert(Cast::new(event.spell, 200));
+                .insert(Cast::new(event.spell, &time, 200));
 
             if let Some(mut velocity) = opt_velocity {
-                velocity.set_target(None);
+                velocity.set_target(&area_config, None);
             }
         }
     }
 }
 
-pub fn create_casted_spells(mut command: Commands, query: Query<(Entity, &Cast), With<Cast>>) {
-    let now = get_game_time();
+pub fn create_casted_spells(
+    mut command: Commands,
+    query: Query<(Entity, &Cast), With<Cast>>,
+    time: Res<Time>,
+) {
+    let now = time.current_millis;
     for (entity, cast) in &query {
         if now < cast.end_at_millis {
             continue;

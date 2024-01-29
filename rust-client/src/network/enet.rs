@@ -6,7 +6,10 @@ use std::{
     ffi::CString,
     mem::MaybeUninit,
     ptr::null,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc, Mutex,
+    },
     thread,
     time::Duration,
 };
@@ -25,6 +28,7 @@ const PORT: u16 = 34254;
 pub fn enet_start(
     udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
     rx_enet_sender: Receiver<UdpMsgUpWrapper>,
+    tx_enet_receiver: Sender<UdpMsgDownWrapper>,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));
     let peers_for_manage = Arc::clone(&peers);
@@ -91,6 +95,11 @@ pub fn enet_start(
                             .lock()
                             .unwrap()
                             .push_back(udp_msg_down_wrapper);
+
+                        let udp_msg_down_wrapper: UdpMsgDownWrapper =
+                            UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
+                                .expect("Failed to parse UdpMsgDownWrapper");
+                        tx_enet_receiver.send(udp_msg_down_wrapper).unwrap();
                     }
                     _ENetEventType_ENET_EVENT_TYPE_NONE => {}
                     _ => unreachable!(),

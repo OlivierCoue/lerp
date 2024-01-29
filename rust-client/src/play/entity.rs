@@ -11,11 +11,13 @@ use rust_common::helper::point_to_vector2;
 use rust_common::proto::common::GameEntityBaseType;
 use rust_common::proto::udp_down::UdpMsgDownGameEntityUpdate;
 
-use crate::root::{Root, DEBUG};
+use crate::root::{DEBUG, PATH_PLAY};
 use crate::utils::{
     angle_to_direction, cart_to_iso, get_attack_animation_for_direction,
     get_idle_animation_for_direction, get_walk_animation_for_direction, iso_to_cart, Direction,
 };
+
+use super::play_node::PlayNode;
 
 #[derive(GodotClass)]
 #[class(base=CharacterBody2D)]
@@ -28,7 +30,6 @@ pub struct GameEntity {
     health_label: Option<Gd<Label>>,
     is_dead: bool,
     animated_sprite_2d: Option<Gd<AnimatedSprite2D>>,
-    #[base]
     base: Base<CharacterBody2D>,
     direction: Direction,
     is_casting: bool,
@@ -101,12 +102,13 @@ impl ISprite2D for GameEntity {
 
         self.update_animated_sprite();
 
-        let mut root = self.base().get_node_as::<Root>("/root/Root");
-        root.connect(
+        let mut play_node = self.base().get_node_as::<PlayNode>(PATH_PLAY);
+
+        play_node.connect(
             "player_throw_fireball_start".into(),
             self.base().callable("on_player_throw_fireball_start"),
         );
-        root.connect(
+        play_node.connect(
             "player_move_start".into(),
             self.base().callable("on_player_move_start"),
         );

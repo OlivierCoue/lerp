@@ -3,32 +3,32 @@ use godot::builtin::Vector2;
 use rand::Rng;
 use rust_common::math::get_point_from_points_and_distance;
 
-use crate::{
-    game::{
-        bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
-        UpdateVelocityTargetWithPathFinder,
-    },
-    utils::get_game_time,
+use crate::game::{
+    bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
+    UpdateVelocityTargetWithPathFinder,
 };
 
-use super::prelude::{GRID_SIZE_X_MAX, GRID_SIZE_X_MIN, GRID_SIZE_Y_MAX, GRID_SIZE_Y_MIN};
-
-pub fn enemies_spawner(mut enemies_state: ResMut<EnemiesState>, mut command: Commands) {
+pub fn enemies_spawner(
+    mut enemies_state: ResMut<EnemiesState>,
+    area_config: Res<AreaConfig>,
+    time: Res<Time>,
+    mut command: Commands,
+) {
     if !enemies_state.is_enable() {
         return;
     }
 
-    let current_game_time = get_game_time();
+    let current_game_time = time.current_millis;
     if enemies_state.last_spawn_at_millis == 0
         || enemies_state.last_spawn_at_millis + enemies_state.spwan_every_millis < current_game_time
     {
         enemies_state.last_spawn_at_millis = current_game_time;
-        let random = rand::thread_rng().gen_range(GRID_SIZE_X_MIN..GRID_SIZE_X_MAX - 1.0);
+        let random = rand::thread_rng().gen_range(0.0..area_config.area_width - 1.0);
         let position_current = match rand::thread_rng().gen_range(0..4) {
-            0 => Vector2::new(GRID_SIZE_X_MIN, random),
-            1 => Vector2::new(GRID_SIZE_X_MAX, random),
-            2 => Vector2::new(random, GRID_SIZE_Y_MIN),
-            3 => Vector2::new(random, GRID_SIZE_Y_MAX),
+            0 => Vector2::new(0.0, random),
+            1 => Vector2::new(area_config.area_width, random),
+            2 => Vector2::new(random, 0.0),
+            3 => Vector2::new(random, area_config.area_height),
             _ => panic!("Unexpected value"),
         };
         let is_wizard: u32 = rand::thread_rng().gen_range(0..2);
@@ -47,10 +47,11 @@ pub fn enemies_ai(
         UpdateVelocityTargetWithPathFinder,
     >,
     mut writer_cast_spell: EventWriter<CastSpell>,
+    time: Res<Time>,
 ) {
     let aggro_range = 700.0;
     for (enemy_entity, mut enemy, enemy_position, team) in &mut query_enemies {
-        let current_game_time = get_game_time();
+        let current_game_time = time.current_millis;
         if enemy.last_action_at_millis != 0
             && enemy.last_action_at_millis + 1000 > current_game_time
         {

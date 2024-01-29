@@ -6,12 +6,9 @@ use std::{
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::{
-    game::{
-        pathfinder::{pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE},
-        systems::prelude::{GRID_HEIGHT, GRID_WIDTH},
-    },
-    utils::get_game_time,
+use crate::game::{
+    pathfinder::{pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE},
+    AreaConfig, Time,
 };
 
 #[derive(Resource)]
@@ -21,19 +18,19 @@ pub struct PathfinderState {
     pub update_every_millis: u32,
 }
 impl PathfinderState {
-    pub fn new() -> Self {
+    pub fn new(area_config: &AreaConfig) -> Self {
         Self {
-            grid: PathfinderState::create_grid(),
+            grid: PathfinderState::create_grid(area_config),
             last_update_at_millis: 0,
             update_every_millis: 1000,
         }
     }
 
-    fn create_grid() -> Vec<Vec<Node>> {
+    fn create_grid(area_config: &AreaConfig) -> Vec<Vec<Node>> {
         let mut grid = Vec::new();
-        for x in 0..((GRID_WIDTH / PATHFINDER_TILE_SIZE as u32) + 1) {
+        for x in 0..((area_config.area_width as u32 / PATHFINDER_TILE_SIZE as u32) + 1) {
             let mut row = Vec::new();
-            for y in 0..((GRID_HEIGHT / PATHFINDER_TILE_SIZE as u32) + 1) {
+            for y in 0..((area_config.area_height as u32 / PATHFINDER_TILE_SIZE as u32) + 1) {
                 row.push(Node::new(
                     x as f32 * PATHFINDER_TILE_SIZE + PATHFINDER_TILE_SIZE / 2.0,
                     y as f32 * PATHFINDER_TILE_SIZE + PATHFINDER_TILE_SIZE / 2.0,
@@ -45,9 +42,9 @@ impl PathfinderState {
         grid
     }
 
-    pub fn reset(&mut self) {
-        self.grid = PathfinderState::create_grid();
-        self.last_update_at_millis = get_game_time();
+    pub fn reset(&mut self, area_config: &AreaConfig, time: &Time) {
+        self.grid = PathfinderState::create_grid(area_config);
+        self.last_update_at_millis = time.current_millis;
     }
 
     pub fn block_nodes_in_rect(&mut self, entity: Entity, position: &Vector2, rect: &Vector2) {

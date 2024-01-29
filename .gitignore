@@ -1,3 +1,5 @@
 .ssh
 /target
 /godot/export
+/local
+/output

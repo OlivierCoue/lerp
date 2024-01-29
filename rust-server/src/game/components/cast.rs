@@ -6,7 +6,7 @@ use rust_common::{
     proto::{common::UdpSpell, udp_down::UdpCast},
 };
 
-use crate::{game::Team, utils::get_game_time};
+use crate::game::{Team, Time};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Spell {
@@ -22,10 +22,10 @@ pub struct Cast {
     pub duration_millis: u32,
 }
 impl Cast {
-    pub fn new(spell: Spell, duration_millis: u32) -> Self {
+    pub fn new(spell: Spell, time: &Time, duration_millis: u32) -> Self {
         Self {
             spell,
-            end_at_millis: get_game_time() + duration_millis,
+            end_at_millis: time.current_millis + duration_millis,
             duration_millis,
         }
     }

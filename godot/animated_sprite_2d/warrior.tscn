@@ -1336,4 +1336,5 @@ animations = [{
 position = Vector2(0, -1)
 sprite_frames = SubResource("SpriteFrames_pyerm")
 animation = &"attack_nnw"
-frame_progress = 0.418794
+frame = 5
+frame_progress = 0.483003

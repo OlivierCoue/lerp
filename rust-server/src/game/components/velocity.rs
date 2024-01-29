@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::game::systems::prelude::world_bounded_vector2;
+use crate::game::{systems::prelude::world_bounded_vector2, AreaConfig};
 
 #[derive(Component)]
 pub struct Velocity {
@@ -45,9 +45,10 @@ impl Velocity {
         self.despawn_at_target
     }
 
-    pub fn set_target(&mut self, new_target: Option<Vector2>) {
+    pub fn set_target(&mut self, area_config: &AreaConfig, new_target: Option<Vector2>) {
         if let Some(target) = new_target {
-            self.target_queue = VecDeque::from_iter(Some(world_bounded_vector2(target)))
+            self.target_queue =
+                VecDeque::from_iter(Some(world_bounded_vector2(area_config, target)))
         } else {
             self.target_queue = VecDeque::new();
         }
@@ -59,9 +60,9 @@ impl Velocity {
         self.revision += 1;
     }
 
-    pub fn add_target(&mut self, new_target: Vector2) {
+    pub fn add_target(&mut self, area_config: &AreaConfig, new_target: Vector2) {
         self.target_queue
-            .push_front(world_bounded_vector2(new_target));
+            .push_front(world_bounded_vector2(area_config, new_target));
     }
 
     pub fn remove_current_target(&mut self) -> bool {

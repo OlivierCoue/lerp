@@ -305,6 +305,7 @@ fn is_walkable(
         (to_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
     );
     let mut points = vec![from];
+
     while *points.last().unwrap() != to {
         points.push(
             points

@@ -5,12 +5,20 @@ edition = "2021"
 
 [dependencies]
 bevy_ecs = "0.12.1"
+bson = { version = "2", features = ["chrono-0_4"] }
+chrono = "0.4"
+crossbeam-channel = "0.5"
 enet-cs-sys = "0.1.1"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+image = "0.24.8"
+mongodb = "2.1"
 protobuf = "3.3.0"
-rand = "0.8.4"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
 rust-common = { path = "../rust-common" }
+serde = "1"
 spin_sleep = "1.1.1"
+tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]
 protobuf-codegen = "3.3.0"

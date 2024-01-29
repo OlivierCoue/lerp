@@ -25,6 +25,128 @@
 /// of protobuf runtime.
 const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_3_3_0;
 
+// @@protoc_insertion_point(message:UdpMsgUpUserJoinWorldInstance)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpMsgUpUserJoinWorldInstance {
+    // message fields
+    // @@protoc_insertion_point(field:UdpMsgUpUserJoinWorldInstance.id)
+    pub id: ::std::string::String,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpMsgUpUserJoinWorldInstance.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpMsgUpUserJoinWorldInstance {
+    fn default() -> &'a UdpMsgUpUserJoinWorldInstance {
+        <UdpMsgUpUserJoinWorldInstance as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpMsgUpUserJoinWorldInstance {
+    pub fn new() -> UdpMsgUpUserJoinWorldInstance {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "id",
+            |m: &UdpMsgUpUserJoinWorldInstance| { &m.id },
+            |m: &mut UdpMsgUpUserJoinWorldInstance| { &mut m.id },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgUpUserJoinWorldInstance>(
+            "UdpMsgUpUserJoinWorldInstance",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpMsgUpUserJoinWorldInstance {
+    const NAME: &'static str = "UdpMsgUpUserJoinWorldInstance";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.id = is.read_string()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.id.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.id);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.id.is_empty() {
+            os.write_string(1, &self.id)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpMsgUpUserJoinWorldInstance {
+        UdpMsgUpUserJoinWorldInstance::new()
+    }
+
+    fn clear(&mut self) {
+        self.id.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpMsgUpUserJoinWorldInstance {
+        static instance: UdpMsgUpUserJoinWorldInstance = UdpMsgUpUserJoinWorldInstance {
+            id: ::std::string::String::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpMsgUpUserJoinWorldInstance {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpMsgUpUserJoinWorldInstance").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpMsgUpUserJoinWorldInstance {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpMsgUpUserJoinWorldInstance {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
 // @@protoc_insertion_point(message:UdpMsgUp)
 #[derive(PartialEq,Clone,Default,Debug)]
 pub struct UdpMsgUp {
@@ -39,6 +161,10 @@ pub struct UdpMsgUp {
     pub player_throw_projectile: ::protobuf::MessageField<super::common::Point>,
     // @@protoc_insertion_point(field:UdpMsgUp.player_throw_frozen_orb)
     pub player_throw_frozen_orb: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpMsgUp.user_connect_username)
+    pub user_connect_username: ::std::option::Option<::std::string::String>,
+    // @@protoc_insertion_point(field:UdpMsgUp.user_join_world_instance)
+    pub user_join_world_instance: ::protobuf::MessageField<UdpMsgUpUserJoinWorldInstance>,
     // special fields
     // @@protoc_insertion_point(special_field:UdpMsgUp.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -56,7 +182,7 @@ impl UdpMsgUp {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(5);
+        let mut fields = ::std::vec::Vec::with_capacity(7);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "_type",
@@ -82,6 +208,16 @@ impl UdpMsgUp {
             "player_throw_frozen_orb",
             |m: &UdpMsgUp| { &m.player_throw_frozen_orb },
             |m: &mut UdpMsgUp| { &mut m.player_throw_frozen_orb },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "user_connect_username",
+            |m: &UdpMsgUp| { &m.user_connect_username },
+            |m: &mut UdpMsgUp| { &mut m.user_connect_username },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpMsgUpUserJoinWorldInstance>(
+            "user_join_world_instance",
+            |m: &UdpMsgUp| { &m.user_join_world_instance },
+            |m: &mut UdpMsgUp| { &mut m.user_join_world_instance },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgUp>(
             "UdpMsgUp",
@@ -116,6 +252,12 @@ impl ::protobuf::Message for UdpMsgUp {
                 42 => {
                     ::protobuf::rt::read_singular_message_into_field(is, &mut self.player_throw_frozen_orb)?;
                 },
+                50 => {
+                    self.user_connect_username = ::std::option::Option::Some(is.read_string()?);
+                },
+                58 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.user_join_world_instance)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -147,6 +289,13 @@ impl ::protobuf::Message for UdpMsgUp {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
+        if let Some(v) = self.user_connect_username.as_ref() {
+            my_size += ::protobuf::rt::string_size(6, &v);
+        }
+        if let Some(v) = self.user_join_world_instance.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -167,6 +316,12 @@ impl ::protobuf::Message for UdpMsgUp {
         }
         if let Some(v) = self.player_throw_frozen_orb.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(5, v, os)?;
+        }
+        if let Some(v) = self.user_connect_username.as_ref() {
+            os.write_string(6, v)?;
+        }
+        if let Some(v) = self.user_join_world_instance.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(7, v, os)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -190,6 +345,8 @@ impl ::protobuf::Message for UdpMsgUp {
         self.player_teleport.clear();
         self.player_throw_projectile.clear();
         self.player_throw_frozen_orb.clear();
+        self.user_connect_username = ::std::option::Option::None;
+        self.user_join_world_instance.clear();
         self.special_fields.clear();
     }
 
@@ -200,6 +357,8 @@ impl ::protobuf::Message for UdpMsgUp {
             player_teleport: ::protobuf::MessageField::none(),
             player_throw_projectile: ::protobuf::MessageField::none(),
             player_throw_frozen_orb: ::protobuf::MessageField::none(),
+            user_connect_username: ::std::option::Option::None,
+            user_join_world_instance: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -353,14 +512,10 @@ pub enum UdpMsgUpType {
     GAME_PAUSE = 0,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_INIT)
     PLAYER_INIT = 1,
-    // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_PING)
-    PLAYER_PING = 2,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_MOVE)
     PLAYER_MOVE = 3,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_TELEPORT)
     PLAYER_TELEPORT = 4,
-    // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_TOGGLE_HIDDEN)
-    PLAYER_TOGGLE_HIDDEN = 5,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_THROW_PROJECTILE)
     PLAYER_THROW_PROJECTILE = 6,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.PLAYER_THROW_FROZEN_ORB)
@@ -369,6 +524,14 @@ pub enum UdpMsgUpType {
     PLAYER_MELEE_ATTACK = 8,
     // @@protoc_insertion_point(enum_value:UdpMsgUpType.SETTINGS_TOGGLE_ENEMIES)
     SETTINGS_TOGGLE_ENEMIES = 9,
+    // @@protoc_insertion_point(enum_value:UdpMsgUpType.USER_CONNECT)
+    USER_CONNECT = 10,
+    // @@protoc_insertion_point(enum_value:UdpMsgUpType.USER_DISCONNECT)
+    USER_DISCONNECT = 11,
+    // @@protoc_insertion_point(enum_value:UdpMsgUpType.USER_CREATE_WORLD_INSTANCE)
+    USER_CREATE_WORLD_INSTANCE = 12,
+    // @@protoc_insertion_point(enum_value:UdpMsgUpType.USER_JOIN_WOLD_INSTANCE)
+    USER_JOIN_WOLD_INSTANCE = 13,
 }
 
 impl ::protobuf::Enum for UdpMsgUpType {
@@ -382,14 +545,16 @@ impl ::protobuf::Enum for UdpMsgUpType {
         match value {
             0 => ::std::option::Option::Some(UdpMsgUpType::GAME_PAUSE),
             1 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_INIT),
-            2 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_PING),
             3 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MOVE),
             4 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TELEPORT),
-            5 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TOGGLE_HIDDEN),
             6 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_PROJECTILE),
             7 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_FROZEN_ORB),
             8 => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MELEE_ATTACK),
             9 => ::std::option::Option::Some(UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES),
+            10 => ::std::option::Option::Some(UdpMsgUpType::USER_CONNECT),
+            11 => ::std::option::Option::Some(UdpMsgUpType::USER_DISCONNECT),
+            12 => ::std::option::Option::Some(UdpMsgUpType::USER_CREATE_WORLD_INSTANCE),
+            13 => ::std::option::Option::Some(UdpMsgUpType::USER_JOIN_WOLD_INSTANCE),
             _ => ::std::option::Option::None
         }
     }
@@ -398,14 +563,16 @@ impl ::protobuf::Enum for UdpMsgUpType {
         match str {
             "GAME_PAUSE" => ::std::option::Option::Some(UdpMsgUpType::GAME_PAUSE),
             "PLAYER_INIT" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_INIT),
-            "PLAYER_PING" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_PING),
             "PLAYER_MOVE" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MOVE),
             "PLAYER_TELEPORT" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TELEPORT),
-            "PLAYER_TOGGLE_HIDDEN" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_TOGGLE_HIDDEN),
             "PLAYER_THROW_PROJECTILE" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_PROJECTILE),
             "PLAYER_THROW_FROZEN_ORB" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_THROW_FROZEN_ORB),
             "PLAYER_MELEE_ATTACK" => ::std::option::Option::Some(UdpMsgUpType::PLAYER_MELEE_ATTACK),
             "SETTINGS_TOGGLE_ENEMIES" => ::std::option::Option::Some(UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES),
+            "USER_CONNECT" => ::std::option::Option::Some(UdpMsgUpType::USER_CONNECT),
+            "USER_DISCONNECT" => ::std::option::Option::Some(UdpMsgUpType::USER_DISCONNECT),
+            "USER_CREATE_WORLD_INSTANCE" => ::std::option::Option::Some(UdpMsgUpType::USER_CREATE_WORLD_INSTANCE),
+            "USER_JOIN_WOLD_INSTANCE" => ::std::option::Option::Some(UdpMsgUpType::USER_JOIN_WOLD_INSTANCE),
             _ => ::std::option::Option::None
         }
     }
@@ -413,14 +580,16 @@ impl ::protobuf::Enum for UdpMsgUpType {
     const VALUES: &'static [UdpMsgUpType] = &[
         UdpMsgUpType::GAME_PAUSE,
         UdpMsgUpType::PLAYER_INIT,
-        UdpMsgUpType::PLAYER_PING,
         UdpMsgUpType::PLAYER_MOVE,
         UdpMsgUpType::PLAYER_TELEPORT,
-        UdpMsgUpType::PLAYER_TOGGLE_HIDDEN,
         UdpMsgUpType::PLAYER_THROW_PROJECTILE,
         UdpMsgUpType::PLAYER_THROW_FROZEN_ORB,
         UdpMsgUpType::PLAYER_MELEE_ATTACK,
         UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES,
+        UdpMsgUpType::USER_CONNECT,
+        UdpMsgUpType::USER_DISCONNECT,
+        UdpMsgUpType::USER_CREATE_WORLD_INSTANCE,
+        UdpMsgUpType::USER_JOIN_WOLD_INSTANCE,
     ];
 }
 
@@ -431,7 +600,20 @@ impl ::protobuf::EnumFull for UdpMsgUpType {
     }
 
     fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
-        let index = *self as usize;
+        let index = match self {
+            UdpMsgUpType::GAME_PAUSE => 0,
+            UdpMsgUpType::PLAYER_INIT => 1,
+            UdpMsgUpType::PLAYER_MOVE => 2,
+            UdpMsgUpType::PLAYER_TELEPORT => 3,
+            UdpMsgUpType::PLAYER_THROW_PROJECTILE => 4,
+            UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => 5,
+            UdpMsgUpType::PLAYER_MELEE_ATTACK => 6,
+            UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES => 7,
+            UdpMsgUpType::USER_CONNECT => 8,
+            UdpMsgUpType::USER_DISCONNECT => 9,
+            UdpMsgUpType::USER_CREATE_WORLD_INSTANCE => 10,
+            UdpMsgUpType::USER_JOIN_WOLD_INSTANCE => 11,
+        };
         Self::enum_descriptor().value_by_index(index)
     }
 }
@@ -449,23 +631,29 @@ impl UdpMsgUpType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0cudp-up.proto\x1a\x0ccommon.proto\"\xf7\x02\n\x08UdpMsgUp\x12\"\n\
-    \x05_type\x18\x01\x20\x01(\x0e2\r.UdpMsgUpTypeR\x04Type\x12,\n\x0bplayer\
-    _move\x18\x02\x20\x01(\x0b2\x06.PointH\0R\nplayerMove\x88\x01\x01\x124\n\
-    \x0fplayer_teleport\x18\x03\x20\x01(\x0b2\x06.PointH\x01R\x0eplayerTelep\
-    ort\x88\x01\x01\x12C\n\x17player_throw_projectile\x18\x04\x20\x01(\x0b2\
-    \x06.PointH\x02R\x15playerThrowProjectile\x88\x01\x01\x12B\n\x17player_t\
-    hrow_frozen_orb\x18\x05\x20\x01(\x0b2\x06.PointH\x03R\x14playerThrowFroz\
-    enOrb\x88\x01\x01B\x0e\n\x0c_player_moveB\x12\n\x10_player_teleportB\x1a\
-    \n\x18_player_throw_projectileB\x1a\n\x18_player_throw_frozen_orb\"8\n\
-    \x0fUdpMsgUpWrapper\x12%\n\x08messages\x18\x01\x20\x03(\x0b2\t.UdpMsgUpR\
-    \x08messages*\xf0\x01\n\x0cUdpMsgUpType\x12\x0e\n\nGAME_PAUSE\x10\0\x12\
-    \x0f\n\x0bPLAYER_INIT\x10\x01\x12\x0f\n\x0bPLAYER_PING\x10\x02\x12\x0f\n\
-    \x0bPLAYER_MOVE\x10\x03\x12\x13\n\x0fPLAYER_TELEPORT\x10\x04\x12\x18\n\
-    \x14PLAYER_TOGGLE_HIDDEN\x10\x05\x12\x1b\n\x17PLAYER_THROW_PROJECTILE\
-    \x10\x06\x12\x1b\n\x17PLAYER_THROW_FROZEN_ORB\x10\x07\x12\x17\n\x13PLAYE\
-    R_MELEE_ATTACK\x10\x08\x12\x1b\n\x17SETTINGS_TOGGLE_ENEMIES\x10\tb\x06pr\
-    oto3\
+    \n\x0cudp-up.proto\x1a\x0ccommon.proto\"/\n\x1dUdpMsgUpUserJoinWorldInst\
+    ance\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\"\xc5\x04\n\x08UdpMsgUp\
+    \x12\"\n\x05_type\x18\x01\x20\x01(\x0e2\r.UdpMsgUpTypeR\x04Type\x12,\n\
+    \x0bplayer_move\x18\x02\x20\x01(\x0b2\x06.PointH\0R\nplayerMove\x88\x01\
+    \x01\x124\n\x0fplayer_teleport\x18\x03\x20\x01(\x0b2\x06.PointH\x01R\x0e\
+    playerTeleport\x88\x01\x01\x12C\n\x17player_throw_projectile\x18\x04\x20\
+    \x01(\x0b2\x06.PointH\x02R\x15playerThrowProjectile\x88\x01\x01\x12B\n\
+    \x17player_throw_frozen_orb\x18\x05\x20\x01(\x0b2\x06.PointH\x03R\x14pla\
+    yerThrowFrozenOrb\x88\x01\x01\x127\n\x15user_connect_username\x18\x06\
+    \x20\x01(\tH\x04R\x13userConnectUsername\x88\x01\x01\x12\\\n\x18user_joi\
+    n_world_instance\x18\x07\x20\x01(\x0b2\x1e.UdpMsgUpUserJoinWorldInstance\
+    H\x05R\x15userJoinWorldInstance\x88\x01\x01B\x0e\n\x0c_player_moveB\x12\
+    \n\x10_player_teleportB\x1a\n\x18_player_throw_projectileB\x1a\n\x18_pla\
+    yer_throw_frozen_orbB\x18\n\x16_user_connect_usernameB\x1b\n\x19_user_jo\
+    in_world_instance\"8\n\x0fUdpMsgUpWrapper\x12%\n\x08messages\x18\x01\x20\
+    \x03(\x0b2\t.UdpMsgUpR\x08messages*\xa9\x02\n\x0cUdpMsgUpType\x12\x0e\n\
+    \nGAME_PAUSE\x10\0\x12\x0f\n\x0bPLAYER_INIT\x10\x01\x12\x0f\n\x0bPLAYER_\
+    MOVE\x10\x03\x12\x13\n\x0fPLAYER_TELEPORT\x10\x04\x12\x1b\n\x17PLAYER_TH\
+    ROW_PROJECTILE\x10\x06\x12\x1b\n\x17PLAYER_THROW_FROZEN_ORB\x10\x07\x12\
+    \x17\n\x13PLAYER_MELEE_ATTACK\x10\x08\x12\x1b\n\x17SETTINGS_TOGGLE_ENEMI\
+    ES\x10\t\x12\x10\n\x0cUSER_CONNECT\x10\n\x12\x13\n\x0fUSER_DISCONNECT\
+    \x10\x0b\x12\x1e\n\x1aUSER_CREATE_WORLD_INSTANCE\x10\x0c\x12\x1b\n\x17US\
+    ER_JOIN_WOLD_INSTANCE\x10\rb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -484,7 +672,8 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::common::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(2);
+            let mut messages = ::std::vec::Vec::with_capacity(3);
+            messages.push(UdpMsgUpUserJoinWorldInstance::generated_message_descriptor_data());
             messages.push(UdpMsgUp::generated_message_descriptor_data());
             messages.push(UdpMsgUpWrapper::generated_message_descriptor_data());
             let mut enums = ::std::vec::Vec::with_capacity(1);

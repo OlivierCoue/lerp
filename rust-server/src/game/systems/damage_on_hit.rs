@@ -3,6 +3,7 @@ use rust_common::collisions::collide_rect_to_rect;
 
 use crate::game::components::prelude::*;
 
+#[allow(clippy::type_complexity)]
 pub fn damage_on_hit(
     mut query_damage_source: Query<
         (

@@ -5,7 +5,6 @@ use crate::utils::cart_to_iso;
 #[derive(GodotClass)]
 #[class(base=Node2D)]
 pub struct PlayNodeDebug {
-    #[base]
     base: Base<Node2D>,
 }
 

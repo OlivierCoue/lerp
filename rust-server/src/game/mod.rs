@@ -1,55 +1,63 @@
+mod area_gen;
 mod bundles;
 mod components;
 mod events;
-pub mod pathfinder;
+mod pathfinder;
 mod resources;
 mod systems;
 
-pub mod user;
+pub mod internal_message;
+pub mod player;
 
 use bevy_ecs::prelude::*;
+use bson::oid::ObjectId;
 use godot::builtin::Vector2;
 use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
 use rust_common::math::get_point_from_points_and_distance;
 use rust_common::proto::udp_down::{
-    UdpMsgDown, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate, UdpMsgDownType,
-    UdpMsgDownWrapper,
+    UdpMsgDown, UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate,
+    UdpMsgDownType, UdpMsgDownWrapper,
 };
-use rust_common::proto::udp_up::{UdpMsgUpType, UdpMsgUpWrapper};
+use rust_common::proto::udp_up::{UdpMsgUp, UdpMsgUpType};
+use tokio::sync::mpsc;
 
-use crate::utils::inc_game_time_millis;
 use std::cmp::max;
+use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::{collections::HashMap, sync::mpsc::Sender};
 
 use crate::game::{
-    bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
-    systems::prelude::*, user::User,
+    bundles::prelude::*, components::prelude::*, events::prelude::*, player::Player,
+    resources::prelude::*, systems::prelude::*,
 };
+
+use self::area_gen::generate_area;
+use self::internal_message::InboundAreaMessage;
 
 const TICK_RATE_MILLIS: u128 = 30;
 const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
 const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
-pub struct Game<'a> {
-    users: HashMap<u32, User<'a>>,
-    users_curr_id: u32,
-    peer_id_user_id_map: HashMap<u16, u32>,
-    tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
+pub struct Game {
+    players: HashMap<ObjectId, Player>,
+    peer_id_player_id_map: HashMap<u16, ObjectId>,
+    tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
-    clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
-    world: World,
-    world_schedule: Schedule,
+    internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
+    received_udp_messages: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+    ecs_world: World,
+    ecs_world_schedule: Schedule,
 }
 
-impl<'a> Game<'a> {
+impl Game {
     pub fn new(
-        tx_enet_sender: &'a Sender<(u16, UdpMsgDownWrapper)>,
-        clients_msg: &'a Mutex<VecDeque<(u16, UdpMsgUpWrapper)>>,
-    ) -> Game<'a> {
+        tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
+        internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
+        received_udp_messages: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+    ) -> Game {
+        let area_gen = generate_area();
         let mut world = World::new();
 
         world.init_resource::<Events<UpdateVelocityTarget>>();
@@ -60,7 +68,14 @@ impl<'a> Game<'a> {
         world.init_resource::<Events<VelocityReachedTarget>>();
         world.insert_resource(Time::new());
         world.insert_resource(EnemiesState::new());
-        world.insert_resource(PathfinderState::new());
+        let area_config = AreaConfig {
+            area_width: area_gen.width as f32 * 60.0,
+            area_height: area_gen.height as f32 * 60.0,
+            walkable_x: area_gen.walkable_x,
+            walkable_y: area_gen.walkable_y,
+        };
+        world.insert_resource(PathfinderState::new(&area_config));
+        world.insert_resource(area_config);
 
         let mut world_schedule = Schedule::default();
 
@@ -125,33 +140,51 @@ impl<'a> Game<'a> {
         world.spawn(wall3);
 
         Game {
-            users: HashMap::new(),
-            peer_id_user_id_map: HashMap::new(),
-            users_curr_id: 0,
-            tx_enet_sender,
+            players: HashMap::new(),
+            peer_id_player_id_map: HashMap::new(),
+            tx_udp_sender,
             paused: false,
-            clients_msg,
-            world,
-            world_schedule,
+            internal_messages_in,
+            received_udp_messages,
+            ecs_world: world,
+            ecs_world_schedule: world_schedule,
         }
     }
 
-    fn add_user(&mut self, peer_id: u16, udp_tunnel: &'a Sender<(u16, UdpMsgDownWrapper)>) {
-        self.users_curr_id += 1;
+    fn add_player(
+        &mut self,
+        user_id: ObjectId,
+        peer_id: u16,
+        udp_tunnel: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
+    ) {
+        let player_entity = self.ecs_world.spawn(PlayerBundle::new()).id();
 
-        let player = PlayerBundle::new();
-        let player_entity = self.world.spawn(player).id();
+        let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
+        let new_player = Player::new(user_id, peer_id, udp_tunnel, player_entity);
+        new_player.send_message(UdpMsgDownWrapper {
+            messages: vec![UdpMsgDown {
+                _type: UdpMsgDownType::AREA_INIT.into(),
+                area_init: Some(UdpMsgDownAreaInit {
+                    width: area_config.area_width,
+                    height: area_config.area_height,
+                    walkable_x: area_config.walkable_x.to_vec(),
+                    walkable_y: area_config.walkable_y.to_vec(),
+                    ..Default::default()
+                })
+                .into(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
+        self.players.insert(user_id, new_player);
+        self.peer_id_player_id_map.insert(peer_id, user_id);
 
-        let new_user = User::new(self.users_curr_id, peer_id, udp_tunnel, player_entity);
-        self.users.insert(self.users_curr_id, new_user);
-        self.peer_id_user_id_map.insert(peer_id, self.users_curr_id);
-
-        println!("Created new Player({})", self.users_curr_id);
+        println!("Created new Player({})", user_id);
     }
 
-    fn delete_user(&mut self, user_id: u32) {
-        if let Some(removed_user) = self.users.remove(&user_id) {
-            self.world.despawn(removed_user.player_entity);
+    fn delete_player(&mut self, player_id: ObjectId) {
+        if let Some(removed_player) = self.players.remove(&player_id) {
+            self.ecs_world.despawn(removed_player.player_entity);
         }
     }
 
@@ -168,6 +201,7 @@ impl<'a> Game<'a> {
             let tick_duration = get_timestamp_nanos() - started_at;
             if tick_duration < TICK_RATE_NANOS {
                 let time_to_wait = max(TICK_RATE_NANOS - tick_duration, 0);
+                // tokio::time::sleep(Duration::from_nanos(time_to_wait as u64)).await;
                 spin_sleep::sleep(Duration::from_nanos(time_to_wait as u64));
             } else {
                 println!(
@@ -175,29 +209,36 @@ impl<'a> Game<'a> {
                     tick_duration, TICK_RATE_NANOS
                 );
             }
-            self.world.get_resource_mut::<Time>().unwrap().delta =
+            self.ecs_world.get_resource_mut::<Time>().unwrap().delta =
                 (get_timestamp_nanos() - started_at) as f32 / 1000000000.0;
         }
     }
 
-    pub fn tick(&mut self, _: bool) {
-        let mut users_to_delete_ids = Vec::new();
-        for (user_id, user) in self.users.iter_mut() {
-            if user.should_be_deleted() {
-                users_to_delete_ids.push(*user_id);
-            }
-        }
-
-        for user_id in users_to_delete_ids {
-            self.delete_user(user_id);
-        }
-
-        if let Ok(mut clients_messages) = self.clients_msg.lock() {
-            while let Some((from_enet_peer_id, udp_msg_up)) = clients_messages.pop_front() {
-                self.handle_upd_msg_up(&from_enet_peer_id, &udp_msg_up);
+    fn tick(&mut self, _: bool) {
+        let mut internal_messages = VecDeque::new();
+        if let Ok(mut received_udp_messages) = self.internal_messages_in.lock() {
+            while let Some(message) = received_udp_messages.pop_front() {
+                internal_messages.push_back(message);
             }
         } else {
-            println!("Failed to get clients_messages lock");
+            println!("Failed to get internal_messages_in lock");
+        }
+
+        while let Some(message) = internal_messages.pop_front() {
+            self.handle_internal_message(message);
+        }
+
+        let mut udp_messages = VecDeque::new();
+        if let Ok(mut received_udp_messages) = self.received_udp_messages.lock() {
+            while let Some((from_udp_peer_id, udp_msg_up)) = received_udp_messages.pop_front() {
+                udp_messages.push_back((from_udp_peer_id, udp_msg_up));
+            }
+        } else {
+            println!("Failed to get received_udp_messages lock");
+        }
+
+        while let Some((from_udp_peer_id, udp_msg_up)) = udp_messages.pop_front() {
+            self.handle_upd_msg_up(from_udp_peer_id, udp_msg_up);
         }
 
         if self.paused {
@@ -206,33 +247,36 @@ impl<'a> Game<'a> {
 
         let mut entities_to_despawn = Vec::new();
         for (entity_id, game_entity) in self
-            .world
+            .ecs_world
             .query::<(Entity, &GameEntity)>()
-            .iter(&self.world)
+            .iter(&self.ecs_world)
         {
             if game_entity.pending_despwan {
                 entities_to_despawn.push(entity_id);
             }
         }
         for entity_to_despawn in entities_to_despawn {
-            self.world.despawn(entity_to_despawn);
+            self.ecs_world.despawn(entity_to_despawn);
         }
 
-        self.world_schedule.run(&mut self.world);
-        self.world.clear_trackers();
-        inc_game_time_millis(GAME_TIME_TICK_DURATION_MILLIS);
+        self.ecs_world_schedule.run(&mut self.ecs_world);
+        self.ecs_world.clear_trackers();
+        self.ecs_world
+            .get_resource_mut::<Time>()
+            .unwrap()
+            .inc_current_millis();
 
         let mut player_udp_msg_down_wrapper_map = HashMap::new();
 
         for (entity_id, game_entity) in self
-            .world
+            .ecs_world
             .query::<(Entity, &GameEntity)>()
-            .iter(&self.world)
+            .iter(&self.ecs_world)
         {
-            let entity_ref = self.world.entity(entity_id);
+            let entity_ref = self.ecs_world.entity(entity_id);
 
-            for user_mut in self.users.values_mut() {
-                let opt_last_revision = user_mut
+            for player_mut in self.players.values_mut() {
+                let opt_last_revision = player_mut
                     .entity_id_revision_map
                     .insert(game_entity.id, game_entity.revision);
                 let require_update = match opt_last_revision {
@@ -242,7 +286,7 @@ impl<'a> Game<'a> {
 
                 if require_update {
                     let udp_msg_down_wrapper = player_udp_msg_down_wrapper_map
-                        .entry(user_mut.id)
+                        .entry(player_mut.id)
                         .or_insert(UdpMsgDownWrapper {
                             messages: Vec::new(),
                             ..Default::default()
@@ -302,7 +346,7 @@ impl<'a> Game<'a> {
                                 collider_mvt_rect: collider_mvt_rect.into(),
                                 velocity_speed,
                                 health_current,
-                                is_self: entity_id == user_mut.player_entity,
+                                is_self: entity_id == player_mut.player_entity,
                                 cast: cast.into(),
                                 ..Default::default()
                             }))
@@ -314,148 +358,132 @@ impl<'a> Game<'a> {
             }
         }
 
-        for user in self.users.values() {
-            if let Some(udp_msg_down_wrapper) = player_udp_msg_down_wrapper_map.remove(&user.id) {
+        for player in self.players.values() {
+            if let Some(udp_msg_down_wrapper) = player_udp_msg_down_wrapper_map.remove(&player.id) {
                 if !udp_msg_down_wrapper.messages.is_empty() {
-                    user.send_message(udp_msg_down_wrapper)
+                    player.send_message(udp_msg_down_wrapper);
                 }
             }
         }
     }
 
-    pub fn handle_upd_msg_up(
-        &mut self,
-        from_enet_peer_id: &u16,
-        udp_msg_up_wrapper: &UdpMsgUpWrapper,
-    ) {
-        let from_actor_id = match self.peer_id_user_id_map.get(from_enet_peer_id) {
-            None => {
-                println!("New message from unknown addr {from_enet_peer_id}");
-                999
-            }
-            Some(player_id) => *player_id,
+    fn handle_internal_message(&mut self, message: InboundAreaMessage) {
+        match message {
+            InboundAreaMessage::PlayerInit(payload) => self.add_player(
+                payload.user_id,
+                payload.udp_peer_id,
+                self.tx_udp_sender.clone(),
+            ),
+        }
+    }
+
+    fn handle_upd_msg_up(&mut self, from_udp_peer_id: u16, udp_msg_up: UdpMsgUp) {
+        let Some(from_player_id) = self.peer_id_player_id_map.get(&from_udp_peer_id) else {
+            return;
         };
 
-        for udp_msg_up in udp_msg_up_wrapper.messages.iter() {
-            let user = self.users.get_mut(&from_actor_id);
+        let Some(player) = self.players.get_mut(from_player_id) else {
+            return;
+        };
 
-            match udp_msg_up._type.unwrap() {
-                UdpMsgUpType::GAME_PAUSE => self.paused = !self.paused,
-                UdpMsgUpType::PLAYER_INIT => {
-                    if user.is_none() {
-                        self.add_user(*from_enet_peer_id, self.tx_enet_sender)
-                    };
+        match udp_msg_up._type.unwrap() {
+            UdpMsgUpType::GAME_PAUSE => self.paused = !self.paused,
+            UdpMsgUpType::PLAYER_MOVE => {
+                if let Some(ok_coord) = &udp_msg_up.player_move.0 {
+                    let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
+                    self.ecs_world
+                        .send_event(UpdateVelocityTargetWithPathFinder {
+                            entity: player.player_entity,
+                            target: world_bounded_vector2(
+                                area_config,
+                                Vector2::new(ok_coord.x, ok_coord.y),
+                            ),
+                        });
                 }
-                UdpMsgUpType::PLAYER_MOVE => {
-                    if let Some(ok_user) = user {
-                        if let Some(ok_coord) = &udp_msg_up.player_move.0 {
-                            self.world.send_event(UpdateVelocityTargetWithPathFinder {
-                                entity: ok_user.player_entity,
-                                target: world_bounded_vector2(Vector2::new(ok_coord.x, ok_coord.y)),
-                            });
-                        }
-                    };
-                }
-                UdpMsgUpType::PLAYER_TELEPORT => {
-                    if let Some(ok_user) = user {
-                        if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
-                            self.world.send_event(UpdatePositionCurrent {
-                                entity: ok_user.player_entity,
-                                current: world_bounded_vector2(Vector2::new(
-                                    ok_coord.x, ok_coord.y,
-                                )),
-                                force_update_velocity_target: true,
-                            });
-                        }
-                    };
-                }
-                UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => {
-                    if let Some(ok_user) = user {
-                        if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
-                            let player_position =
-                                self.world.get::<Position>(ok_user.player_entity).unwrap();
-                            let player_team =
-                                self.world.get::<Team>(ok_user.player_entity).unwrap();
-                            self.world.send_event(CastSpell {
-                                from_entity: ok_user.player_entity,
-                                spell: Spell::FrozenOrb(
-                                    ok_user.player_entity,
-                                    player_position.current,
-                                    get_point_from_points_and_distance(
-                                        player_position.current,
-                                        Vector2::new(ok_coord.x, ok_coord.y),
-                                        600.0,
-                                    ),
-                                    *player_team,
-                                ),
-                            });
-                        }
-                    };
-                }
-                UdpMsgUpType::PLAYER_THROW_PROJECTILE => {
-                    if let Some(ok_user) = user {
-                        if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
-                            let player_position =
-                                self.world.get::<Position>(ok_user.player_entity).unwrap();
-                            let player_team =
-                                self.world.get::<Team>(ok_user.player_entity).unwrap();
-                            self.world.send_event(CastSpell {
-                                from_entity: ok_user.player_entity,
-                                spell: Spell::Projectile(
-                                    ok_user.player_entity,
-                                    player_position.current,
-                                    get_point_from_points_and_distance(
-                                        player_position.current,
-                                        Vector2::new(ok_coord.x, ok_coord.y),
-                                        600.0,
-                                    ),
-                                    *player_team,
-                                ),
-                            });
-                        }
-                    };
-                }
-                UdpMsgUpType::PLAYER_MELEE_ATTACK => {
-                    if let Some(ok_user) = user {
-                        if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
-                            let player_position =
-                                self.world.get::<Position>(ok_user.player_entity).unwrap();
-                            let player_team =
-                                self.world.get::<Team>(ok_user.player_entity).unwrap();
-                            self.world.send_event(CastSpell {
-                                from_entity: ok_user.player_entity,
-                                spell: Spell::MeleeAttack(
-                                    ok_user.player_entity,
-                                    get_point_from_points_and_distance(
-                                        player_position.current,
-                                        Vector2::new(ok_coord.x, ok_coord.y),
-                                        40.0,
-                                    ),
-                                    *player_team,
-                                ),
-                            });
-                        }
-                    };
-                }
-                UdpMsgUpType::PLAYER_PING => {
-                    if let Some(ok_player) = user {
-                        ok_player.user_ping()
-                    }
-                }
-                UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES => {
-                    let mut enemmies_state = self.world.get_resource_mut::<EnemiesState>().unwrap();
-                    enemmies_state.toggle_enable();
-                }
-                // UdpMsgUpType::PLAYER_TOGGLE_HIDDEN => {
-                //     if let Some(ok_user) = user {
-                //         let opt_player = self.game_entity_manager.get_player(&ok_user.player_id);
-                //         if let Some(player) = opt_player {
-                //             player.user_toggle_hidden();
-                //         }
-                //     }
-                // }
-                _ => println!("Not handled event"),
             }
+            UdpMsgUpType::PLAYER_TELEPORT => {
+                if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
+                    let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
+                    self.ecs_world.send_event(UpdatePositionCurrent {
+                        entity: player.player_entity,
+                        current: world_bounded_vector2(
+                            area_config,
+                            Vector2::new(ok_coord.x, ok_coord.y),
+                        ),
+                        force_update_velocity_target: true,
+                    });
+                }
+            }
+            UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+                    let player_position = self
+                        .ecs_world
+                        .get::<Position>(player.player_entity)
+                        .unwrap();
+                    let player_team = self.ecs_world.get::<Team>(player.player_entity).unwrap();
+                    self.ecs_world.send_event(CastSpell {
+                        from_entity: player.player_entity,
+                        spell: Spell::FrozenOrb(
+                            player.player_entity,
+                            player_position.current,
+                            get_point_from_points_and_distance(
+                                player_position.current,
+                                Vector2::new(ok_coord.x, ok_coord.y),
+                                600.0,
+                            ),
+                            *player_team,
+                        ),
+                    });
+                }
+            }
+            UdpMsgUpType::PLAYER_THROW_PROJECTILE => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
+                    let player_position = self
+                        .ecs_world
+                        .get::<Position>(player.player_entity)
+                        .unwrap();
+                    let player_team = self.ecs_world.get::<Team>(player.player_entity).unwrap();
+                    self.ecs_world.send_event(CastSpell {
+                        from_entity: player.player_entity,
+                        spell: Spell::Projectile(
+                            player.player_entity,
+                            player_position.current,
+                            get_point_from_points_and_distance(
+                                player_position.current,
+                                Vector2::new(ok_coord.x, ok_coord.y),
+                                600.0,
+                            ),
+                            *player_team,
+                        ),
+                    });
+                }
+            }
+            UdpMsgUpType::PLAYER_MELEE_ATTACK => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+                    let player_position = self
+                        .ecs_world
+                        .get::<Position>(player.player_entity)
+                        .unwrap();
+                    let player_team = self.ecs_world.get::<Team>(player.player_entity).unwrap();
+                    self.ecs_world.send_event(CastSpell {
+                        from_entity: player.player_entity,
+                        spell: Spell::MeleeAttack(
+                            player.player_entity,
+                            get_point_from_points_and_distance(
+                                player_position.current,
+                                Vector2::new(ok_coord.x, ok_coord.y),
+                                40.0,
+                            ),
+                            *player_team,
+                        ),
+                    });
+                }
+            }
+            UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES => {
+                let mut enemmies_state = self.ecs_world.get_resource_mut::<EnemiesState>().unwrap();
+                enemmies_state.toggle_enable();
+            }
+            _ => println!("Not handled event"),
         }
     }
 }

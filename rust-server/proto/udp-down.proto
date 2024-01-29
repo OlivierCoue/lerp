@@ -4,6 +4,12 @@ import "common.proto";
 enum UdpMsgDownType {
     GAME_ENTITY_UPDATE = 0;
     GAME_ENTITY_REMOVED = 1;
+    USER_CONNECT_SUCCESS = 3;
+    USER_CONNECT_FAILED = 4;
+    USER_DISCONNECT_SUCCESS = 5;
+    USER_CREATE_WORDL_INSTANCE_SUCCESS = 6;
+    USER_JOIN_WORDL_INSTANCE_SUCCESS = 7;
+    AREA_INIT = 8;
 }
 
 message UdpMsgDownGameEntityUpdate {
@@ -29,10 +35,29 @@ message UdpMsgDownGameEntityRemoved {
     uint32 id = 1;
 }
 
+message UdpMsgDownUserConnectFailed {
+    string error_message = 1;
+}
+
+message UdpMsgDownUserCreateWorldInstanceSuccess {
+    string id = 1;
+}
+
+message UdpMsgDownAreaInit {
+    float width = 1;
+    float height = 2;
+    repeated uint32 walkable_x = 3;
+    repeated uint32 walkable_y = 4;
+}
+
+
 message UdpMsgDown {
     UdpMsgDownType _type = 1;
     optional UdpMsgDownGameEntityUpdate game_entity_update = 2;
     optional UdpMsgDownGameEntityRemoved game_entity_removed = 3;
+    optional UdpMsgDownUserConnectFailed user_connect_failed = 4;
+    optional UdpMsgDownUserCreateWorldInstanceSuccess user_create_world_instance_success = 5;
+    optional UdpMsgDownAreaInit area_init = 6;
 }
 
 message UdpMsgDownWrapper {

@@ -1,25 +1,39 @@
-use godot::{engine::InputEvent, prelude::*};
-use rust_common::proto::{
-    common::Point,
-    udp_down::UdpMsgDownType,
-    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
-};
+use godot::{obj::WithBaseField, prelude::*};
 
-use crate::{network::Network, play_node::PlayNode, utils::iso_to_cart};
+use crate::{
+    auth::auth_node::AuthNode, lobby::lobby_node::LobbyNode, network::prelude::*,
+    play::prelude::PlayNode,
+};
 
 pub const DEBUG: bool = false;
 
-const SEND_INPUT_TICK_SEC: f64 = 0.1;
+pub const PATH_ROOT: &str = "/root/Root";
+
+pub const NODE_NETWORK: &str = "NetworkManager";
+pub const PATH_NETWORK: &str = "/root/Root/NetworkManager";
+
+pub const NODE_PLAY: &str = "Play";
+pub const PATH_PLAY: &str = "/root/Root/Play";
+
+pub const NODE_AUTH: &str = "Auth";
+pub const PATH_AUTH: &str = "/root/Root/Auth";
+
+pub const NODE_LOBBY: &str = "Lobby";
+pub const PATH_LOBBY: &str = "/root/Root/Lobby";
+
+#[derive(Clone)]
+pub enum Scenes {
+    Auth,
+    Lobby,
+    // Play(world_instance_id)
+    Play(String),
+}
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
 pub struct Root {
-    #[base]
     base: Base<Node2D>,
-    time_since_last_input_sent: f64,
-
-    network: Option<Gd<Network>>,
-    play_node: Option<Gd<PlayNode>>,
+    current_scene: Scenes,
 }
 
 #[godot_api]
@@ -29,194 +43,59 @@ impl INode2D for Root {
 
         Self {
             base,
-            time_since_last_input_sent: 0.0,
-            network: None,
-            play_node: None,
+            current_scene: Scenes::Auth,
         }
     }
 
     fn ready(&mut self) {
-        let mut network = Gd::<Network>::from_init_fn(Network::init);
-        network.set_name("Network".into());
-        self.network = Some(network.clone());
+        let mut network: Gd<NetworkManager> =
+            Gd::<NetworkManager>::from_init_fn(NetworkManager::init);
+        network.set_name(NODE_NETWORK.into());
         self.base_mut().add_child(network.upcast());
 
-        let play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(PlayNode::init);
-        self.play_node = Some(play_node.clone());
-        self.base_mut().add_child(play_node.upcast());
-
-        self.base_mut().set_y_sort_enabled(true);
-    }
-
-    fn process(&mut self, delta: f64) {
-        if let Some(network) = &mut self.network {
-            if let Ok(mut udp_msg_down_wrappers) = network.bind_mut().udp_msg_down_wrappers.lock() {
-                while let Some(udp_msg_down_wrapper) = udp_msg_down_wrappers.pop_front() {
-                    if let Some(play_node) = &mut self.play_node {
-                        for udp_msg_down in udp_msg_down_wrapper.messages {
-                            match udp_msg_down._type.unwrap() {
-                                UdpMsgDownType::GAME_ENTITY_UPDATE => {
-                                    if let Some(entity_update) = udp_msg_down.game_entity_update.0 {
-                                        play_node.bind_mut().update_entity(&entity_update);
-                                    }
-                                }
-                                UdpMsgDownType::GAME_ENTITY_REMOVED => {
-                                    if let Some(entity_removed) = udp_msg_down.game_entity_removed.0
-                                    {
-                                        play_node.bind_mut().remove_entity(&entity_removed);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        self.time_since_last_input_sent += delta;
-        if self.time_since_last_input_sent >= SEND_INPUT_TICK_SEC {
-            self.time_since_last_input_sent = 0.0;
-            let mut actions = Vec::new();
-
-            if Input::singleton().is_action_pressed("key_e".into()) {
-                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-                self.base_mut()
-                    .emit_signal("player_throw_fireball_start".into(), &[]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
-                    player_throw_frozen_orb: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
-                    ..Default::default()
-                });
-            }
-
-            if Input::singleton().is_action_pressed("right_mouse_button".into()) {
-                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-                self.base_mut()
-                    .emit_signal("player_throw_fireball_start".into(), &[]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_MELEE_ATTACK.into(),
-                    player_throw_frozen_orb: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
-                    ..Default::default()
-                });
-            }
-
-            if actions.is_empty()
-                && Input::singleton().is_action_pressed("left_mouse_button".into())
-            {
-                let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-                self.base_mut()
-                    .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_MOVE.into(),
-                    player_move: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
-                    ..Default::default()
-                });
-            }
-
-            if let Some(network) = &self.network {
-                if !actions.is_empty() {
-                    network.bind().send(UdpMsgUpWrapper {
-                        messages: actions,
-                        ..Default::default()
-                    })
-                }
-            }
-        }
-    }
-
-    fn input(&mut self, event: Gd<InputEvent>) {
-        if event.is_action_pressed("left_mouse_button".into()) {
-            godot_print!("Left button pressed");
-            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-            self.base_mut()
-                .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
-            if let Some(network) = &self.network {
-                network.bind().send(UdpMsgUpWrapper {
-                    messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::PLAYER_MOVE.into(),
-                        player_move: Some(Point {
-                            x: mouse_position.x,
-                            y: mouse_position.y,
-                            ..Default::default()
-                        })
-                        .into(),
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                })
-            }
-        } else if event.is_action_pressed("key_e".into()) {
-            godot_print!("Key E pressed");
-            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-            self.base_mut()
-                .emit_signal("player_throw_fireball_start".into(), &[]);
-            if let Some(network) = &self.network {
-                network.bind().send(UdpMsgUpWrapper {
-                    messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
-                        player_throw_frozen_orb: Some(Point {
-                            x: mouse_position.x,
-                            y: mouse_position.y,
-                            ..Default::default()
-                        })
-                        .into(),
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                })
-            }
-        } else if event.is_action_pressed("key_r".into()) {
-            godot_print!("Key R pressed");
-            let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
-            if let Some(network) = &self.network {
-                network.bind().send(UdpMsgUpWrapper {
-                    messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::PLAYER_TELEPORT.into(),
-                        player_teleport: Some(Point {
-                            x: mouse_position.x,
-                            y: mouse_position.y,
-                            ..Default::default()
-                        })
-                        .into(),
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                })
-            }
-        } else if event.is_action_pressed("key_n".into()) {
-            godot_print!("Key N pressed");
-            if let Some(network) = &self.network {
-                network.bind().send(UdpMsgUpWrapper {
-                    messages: vec![UdpMsgUp {
-                        _type: UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                })
-            }
-        }
+        let mut auth_node: Gd<AuthNode> = Gd::<AuthNode>::from_init_fn(AuthNode::init);
+        auth_node.set_name(NODE_AUTH.into());
+        self.base_mut().add_child(auth_node.upcast());
     }
 }
 
-#[godot_api]
 impl Root {
-    #[signal]
-    fn player_move_start();
-    #[signal]
-    fn player_throw_fireball_start();
+    pub fn change_scene(&mut self, scene: Scenes) {
+        match &self.current_scene {
+            Scenes::Auth => {
+                let auth_node = self.base().get_node_as::<AuthNode>(PATH_AUTH);
+                self.base_mut().remove_child(auth_node.upcast());
+            }
+            Scenes::Lobby => {
+                let lobby_node = self.base().get_node_as::<LobbyNode>(PATH_LOBBY);
+                self.base_mut().remove_child(lobby_node.upcast());
+            }
+            Scenes::Play(_) => {
+                let play_node = self.base().get_node_as::<PlayNode>(PATH_PLAY);
+                self.base_mut().remove_child(play_node.upcast());
+            }
+        }
+
+        match &scene {
+            Scenes::Auth => {
+                let mut auth_node: Gd<AuthNode> = Gd::<AuthNode>::from_init_fn(AuthNode::init);
+                auth_node.set_name(NODE_AUTH.into());
+                self.base_mut().add_child(auth_node.upcast());
+            }
+            Scenes::Lobby => {
+                let mut lobby_node: Gd<LobbyNode> = Gd::<LobbyNode>::from_init_fn(LobbyNode::init);
+                lobby_node.set_name(NODE_LOBBY.into());
+                self.base_mut().add_child(lobby_node.upcast());
+            }
+            Scenes::Play(world_instance_id) => {
+                let mut play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(PlayNode::init);
+                play_node.set_name(NODE_PLAY.into());
+                play_node
+                    .bind_mut()
+                    .init_state(String::from(world_instance_id));
+                self.base_mut().add_child(play_node.upcast());
+            }
+        }
+        self.current_scene = scene;
+    }
 }

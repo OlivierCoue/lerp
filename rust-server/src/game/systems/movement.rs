@@ -2,50 +2,42 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::collisions::collide_rect_to_rect;
 
-use crate::{
-    game::{components::prelude::*, events::prelude::*, resources::prelude::*},
-    utils::get_game_time,
-};
+use crate::game::{components::prelude::*, events::prelude::*, resources::prelude::*};
 
-pub const GRID_WIDTH: u32 = 2048;
-pub const GRID_HEIGHT: u32 = 2048;
-pub const GRID_SIZE_X_MIN: f32 = 0.0;
-pub const GRID_SIZE_X_MAX: f32 = 2048.0;
-pub const GRID_SIZE_Y_MIN: f32 = 0.0;
-pub const GRID_SIZE_Y_MAX: f32 = 2048.0;
-
-fn wolrd_bounded_x(x: f32) -> f32 {
-    f32::min(f32::max(GRID_SIZE_X_MIN, x), GRID_SIZE_X_MAX)
+fn wolrd_bounded_x(area_config: &AreaConfig, x: f32) -> f32 {
+    f32::min(f32::max(0.0, x), area_config.area_width)
 }
 
-fn world_bounded_y(y: f32) -> f32 {
-    f32::min(f32::max(GRID_SIZE_Y_MIN, y), GRID_SIZE_Y_MAX)
+fn world_bounded_y(area_config: &AreaConfig, y: f32) -> f32 {
+    f32::min(f32::max(0.0, y), area_config.area_height)
 }
 
-pub fn world_bounded_vector2(v: Vector2) -> Vector2 {
+pub fn world_bounded_vector2(area_config: &AreaConfig, v: Vector2) -> Vector2 {
     Vector2 {
-        x: wolrd_bounded_x(v.x),
-        y: world_bounded_y(v.y),
+        x: wolrd_bounded_x(area_config, v.x),
+        y: world_bounded_y(area_config, v.y),
     }
 }
 
-fn is_oob(position: &Vector2) -> bool {
-    position.x > GRID_SIZE_X_MAX
-        || position.x < GRID_SIZE_X_MIN
-        || position.y > GRID_SIZE_Y_MAX
-        || position.y < GRID_SIZE_Y_MIN
+fn is_oob(area_config: &AreaConfig, position: &Vector2) -> bool {
+    position.x > area_config.area_width
+        || position.x < 0.0
+        || position.y > area_config.area_height
+        || position.y < 0.0
 }
 
 pub fn update_pathfinder_state(
     query: Query<(Entity, &Position, &ColliderMvt)>,
     mut pathfinder_state: ResMut<PathfinderState>,
+    area_config: Res<AreaConfig>,
+    time: Res<Time>,
 ) {
-    let current_game_time = get_game_time();
+    let current_game_time = time.current_millis;
 
     if pathfinder_state.last_update_at_millis + pathfinder_state.update_every_millis
         < current_game_time
     {
-        pathfinder_state.reset();
+        pathfinder_state.reset(&area_config, &time);
         for (entity, position, collider_mvt) in &query {
             pathfinder_state.block_nodes_in_rect(entity, &position.current, &collider_mvt.rect)
         }
@@ -67,13 +59,14 @@ pub fn movement(
     mut writer_update_velocity_target: EventWriter<UpdateVelocityTarget>,
     mut writer: EventWriter<VelocityReachedTarget>,
     time: Res<Time>,
+    area_config: Res<AreaConfig>,
 ) {
     for (entity, game_entity, position, opt_velocity, opt_collider_mvt, opt_cast) in
         &query_entities_to_move
     {
         if let Some(mut velocity) = opt_velocity {
             if let Some(target) = velocity.get_target() {
-                if is_oob(&position.current) && !game_entity.pending_despwan {
+                if is_oob(&area_config, &position.current) && !game_entity.pending_despwan {
                     let mut game_entity_mut = unsafe {
                         query_entities_to_move
                             .get_component_unchecked_mut::<GameEntity>(entity)
@@ -224,10 +217,11 @@ pub fn inc_revision_removed_component(
 pub fn on_update_velocity_target(
     mut reader: EventReader<UpdateVelocityTarget>,
     mut query: Query<&mut Velocity>,
+    area_config: Res<AreaConfig>,
 ) {
     for event in reader.read() {
         if let Ok(mut velocity) = query.get_mut(event.entity) {
-            velocity.set_target(event.target);
+            velocity.set_target(&area_config, event.target);
         }
     }
 }
@@ -260,10 +254,11 @@ pub fn on_update_velocity_target_with_pathfinder(
 pub fn on_add_velocity_target(
     mut reader: EventReader<AddVelocityTarget>,
     mut query: Query<&mut Velocity>,
+    area_config: Res<AreaConfig>,
 ) {
     for event in reader.read() {
         if let Ok(mut velocity) = query.get_mut(event.entity) {
-            velocity.add_target(event.target);
+            velocity.add_target(&area_config, event.target);
         }
     }
 }
@@ -272,6 +267,7 @@ pub fn on_update_position_current(
     mut reader: EventReader<UpdatePositionCurrent>,
     mut query: Query<(Entity, &mut Position, Option<&mut Velocity>)>,
     mut writer: EventWriter<VelocityReachedTarget>,
+    area_config: Res<AreaConfig>,
 ) {
     for event in reader.read() {
         if let Ok((entity, mut position, opt_velocity)) = query.get_mut(event.entity) {
@@ -279,7 +275,7 @@ pub fn on_update_position_current(
 
             if let Some(mut velocity) = opt_velocity {
                 if event.force_update_velocity_target {
-                    velocity.set_target(None);
+                    velocity.set_target(&area_config, None);
                 }
 
                 if let Some(target) = velocity.get_target() {

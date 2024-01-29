@@ -10,7 +10,6 @@ use crate::utils::cart_to_iso;
 #[class(base=Sprite2D)]
 pub struct GameServerEntity {
     position_init: Vector2,
-    #[base]
     base: Base<Sprite2D>,
 }
 
