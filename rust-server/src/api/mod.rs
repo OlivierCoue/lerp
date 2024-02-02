@@ -1,23 +1,25 @@
-mod service;
+mod resolver;
+mod service_area;
+mod service_user;
 mod types;
 
-use self::service::ApiService;
+use self::resolver::ApiResolver;
 use self::types::*;
 
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::UdpMsgUpWrapper};
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
 pub struct Api {
     mongo_client: mongodb::Client,
-    rx_udp_user_receiver: mpsc::Receiver<(u16, UdpMsgUpWrapper)>,
+    rx_udp_user_receiver: mpsc::Receiver<(u16, MsgUpWrapper)>,
     tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     connections_state: Arc<Mutex<ConnectionsState>>,
 }
 impl Api {
     pub fn new(
         mongo_client: mongodb::Client,
-        rx_udp_user_receiver: mpsc::Receiver<(u16, UdpMsgUpWrapper)>,
+        rx_udp_user_receiver: mpsc::Receiver<(u16, MsgUpWrapper)>,
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     ) -> Self {
         Self {
@@ -34,7 +36,7 @@ impl Api {
             let tx_udp_sender = self.tx_udp_sender.clone();
             let connections_state = self.connections_state.clone();
             tokio::task::spawn(async move {
-                ApiService::handle_msg_up_wrapper(
+                ApiResolver::handle_msg_up_wrapper(
                     mongo_client,
                     tx_udp_sender,
                     udp_peer_id,

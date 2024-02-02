@@ -6,7 +6,7 @@ use godot::{
 };
 use rust_common::proto::{
     udp_down::UdpMsgDownType,
-    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
+    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
 };
 
 use crate::{
@@ -106,9 +106,9 @@ impl INode2D for LobbyNode {
 impl LobbyNode {
     #[func]
     fn on_button_create_game_pressed(&mut self) {
-        self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-            messages: vec![UdpMsgUp {
-                _type: UdpMsgUpType::USER_CREATE_WORLD_INSTANCE.into(),
+        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+            messages: vec![MsgUp {
+                _type: MsgUpType::USER_CREATE_WORLD_INSTANCE.into(),
                 ..Default::default()
             }],
             ..Default::default()
@@ -129,9 +129,9 @@ impl LobbyNode {
     }
     #[func]
     fn on_button_logout_pressed(&mut self) {
-        self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-            messages: vec![UdpMsgUp {
-                _type: UdpMsgUpType::USER_DISCONNECT.into(),
+        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+            messages: vec![MsgUp {
+                _type: MsgUpType::USER_DISCONNECT.into(),
                 ..Default::default()
             }],
             ..Default::default()

@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::game::Spell;
+use crate::game::ecs::components::prelude::*;
 
 #[derive(Event)]
 pub struct UpdateVelocityTarget {

@@ -4,7 +4,7 @@ use std::{
 };
 
 use bson::oid::ObjectId;
-use rust_common::proto::udp_up::UdpMsgUp;
+use rust_common::proto::udp_up::MsgUp;
 
 use crate::game::internal_message::InboundAreaMessage;
 
@@ -28,7 +28,7 @@ impl User {
 pub struct WorldInstance {
     pub _id: ObjectId,
     pub user_ids: Vec<ObjectId>,
-    pub udp_msg_up_dequeue: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+    pub udp_msg_up_dequeue: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     pub received_internal_messages: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
 }
 

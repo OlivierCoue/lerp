@@ -10,7 +10,7 @@ use std::{
 
 use crate::network::prelude::*;
 use godot::prelude::*;
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::UdpMsgUpWrapper};
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 
 pub trait NetworkListener {
     fn on_message(&mut self, udp_msg_down_wrapper: UdpMsgDownWrapper);
@@ -22,7 +22,7 @@ pub struct NetworkManager {
     base: Base<Node>,
 
     pub udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
-    pub tx_enet_sender: Sender<UdpMsgUpWrapper>,
+    pub tx_enet_sender: Sender<MsgUpWrapper>,
     pub rx_enet_receiver: Rc<Receiver<UdpMsgDownWrapper>>,
 }
 
@@ -51,7 +51,7 @@ impl NetworkManager {
         }
     }
 
-    pub fn send(&self, udp_msg_up_wrapper: UdpMsgUpWrapper) {
+    pub fn send(&self, udp_msg_up_wrapper: MsgUpWrapper) {
         self.tx_enet_sender
             .send(udp_msg_up_wrapper)
             .expect("Failed to send msg to server");

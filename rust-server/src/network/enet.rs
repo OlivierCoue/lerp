@@ -1,7 +1,7 @@
 use enet_cs_sys::*;
 use rust_common::proto::{
     udp_down::UdpMsgDownWrapper,
-    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
+    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
 };
 use tokio::sync::mpsc;
 
@@ -32,7 +32,7 @@ const PORT: u16 = 34254;
 const MAX_PEERS_COUNT: usize = 10;
 
 pub fn enet_start(
-    tx_enet_sender: mpsc::Sender<(u16, UdpMsgUpWrapper)>,
+    tx_enet_sender: mpsc::Sender<(u16, MsgUpWrapper)>,
     rx_enet_sender: mpsc::Receiver<(u16, UdpMsgDownWrapper)>,
 ) {
     let peers = Arc::new(Mutex::new(HashMap::new()));
@@ -53,7 +53,7 @@ pub fn enet_start(
 }
 
 fn enet_receive(
-    tx_enet_sender: mpsc::Sender<(u16, UdpMsgUpWrapper)>,
+    tx_enet_sender: mpsc::Sender<(u16, MsgUpWrapper)>,
     peers_for_manage: Arc<Mutex<HashMap<u16, ENetPeerPtrWrapper>>>,
 ) {
     if unsafe { enet_initialize() } != 0 {
@@ -119,9 +119,9 @@ fn enet_receive(
                     tx_enet_sender
                         .blocking_send((
                             unsafe { *event.0.peer }.incomingPeerID,
-                            UdpMsgUpWrapper {
-                                messages: vec![UdpMsgUp {
-                                    _type: UdpMsgUpType::USER_DISCONNECT.into(),
+                            MsgUpWrapper {
+                                messages: vec![MsgUp {
+                                    _type: MsgUpType::USER_DISCONNECT.into(),
                                     ..Default::default()
                                 }],
                                 ..Default::default()
@@ -142,7 +142,7 @@ fn enet_receive(
                     // let channel_id = event.channelID;
                     // println!("received msg on channel: {}", channel_id);
 
-                    match UdpMsgUpWrapper::parse_from_bytes(recv_packet_raw) {
+                    match MsgUpWrapper::parse_from_bytes(recv_packet_raw) {
                         Ok(udp_msg_up) => {
                             tx_enet_sender
                                 .blocking_send((

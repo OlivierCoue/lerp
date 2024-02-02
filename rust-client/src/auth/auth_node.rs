@@ -6,7 +6,7 @@ use godot::{
 };
 use rust_common::proto::{
     udp_down::UdpMsgDownType,
-    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpWrapper},
+    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
 };
 
 use crate::{
@@ -93,9 +93,9 @@ impl AuthNode {
             return;
         }
 
-        self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-            messages: vec![UdpMsgUp {
-                _type: UdpMsgUpType::USER_CONNECT.into(),
+        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+            messages: vec![MsgUp {
+                _type: MsgUpType::USER_CONNECT.into(),
                 user_connect_username: Some(input_username.to_string()),
                 ..Default::default()
             }],

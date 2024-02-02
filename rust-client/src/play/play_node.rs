@@ -9,7 +9,7 @@ use rust_common::proto::{
     udp_down::{
         UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate, UdpMsgDownType,
     },
-    udp_up::{UdpMsgUp, UdpMsgUpType, UdpMsgUpUserJoinWorldInstance, UdpMsgUpWrapper},
+    udp_up::{MsgUp, MsgUpType, MsgUpUserJoinWorldInstance, MsgUpWrapper},
 };
 
 use crate::{
@@ -60,10 +60,10 @@ impl INode2D for PlayNode {
         }
 
         if let Some(workd_instance_id) = &self.world_instance_id {
-            network.bind().send(UdpMsgUpWrapper {
-                messages: vec![UdpMsgUp {
-                    _type: UdpMsgUpType::USER_JOIN_WOLD_INSTANCE.into(),
-                    user_join_world_instance: Some(UdpMsgUpUserJoinWorldInstance {
+            network.bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::USER_JOIN_WOLD_INSTANCE.into(),
+                    user_join_world_instance: Some(MsgUpUserJoinWorldInstance {
                         id: workd_instance_id.clone(),
                         ..Default::default()
                     })
@@ -112,8 +112,8 @@ impl INode2D for PlayNode {
                 let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
                 self.base_mut()
                     .emit_signal("player_throw_fireball_start".into(), &[]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                actions.push(MsgUp {
+                    _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -128,8 +128,8 @@ impl INode2D for PlayNode {
                 let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
                 self.base_mut()
                     .emit_signal("player_throw_fireball_start".into(), &[]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_MELEE_ATTACK.into(),
+                actions.push(MsgUp {
+                    _type: MsgUpType::PLAYER_MELEE_ATTACK.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -146,8 +146,8 @@ impl INode2D for PlayNode {
                 let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
                 self.base_mut()
                     .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
-                actions.push(UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_MOVE.into(),
+                actions.push(MsgUp {
+                    _type: MsgUpType::PLAYER_MOVE.into(),
                     player_move: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -159,7 +159,7 @@ impl INode2D for PlayNode {
             }
 
             if !actions.is_empty() {
-                self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
+                self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
                     messages: actions,
                     ..Default::default()
                 })
@@ -174,9 +174,9 @@ impl INode2D for PlayNode {
             self.base_mut()
                 .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
 
-            self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-                messages: vec![UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_MOVE.into(),
+            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::PLAYER_MOVE.into(),
                     player_move: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -193,9 +193,9 @@ impl INode2D for PlayNode {
             self.base_mut()
                 .emit_signal("player_throw_fireball_start".into(), &[]);
 
-            self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-                messages: vec![UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -210,9 +210,9 @@ impl INode2D for PlayNode {
             godot_print!("Key R pressed");
             let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
 
-            self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-                messages: vec![UdpMsgUp {
-                    _type: UdpMsgUpType::PLAYER_TELEPORT.into(),
+            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::PLAYER_TELEPORT.into(),
                     player_teleport: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
@@ -226,9 +226,9 @@ impl INode2D for PlayNode {
         } else if event.is_action_pressed("key_n".into()) {
             godot_print!("Key N pressed");
 
-            self.network.as_ref().unwrap().bind().send(UdpMsgUpWrapper {
-                messages: vec![UdpMsgUp {
-                    _type: UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
+            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
                     ..Default::default()
                 }],
                 ..Default::default()

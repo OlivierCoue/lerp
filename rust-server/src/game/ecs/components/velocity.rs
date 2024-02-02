@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::game::{systems::prelude::world_bounded_vector2, AreaConfig};
+use crate::game::ecs::{resources::prelude::AreaConfig, systems::prelude::*};
 
 #[derive(Component)]
 pub struct Velocity {

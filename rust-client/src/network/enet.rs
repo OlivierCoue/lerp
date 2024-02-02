@@ -1,6 +1,6 @@
 use enet_cs_sys::*;
 use godot::log::godot_print;
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::UdpMsgUpWrapper};
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 use std::{
     collections::VecDeque,
     ffi::CString,
@@ -27,7 +27,7 @@ const PORT: u16 = 34254;
 
 pub fn enet_start(
     udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
-    rx_enet_sender: Receiver<UdpMsgUpWrapper>,
+    rx_enet_sender: Receiver<MsgUpWrapper>,
     tx_enet_receiver: Sender<UdpMsgDownWrapper>,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));

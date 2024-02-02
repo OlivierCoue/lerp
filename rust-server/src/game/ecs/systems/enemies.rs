@@ -3,9 +3,8 @@ use godot::builtin::Vector2;
 use rand::Rng;
 use rust_common::math::get_point_from_points_and_distance;
 
-use crate::game::{
+use crate::game::ecs::{
     bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
-    UpdateVelocityTargetWithPathFinder,
 };
 
 pub fn enemies_spawner(

@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::game::{bundles::prelude::*, components::prelude::*, events::prelude::*};
+use crate::game::ecs::{bundles::prelude::*, components::prelude::*, events::prelude::*};
 
 pub fn on_frozen_orb_velocity_reached_target(
     mut commands: Commands,

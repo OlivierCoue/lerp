@@ -1,7 +1,7 @@
-use crate::game::bundles::prelude::*;
-use crate::game::components::prelude::*;
-use crate::game::events::prelude::*;
-use crate::game::resources::prelude::*;
+use crate::game::ecs::bundles::prelude::*;
+use crate::game::ecs::components::prelude::*;
+use crate::game::ecs::events::prelude::*;
+use crate::game::ecs::resources::prelude::*;
 use bevy_ecs::prelude::*;
 
 pub fn on_cast_spell(

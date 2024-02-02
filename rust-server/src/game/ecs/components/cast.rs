@@ -6,7 +6,7 @@ use rust_common::{
     proto::{common::UdpSpell, udp_down::UdpCast},
 };
 
-use crate::game::{Team, Time};
+use crate::game::ecs::{components::prelude::Team, resources::prelude::Time};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Spell {

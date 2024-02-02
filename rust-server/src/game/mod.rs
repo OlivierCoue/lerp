@@ -1,10 +1,6 @@
 mod area_gen;
-mod bundles;
-mod components;
-mod events;
+mod ecs;
 mod pathfinder;
-mod resources;
-mod systems;
 
 pub mod internal_message;
 pub mod player;
@@ -18,7 +14,7 @@ use rust_common::proto::udp_down::{
     UdpMsgDown, UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate,
     UdpMsgDownType, UdpMsgDownWrapper,
 };
-use rust_common::proto::udp_up::{UdpMsgUp, UdpMsgUpType};
+use rust_common::proto::udp_up::{MsgUp, MsgUpType};
 use tokio::sync::mpsc;
 
 use std::cmp::max;
@@ -27,13 +23,10 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::game::{
-    bundles::prelude::*, components::prelude::*, events::prelude::*, player::Player,
-    resources::prelude::*, systems::prelude::*,
-};
-
 use self::area_gen::generate_area;
+use self::ecs::prelude::*;
 use self::internal_message::InboundAreaMessage;
+use self::player::Player;
 
 const TICK_RATE_MILLIS: u128 = 30;
 const TICK_RATE_NANOS: u128 = TICK_RATE_MILLIS * 1000000;
@@ -46,7 +39,7 @@ pub struct Game {
     tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
     internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
-    received_udp_messages: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+    received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ecs_world: World,
     ecs_world_schedule: Schedule,
 }
@@ -55,7 +48,7 @@ impl Game {
     pub fn new(
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
-        received_udp_messages: Arc<Mutex<VecDeque<(u16, UdpMsgUp)>>>,
+        received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
         let area_gen = generate_area();
         let mut world = World::new();
@@ -182,6 +175,7 @@ impl Game {
         println!("Created new Player({})", user_id);
     }
 
+    #[allow(dead_code)]
     fn delete_player(&mut self, player_id: ObjectId) {
         if let Some(removed_player) = self.players.remove(&player_id) {
             self.ecs_world.despawn(removed_player.player_entity);
@@ -377,7 +371,7 @@ impl Game {
         }
     }
 
-    fn handle_upd_msg_up(&mut self, from_udp_peer_id: u16, udp_msg_up: UdpMsgUp) {
+    fn handle_upd_msg_up(&mut self, from_udp_peer_id: u16, udp_msg_up: MsgUp) {
         let Some(from_player_id) = self.peer_id_player_id_map.get(&from_udp_peer_id) else {
             return;
         };
@@ -387,8 +381,8 @@ impl Game {
         };
 
         match udp_msg_up._type.unwrap() {
-            UdpMsgUpType::GAME_PAUSE => self.paused = !self.paused,
-            UdpMsgUpType::PLAYER_MOVE => {
+            MsgUpType::GAME_PAUSE => self.paused = !self.paused,
+            MsgUpType::PLAYER_MOVE => {
                 if let Some(ok_coord) = &udp_msg_up.player_move.0 {
                     let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
                     self.ecs_world
@@ -401,7 +395,7 @@ impl Game {
                         });
                 }
             }
-            UdpMsgUpType::PLAYER_TELEPORT => {
+            MsgUpType::PLAYER_TELEPORT => {
                 if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
                     let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
                     self.ecs_world.send_event(UpdatePositionCurrent {
@@ -414,7 +408,7 @@ impl Game {
                     });
                 }
             }
-            UdpMsgUpType::PLAYER_THROW_FROZEN_ORB => {
+            MsgUpType::PLAYER_THROW_FROZEN_ORB => {
                 if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
                     let player_position = self
                         .ecs_world
@@ -436,7 +430,7 @@ impl Game {
                     });
                 }
             }
-            UdpMsgUpType::PLAYER_THROW_PROJECTILE => {
+            MsgUpType::PLAYER_THROW_PROJECTILE => {
                 if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
                     let player_position = self
                         .ecs_world
@@ -458,7 +452,7 @@ impl Game {
                     });
                 }
             }
-            UdpMsgUpType::PLAYER_MELEE_ATTACK => {
+            MsgUpType::PLAYER_MELEE_ATTACK => {
                 if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
                     let player_position = self
                         .ecs_world
@@ -479,7 +473,7 @@ impl Game {
                     });
                 }
             }
-            UdpMsgUpType::SETTINGS_TOGGLE_ENEMIES => {
+            MsgUpType::SETTINGS_TOGGLE_ENEMIES => {
                 let mut enemmies_state = self.ecs_world.get_resource_mut::<EnemiesState>().unwrap();
                 enemmies_state.toggle_enable();
             }

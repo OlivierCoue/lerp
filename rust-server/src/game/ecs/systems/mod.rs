@@ -5,7 +5,7 @@ mod movement;
 mod spell;
 
 pub mod prelude {
-    pub use crate::game::systems::{
+    pub use crate::game::ecs::systems::{
         damage_on_hit::*, enemies::*, frozen_rob::*, movement::*, spell::*,
     };
 }

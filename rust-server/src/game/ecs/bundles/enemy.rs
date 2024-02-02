@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::proto::common::GameEntityBaseType;
 
-use crate::game::components::prelude::*;
+use crate::game::ecs::components::prelude::*;
 
 #[derive(Component, Default)]
 pub struct Enemie {

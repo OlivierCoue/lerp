@@ -1,35 +1,35 @@
 syntax = "proto3";
 import "common.proto";
 
-enum UdpMsgUpType {
+enum MsgUpType {
     GAME_PAUSE = 0;
     PLAYER_INIT = 1;
-    PLAYER_MOVE = 3;
-    PLAYER_TELEPORT = 4;
-    PLAYER_THROW_PROJECTILE = 6;
-    PLAYER_THROW_FROZEN_ORB = 7;
-    PLAYER_MELEE_ATTACK = 8;
-    SETTINGS_TOGGLE_ENEMIES = 9;
-    USER_CONNECT = 10;
-    USER_DISCONNECT = 11;
-    USER_CREATE_WORLD_INSTANCE = 12;
-    USER_JOIN_WOLD_INSTANCE = 13;
+    PLAYER_MOVE = 2;
+    PLAYER_TELEPORT = 3;
+    PLAYER_THROW_PROJECTILE = 4;
+    PLAYER_THROW_FROZEN_ORB = 5;
+    PLAYER_MELEE_ATTACK = 6;
+    SETTINGS_TOGGLE_ENEMIES = 7;
+    USER_CONNECT = 8;
+    USER_DISCONNECT = 9;
+    USER_CREATE_WORLD_INSTANCE = 10;
+    USER_JOIN_WOLD_INSTANCE = 11;
 }
 
-message UdpMsgUpUserJoinWorldInstance {
+message MsgUpUserJoinWorldInstance {
     string id = 1;
 }
 
-message UdpMsgUp {
-    UdpMsgUpType _type = 1;
+message MsgUp {
+    MsgUpType _type = 1;
     optional Point player_move = 2;
     optional Point player_teleport = 3;
     optional Point player_throw_projectile = 4;
     optional Point player_throw_frozen_orb = 5;
     optional string user_connect_username = 6;
-    optional UdpMsgUpUserJoinWorldInstance user_join_world_instance = 7;
+    optional MsgUpUserJoinWorldInstance user_join_world_instance = 7;
 }
 
-message UdpMsgUpWrapper {
-    repeated UdpMsgUp messages = 1;
+message MsgUpWrapper {
+    repeated MsgUp messages = 1;
 }

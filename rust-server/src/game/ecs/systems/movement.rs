@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::collisions::collide_rect_to_rect;
 
-use crate::game::{components::prelude::*, events::prelude::*, resources::prelude::*};
+use crate::game::ecs::{components::prelude::*, events::prelude::*, resources::prelude::*};
 
 fn wolrd_bounded_x(area_config: &AreaConfig, x: f32) -> f32 {
     f32::min(f32::max(0.0, x), area_config.area_width)

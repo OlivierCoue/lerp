@@ -6,10 +6,11 @@ use std::{
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 
-use crate::game::{
-    pathfinder::{pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE},
-    AreaConfig, Time,
+use crate::game::pathfinder::{
+    pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE,
 };
+
+use super::{area_config::AreaConfig, time::Time};
 
 #[derive(Resource)]
 pub struct PathfinderState {
