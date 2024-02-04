@@ -532,6 +532,8 @@ pub enum MsgUpType {
     USER_CREATE_WORLD_INSTANCE = 10,
     // @@protoc_insertion_point(enum_value:MsgUpType.USER_JOIN_WOLD_INSTANCE)
     USER_JOIN_WOLD_INSTANCE = 11,
+    // @@protoc_insertion_point(enum_value:MsgUpType.USER_LEAVE_WORLD_INSTANCE)
+    USER_LEAVE_WORLD_INSTANCE = 12,
 }
 
 impl ::protobuf::Enum for MsgUpType {
@@ -555,6 +557,7 @@ impl ::protobuf::Enum for MsgUpType {
             9 => ::std::option::Option::Some(MsgUpType::USER_DISCONNECT),
             10 => ::std::option::Option::Some(MsgUpType::USER_CREATE_WORLD_INSTANCE),
             11 => ::std::option::Option::Some(MsgUpType::USER_JOIN_WOLD_INSTANCE),
+            12 => ::std::option::Option::Some(MsgUpType::USER_LEAVE_WORLD_INSTANCE),
             _ => ::std::option::Option::None
         }
     }
@@ -573,6 +576,7 @@ impl ::protobuf::Enum for MsgUpType {
             "USER_DISCONNECT" => ::std::option::Option::Some(MsgUpType::USER_DISCONNECT),
             "USER_CREATE_WORLD_INSTANCE" => ::std::option::Option::Some(MsgUpType::USER_CREATE_WORLD_INSTANCE),
             "USER_JOIN_WOLD_INSTANCE" => ::std::option::Option::Some(MsgUpType::USER_JOIN_WOLD_INSTANCE),
+            "USER_LEAVE_WORLD_INSTANCE" => ::std::option::Option::Some(MsgUpType::USER_LEAVE_WORLD_INSTANCE),
             _ => ::std::option::Option::None
         }
     }
@@ -590,6 +594,7 @@ impl ::protobuf::Enum for MsgUpType {
         MsgUpType::USER_DISCONNECT,
         MsgUpType::USER_CREATE_WORLD_INSTANCE,
         MsgUpType::USER_JOIN_WOLD_INSTANCE,
+        MsgUpType::USER_LEAVE_WORLD_INSTANCE,
     ];
 }
 
@@ -633,14 +638,14 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     eportB\x1a\n\x18_player_throw_projectileB\x1a\n\x18_player_throw_frozen_\
     orbB\x18\n\x16_user_connect_usernameB\x1b\n\x19_user_join_world_instance\
     \"2\n\x0cMsgUpWrapper\x12\"\n\x08messages\x18\x01\x20\x03(\x0b2\x06.MsgU\
-    pR\x08messages*\xa6\x02\n\tMsgUpType\x12\x0e\n\nGAME_PAUSE\x10\0\x12\x0f\
+    pR\x08messages*\xc5\x02\n\tMsgUpType\x12\x0e\n\nGAME_PAUSE\x10\0\x12\x0f\
     \n\x0bPLAYER_INIT\x10\x01\x12\x0f\n\x0bPLAYER_MOVE\x10\x02\x12\x13\n\x0f\
     PLAYER_TELEPORT\x10\x03\x12\x1b\n\x17PLAYER_THROW_PROJECTILE\x10\x04\x12\
     \x1b\n\x17PLAYER_THROW_FROZEN_ORB\x10\x05\x12\x17\n\x13PLAYER_MELEE_ATTA\
     CK\x10\x06\x12\x1b\n\x17SETTINGS_TOGGLE_ENEMIES\x10\x07\x12\x10\n\x0cUSE\
     R_CONNECT\x10\x08\x12\x13\n\x0fUSER_DISCONNECT\x10\t\x12\x1e\n\x1aUSER_C\
-    REATE_WORLD_INSTANCE\x10\n\x12\x1b\n\x17USER_JOIN_WOLD_INSTANCE\x10\x0bb\
-    \x06proto3\
+    REATE_WORLD_INSTANCE\x10\n\x12\x1b\n\x17USER_JOIN_WOLD_INSTANCE\x10\x0b\
+    \x12\x1d\n\x19USER_LEAVE_WORLD_INSTANCE\x10\x0cb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

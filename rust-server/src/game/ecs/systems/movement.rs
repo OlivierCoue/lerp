@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
-use rust_common::collisions::collide_rect_to_rect;
+use rust_common::collisions::{collide_point_to_poly, collide_rect_to_rect};
 
 use crate::game::ecs::{components::prelude::*, events::prelude::*, resources::prelude::*};
 
@@ -33,14 +33,22 @@ pub fn update_pathfinder_state(
     time: Res<Time>,
 ) {
     let current_game_time = time.current_millis;
+    if pathfinder_state.is_init {
+        return;
+    }
 
     if pathfinder_state.last_update_at_millis + pathfinder_state.update_every_millis
         < current_game_time
     {
         pathfinder_state.reset(&area_config, &time);
         for (entity, position, collider_mvt) in &query {
-            pathfinder_state.block_nodes_in_rect(entity, &position.current, &collider_mvt.rect)
+            if let Some(rect) = &collider_mvt.shape.rect {
+                pathfinder_state.block_nodes_in_rect(entity, &position.current, rect)
+            } else if let Some(poly) = &collider_mvt.shape.poly {
+                pathfinder_state.block_nodes_in_poly(entity, poly, collider_mvt.reversed)
+            }
         }
+        pathfinder_state.is_init = true;
     }
 }
 
@@ -88,16 +96,31 @@ pub fn movement(
                         &query_entities_to_move
                     {
                         if let Some(collider_mvt_blocking) = opt_collider_mvt_blocking {
-                            if entity_blocking != entity
-                                && collide_rect_to_rect(
-                                    &collider_mvt.rect,
-                                    &new_position_current,
-                                    &collider_mvt_blocking.rect,
-                                    &position_blocking.current,
-                                )
-                            {
-                                collide_with_blocking_entity = true;
-                                break;
+                            if entity_blocking != entity {
+                                if let (Some(rect), Some(rect_blocking)) =
+                                    (&collider_mvt.shape.rect, &collider_mvt_blocking.shape.rect)
+                                {
+                                    if collide_rect_to_rect(
+                                        rect,
+                                        &new_position_current,
+                                        rect_blocking,
+                                        &position_blocking.current,
+                                    ) {
+                                        collide_with_blocking_entity = true;
+                                        break;
+                                    }
+                                } else if let Some(poly_blocking) =
+                                    &collider_mvt_blocking.shape.poly
+                                {
+                                    if collide_point_to_poly(
+                                        &new_position_current,
+                                        poly_blocking,
+                                        collider_mvt_blocking.reversed,
+                                    ) {
+                                        collide_with_blocking_entity = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }

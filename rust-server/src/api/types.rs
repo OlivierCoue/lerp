@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
+    thread::JoinHandle,
 };
 
 use bson::oid::ObjectId;
@@ -24,12 +25,12 @@ impl User {
     }
 }
 
-#[derive(Default)]
 pub struct WorldInstance {
     pub _id: ObjectId,
-    pub user_ids: Vec<ObjectId>,
+    pub user_ids: HashMap<ObjectId, bool>,
     pub udp_msg_up_dequeue: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     pub received_internal_messages: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
+    pub thread_join_handle: JoinHandle<()>,
 }
 
 #[derive(Default)]

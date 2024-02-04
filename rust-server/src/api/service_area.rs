@@ -1,13 +1,13 @@
 use bson::oid::ObjectId;
 use bson::{doc, Document};
 use rust_common::proto::{udp_down::*, udp_up::*};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tokio::sync::mpsc;
 
-use crate::game::internal_message::{InboundAreaMessage, PlayerInitPayload};
+use crate::game::internal_message::{InboundAreaMessage, PlayerInitPayload, PlayerLeavePayload};
 use crate::game::Game;
 
 use super::*;
@@ -51,24 +51,33 @@ impl ApiServiceArea {
             .unwrap();
 
         let mut connections_state_lock = connections_state.lock().unwrap();
-        let received_internal_messages = Arc::new(Mutex::new(VecDeque::new()));
-        let udp_msg_up_dequeue = Arc::new(Mutex::new(VecDeque::new()));
-        connections_state_lock.world_instance_map.insert(
-            world_instance_id,
-            WorldInstance {
-                received_internal_messages: Arc::clone(&received_internal_messages),
-                udp_msg_up_dequeue: Arc::clone(&udp_msg_up_dequeue),
-                ..Default::default()
-            },
-        );
-        thread::spawn(move || {
+
+        let received_internal_messages_1 = Arc::new(Mutex::new(VecDeque::new()));
+        let udp_msg_up_dequeue_1 = Arc::new(Mutex::new(VecDeque::new()));
+
+        let received_internal_messages_2 = Arc::clone(&received_internal_messages_1);
+        let udp_msg_up_dequeue_2 = Arc::clone(&udp_msg_up_dequeue_1);
+
+        let thread_join_handle = thread::spawn(move || {
             let mut game = Game::new(
+                world_instance_id,
                 tx_udp_sender,
-                received_internal_messages,
-                udp_msg_up_dequeue,
+                received_internal_messages_1,
+                udp_msg_up_dequeue_1,
             );
             game.start();
         });
+
+        connections_state_lock.world_instance_map.insert(
+            world_instance_id,
+            WorldInstance {
+                _id: world_instance_id,
+                user_ids: HashMap::new(),
+                received_internal_messages: received_internal_messages_2,
+                udp_msg_up_dequeue: udp_msg_up_dequeue_2,
+                thread_join_handle,
+            },
+        );
 
         udp_messages.push(UdpMsgDown {
             _type: UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS.into(),
@@ -105,11 +114,11 @@ impl ApiServiceArea {
                 .remove(&world_instance_id)
             {
                 if let Some(user) = connections_state_lock.user_id_user_map.get_mut(&user._id) {
-                    if !wolrd_instance.user_ids.contains(&user._id)
+                    if wolrd_instance.user_ids.get(&user._id).is_none()
                         && user.current_world_instance_id != Some(world_instance_id)
                     {
                         user.current_world_instance_id = Some(world_instance_id);
-                        wolrd_instance.user_ids.push(user._id);
+                        wolrd_instance.user_ids.insert(user._id, true);
                         if let Ok(mut received_internal_messages) =
                             wolrd_instance.received_internal_messages.lock()
                         {
@@ -147,6 +156,46 @@ impl ApiServiceArea {
         }
 
         None
+    }
+
+    pub fn leave(
+        user: &User,
+        connections_state: Arc<Mutex<ConnectionsState>>,
+    ) -> Option<Vec<UdpMsgDown>> {
+        let mut udp_messages = Vec::new();
+
+        let Some(instance_id) = user.current_world_instance_id else {
+            return None;
+        };
+
+        let mut connections_state_lock = connections_state.lock().unwrap();
+        let Some(user_mut) = connections_state_lock.user_id_user_map.get_mut(&user._id) else {
+            return None;
+        };
+        user_mut.current_world_instance_id = None;
+
+        let Some(instance) = connections_state_lock
+            .world_instance_map
+            .get_mut(&instance_id)
+        else {
+            return None;
+        };
+
+        instance
+            .received_internal_messages
+            .lock()
+            .unwrap()
+            .push_back(InboundAreaMessage::PlayerLeave(PlayerLeavePayload {
+                user_id: user._id,
+            }));
+        instance.user_ids.remove(&user._id);
+
+        udp_messages.push(UdpMsgDown {
+            _type: UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS.into(),
+            ..Default::default()
+        });
+
+        Some(udp_messages)
     }
 
     pub fn forward_msg(

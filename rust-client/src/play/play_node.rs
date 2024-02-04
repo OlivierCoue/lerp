@@ -14,7 +14,7 @@ use rust_common::proto::{
 
 use crate::{
     network::prelude::*,
-    root::{DEBUG, PATH_NETWORK},
+    root::{Root, Scenes, DEBUG, PATH_NETWORK, PATH_ROOT},
     utils::iso_to_cart,
 };
 
@@ -27,6 +27,7 @@ pub const SEND_INPUT_TICK_SEC: f64 = 0.1;
 pub struct PlayNode {
     base: Base<Node2D>,
 
+    root: Option<Gd<Root>>,
     network: Option<Gd<NetworkManager>>,
     entities: HashMap<u32, Gd<GameEntity>>,
     server_entities: HashMap<u32, Gd<GameServerEntity>>,
@@ -41,6 +42,7 @@ impl INode2D for PlayNode {
 
         Self {
             base,
+            root: None,
             network: None,
             entities: HashMap::new(),
             server_entities: HashMap::new(),
@@ -50,6 +52,7 @@ impl INode2D for PlayNode {
     }
 
     fn ready(&mut self) {
+        self.root = Some(self.base().get_node_as::<Root>(PATH_ROOT));
         let network = self.base().get_node_as::<NetworkManager>(PATH_NETWORK);
         self.network = Some(network.clone());
         self.base_mut().set_y_sort_enabled(true);
@@ -96,6 +99,11 @@ impl INode2D for PlayNode {
                     UdpMsgDownType::GAME_ENTITY_REMOVED => {
                         if let Some(entity_removed) = &udp_msg_down.game_entity_removed.0 {
                             self.remove_entity(entity_removed);
+                        }
+                    }
+                    UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS => {
+                        if let Some(root) = self.root.as_mut() {
+                            root.bind_mut().change_scene(Scenes::Lobby);
                         }
                     }
                     _ => {}
@@ -233,6 +241,14 @@ impl INode2D for PlayNode {
                 }],
                 ..Default::default()
             })
+        } else if event.is_action_pressed("key_escape".into()) {
+            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    _type: MsgUpType::USER_LEAVE_WORLD_INSTANCE.into(),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            })
         }
     }
 }
@@ -256,6 +272,8 @@ impl PlayNode {
         tile_map.set_scale(Vector2::new(5.0, 5.0));
         tile_map.set_position(Vector2::new(0.0, 0.0));
 
+        godot_print!("shape count: {}", area_init.oob_polygons.len());
+
         godot_print!(
             "init_tile_map: {}:{}",
             area_init.walkable_x.len(),
@@ -266,8 +284,8 @@ impl PlayNode {
             let cell = tile_map.set_cell_ex(
                 0,
                 Vector2i::new(
-                    area_init.walkable_x[i] as i32,
-                    area_init.walkable_y[i] as i32 + 1,
+                    area_init.walkable_x[i] as i32 - 1,
+                    area_init.walkable_y[i] as i32,
                 ),
             );
             cell.atlas_coords(Vector2i::new(0, 0)).source_id(0).done();

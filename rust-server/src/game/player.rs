@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tokio::sync::mpsc;
 
 pub struct Player {
-    pub id: ObjectId,
+    pub user_id: ObjectId,
     pub enet_peer_id: u16,
     pub tx_enet_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     pub player_entity: Entity,
@@ -14,13 +14,13 @@ pub struct Player {
 }
 impl Player {
     pub fn new(
-        id: ObjectId,
+        user_id: ObjectId,
         enet_peer_id: u16,
         tx_enet_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         player_entity: Entity,
     ) -> Player {
         Player {
-            id,
+            user_id,
             enet_peer_id,
             tx_enet_sender,
             player_entity,

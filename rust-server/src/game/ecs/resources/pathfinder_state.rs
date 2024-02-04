@@ -5,6 +5,7 @@ use std::{
 
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
+use rust_common::collisions::collide_point_to_poly;
 
 use crate::game::pathfinder::{
     pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE,
@@ -17,6 +18,7 @@ pub struct PathfinderState {
     pub grid: Vec<Vec<Node>>,
     pub last_update_at_millis: u32,
     pub update_every_millis: u32,
+    pub is_init: bool,
 }
 impl PathfinderState {
     pub fn new(area_config: &AreaConfig) -> Self {
@@ -24,6 +26,7 @@ impl PathfinderState {
             grid: PathfinderState::create_grid(area_config),
             last_update_at_millis: 0,
             update_every_millis: 1000,
+            is_init: false,
         }
     }
 
@@ -73,6 +76,29 @@ impl PathfinderState {
         }
     }
 
+    pub fn block_nodes_in_poly(&mut self, entity: Entity, poly: &Vec<Vector2>, reversed: bool) {
+        for x in 0..self.grid.len() {
+            for y in 0..self.grid[0].len() {
+                let collide = collide_point_to_poly(
+                    &Vector2::new(
+                        x as f32 * PATHFINDER_TILE_SIZE,
+                        y as f32 * PATHFINDER_TILE_SIZE,
+                    ),
+                    poly,
+                    reversed,
+                );
+                if collide {
+                    if let Some(row) = self.grid.get_mut(x) {
+                        if let Some(node) = row.get_mut(y) {
+                            node.set_is_blocked(true);
+                            node.add_is_blocked_by(entity);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn get_path_async(
         &mut self,
         entity: Entity,
@@ -86,14 +112,8 @@ impl PathfinderState {
             f32::ceil(((from.y + to.y) / 2.0) / PATHFINDER_TILE_SIZE) as i32,
         );
         let top_left_node = (
-            i32::min(
-                i32::max(center_node.0 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-                PATHFINDER_GRID_SIZE as i32 - 1,
-            ) as usize,
-            i32::min(
-                i32::max(center_node.1 - PATHFINDER_GRID_SIZE as i32 / 2, 0),
-                PATHFINDER_GRID_SIZE as i32 - 1,
-            ) as usize,
+            i32::max(center_node.0 - PATHFINDER_GRID_SIZE as i32 / 2, 0) as usize,
+            i32::max(center_node.1 - PATHFINDER_GRID_SIZE as i32 / 2, 0) as usize,
         );
 
         let grid: Grid = array::from_fn(|x| {

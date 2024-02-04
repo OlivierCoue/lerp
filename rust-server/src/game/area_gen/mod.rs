@@ -1,238 +1,290 @@
-#[allow(unused_imports)]
-use std::{thread, vec};
-
+// Custom
+use floor_pattern::{FloorPattern, Map, Tile, TileType};
 // RNG
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 // Image creation
 use image::ImageBuffer;
 
+mod floor_pattern;
+
 type Grid = Vec<Vec<Tile>>;
-#[allow(dead_code)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum TileType {
-    Floor,
-    Wall,
-    Start,
-    Boss,
-    Event,
-    Water,
-    Forest,
-}
-#[derive(Clone)]
-struct FloorPattern {
-    // odds: f32,
-    rng_range_multiplicator_rectangle_size: (f32, f32),
-    rng_range_number_of_direction_changes: (i32, i32),
-    rng_range_direction_repeat: (i32, i32),
-    allowed_directions: Vec<(i32, i32)>,
-    generation_area_size: (i32, i32),
-}
-#[derive(PartialEq, Eq)]
-struct Tile {
-    tile_type: TileType,
-}
-#[derive(Clone)]
-struct Map {
-    name: String,
-    oob_type: TileType,
-    biomes: Vec<FloorPattern>,
-    generation_init_center: (i32, i32),
-}
-// const DIRECTIONS_OUTDOOR: [(i32, i32); 8] = [
-//     (0, -1), // ↑
-//     (0, 1),  // ↓
-//     (-1, 0), // ←
-//     (1, 0),  // →
-//     (1, -1),
-//     (1, 1),
-//     (-1, 1),
-//     (1, 1),
-// ];
 
-// const DIRECTIONS4: [(i32, i32); 4] = [
-//     (0, -1), // ↑
-//     (0, 1),  // ↓
-//     (-1, 0), // ←
-//     (1, 0),  // →
-// ];
+const TILE_SIZE: i32 = 60;
 
-pub struct AreGenerationOutput {
+pub struct AreaGenerationOutput {
     pub width: u32,
     pub height: u32,
     pub walkable_x: Vec<u32>,
     pub walkable_y: Vec<u32>,
+    pub oob_polygons: Vec<Shape>, // bool is true when outer oob shape, false when inner
+    pub player_spawn_position: (i32, i32),
 }
 
-pub fn generate_area() -> AreGenerationOutput {
+pub struct Shape {
+    pub points: Vec<(f32, f32)>,
+    pub inner_if_true: bool,
+}
+
+pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Create random generator from seed
     // fixed seed
     // let seed: u64 = 142857;
     // random seed
     let seed: u64 = rand::random();
-    println!("New seed is {}", seed);
 
-    //------------------------------------------------------//
-    //                Define all Floor Patterns             //
-    //------------------------------------------------------//
-    let large_all_dir = FloorPattern {
-        // odds: 1.0,
-        rng_range_multiplicator_rectangle_size: (0.1, 0.2),
-        rng_range_number_of_direction_changes: (4, 5),
-        rng_range_direction_repeat: (1, 3),
-        allowed_directions: vec![
-            (0, -1),
-            (0, 1),
-            (-1, 0),
-            (1, 0),
-            (1, -1),
-            (1, 1),
-            (-1, 1),
-            (1, 1),
-        ],
-        generation_area_size: (230, 230),
-    };
-    let small_cross_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.02, 0.06),
-        rng_range_number_of_direction_changes: (20, 30),
-        rng_range_direction_repeat: (5, 10),
-        allowed_directions: vec![(0, -1), (0, 1), (-1, 0), (1, 0)],
-        generation_area_size: (230, 230),
-    };
-    let small_all_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.02, 0.04),
-        rng_range_number_of_direction_changes: (15, 25),
-        rng_range_direction_repeat: (10, 15),
-        allowed_directions: vec![
-            (0, -1),
-            (0, 1),
-            (-1, 0),
-            (1, 0),
-            (1, -1),
-            (1, 1),
-            (-1, 1),
-            (-1, -1),
-        ],
-        generation_area_size: (230, 230),
-    };
-    let many_tiny_all_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.01, 0.020),
-        rng_range_number_of_direction_changes: (30, 40),
-        rng_range_direction_repeat: (10, 15),
-        allowed_directions: vec![(1, -1), (1, 1), (-1, 1), (-1, -1)],
-        generation_area_size: (230, 230),
-    };
-    let long_path_bottom_right_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.01, 0.020),
-        rng_range_number_of_direction_changes: (20, 30),
-        rng_range_direction_repeat: (10, 15),
-        allowed_directions: vec![(1, -1), (1, 1), (-1, 1)],
-        generation_area_size: (230, 230),
-    };
-    let short_path_bottom_right_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.01, 0.020),
-        rng_range_number_of_direction_changes: (10, 15),
-        rng_range_direction_repeat: (5, 8),
-        allowed_directions: vec![(1, -1), (1, 1), (-1, 1)],
-
-        generation_area_size: (230, 230),
-    };
-    //------------------------------------------------------//
-    //                Define Maps Content                   //
-    //------------------------------------------------------//
-    let mut maps: Vec<Map> = vec![
-        Map {
-            name: String::from("Island"),
-            oob_type: TileType::Water,
-            biomes: vec![many_tiny_all_dir.clone(), small_all_dir.clone()],
-            generation_init_center: (250, 250),
-        },
-        Map {
-            name: String::from("Ledge"),
-            oob_type: TileType::Wall,
-            biomes: vec![
-                long_path_bottom_right_dir.clone(),
-                long_path_bottom_right_dir.clone(),
-            ],
-            generation_init_center: (20, 20),
-        },
-        Map {
-            name: String::from("Desert"),
-            oob_type: TileType::Wall,
-            biomes: vec![long_path_bottom_right_dir.clone(), large_all_dir.clone()],
-            generation_init_center: (150, 150),
-        },
-        Map {
-            name: String::from("Forest"),
-            oob_type: TileType::Forest,
-            biomes: vec![
-                short_path_bottom_right_dir.clone(),
-                small_cross_dir.clone(),
-                small_cross_dir.clone(),
-            ],
-            generation_init_center: (250, 250),
-        },
-        Map {
-            name: String::from("Quarry"),
-            oob_type: TileType::Wall,
-            biomes: vec![
-                short_path_bottom_right_dir.clone(),
-                many_tiny_all_dir.clone(),
-                many_tiny_all_dir.clone(),
-                short_path_bottom_right_dir.clone(),
-            ],
-            generation_init_center: (250, 250),
-        },
-    ];
+    let mut maps = floor_pattern::define_floor_patterns();
     //------------------------------------------------------//
     //               Generate maps                          //
     //------------------------------------------------------//
 
-    // for map in maps {
-    //     generate_map(seed, map);
-    // }
-    // let mut handlers = Vec::new();
-    // while let Some(map) = maps.pop() {
-    //     handlers.push(thread::spawn(move || {
-    //         generate_map(seed, map);
-    //     }));
-    // }
-    // for handler in handlers {
-    //     handler.join().unwrap();
-    // }
+    // Pick a map
+    let map = maps.remove(map_index);
+    let map_name = map.name.clone();
+    // Generate map grid
+    let (mut grid, player_spawn_position) = generate_map(seed, map);
 
-    let map = maps.remove(4);
-    let grid = generate_map(seed, map);
+    //------------------------------------------------------//
+    //               Find oob polygons                      //
+    //------------------------------------------------------//
+    let oob_polygons = find_oob_polygons(&mut grid);
+    render_grid(&grid, map_name.clone() + "_outline", true);
+    render_grid(&grid, map_name.clone(), false);
 
+    // Initiate module outputf
     let mut walkable_x = Vec::new();
     let mut walkable_y = Vec::new();
     for x in 0..grid.len() {
         for y in 0..grid[0].len() {
-            if grid[x][y].tile_type == TileType::Floor {
+            if grid[x][y].tile_type == TileType::Floor
+                || grid[x][y].tile_type == TileType::Start
+                || grid[x][y].tile_type == TileType::Boss
+            {
                 walkable_x.push(x as u32);
                 walkable_y.push(y as u32);
             }
         }
     }
-    AreGenerationOutput {
+    println!(
+        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles",
+        seed,
+        map_name,
+        grid.len(),
+        grid[0].len()
+    );
+    AreaGenerationOutput {
+        oob_polygons,
         width: grid.len() as u32,
         height: grid[0].len() as u32,
         walkable_x,
         walkable_y,
+        player_spawn_position,
     }
 }
 
-fn generate_map(seed: u64, map: Map) -> Grid {
+fn find_oob_polygons(grid: &mut Grid) -> Vec<Shape> {
+    // Find a first point on the map contour
+    let mut oob_polygons = Vec::new();
+    let mut current_pos = (0, (grid[0].len() / 2) as i32);
+    while grid[current_pos.0 as usize][current_pos.1 as usize].tile_type != TileType::Floor {
+        current_pos.0 += 1;
+    }
+    // Take a step
+    current_pos.0 -= 1;
+    // Generate polygone of the outside of the map
+    oob_polygons.push(Shape {
+        points: find_oob_polygone(current_pos, grid, (0, 1)),
+        inner_if_true: false,
+    });
+    // find inside map polygones
+    // scan the grid and search for tiles that are not floor but next to floor, and not already scanned
+    'outer: loop {
+        for x in 1..grid.len() - 1 {
+            for y in 1..grid[0].len() - 1 {
+                if !grid[x][y].scanned
+                    && grid[x][y].tile_type != TileType::Floor
+                    && (grid[x + 1][y].tile_type == TileType::Floor
+                        || grid[x - 1][y].tile_type == TileType::Floor
+                        || grid[x][y + 1].tile_type == TileType::Floor
+                        || grid[x][y - 1].tile_type == TileType::Floor)
+                {
+                    oob_polygons.push(Shape {
+                        points: find_oob_polygone((x as i32, y as i32), grid, (0, -1)),
+                        inner_if_true: true,
+                    });
+                    continue 'outer;
+                }
+            }
+        }
+        break;
+    }
+
+    oob_polygons
+}
+
+fn find_oob_polygone(
+    start_point: (i32, i32),
+    grid: &mut Grid,
+    start_dir: (i32, i32),
+) -> Vec<(f32, f32)> {
+    let mut tile_polygone = Vec::new();
+    let mut px_polygone: Vec<(f32, f32)> = Vec::new();
+    let mut current_pos = start_point;
+
+    let mut dir = start_dir;
+    let mut next_dir = dir;
+    // continue tracing until we come back where to the first corner
+    while !tile_polygone.contains(&current_pos) {
+        // if current dir is down
+        if dir == (0, 1) {
+            // right is floor
+            if (grid[current_pos.0 as usize + 1][current_pos.1 as usize]).tile_type
+                == TileType::Floor
+            {
+                // down is floor
+                if grid[current_pos.0 as usize][current_pos.1 as usize + 1].tile_type
+                    == TileType::Floor
+                {
+                    //found corner
+                    tile_polygone.push(current_pos);
+                    //keep bottom right point
+                    px_polygone.push((
+                        (current_pos.0 * TILE_SIZE) as f32,
+                        (current_pos.1 * TILE_SIZE) as f32,
+                    ));
+                    next_dir = (-1, 0);
+                } else {
+                    next_dir = (0, 1);
+                }
+            } else {
+                // found corner
+                tile_polygone.push(current_pos);
+                // keep up right point
+                px_polygone.push((
+                    (current_pos.0 * TILE_SIZE) as f32,
+                    ((current_pos.1 * TILE_SIZE) - TILE_SIZE) as f32,
+                ));
+                next_dir = (1, 0);
+            }
+        }
+        // if curent dir is left
+        if dir == (-1, 0) {
+            // bottom is floor
+            if (grid[current_pos.0 as usize][current_pos.1 as usize + 1]).tile_type
+                == TileType::Floor
+            {
+                // left is floor
+                if grid[current_pos.0 as usize - 1][current_pos.1 as usize].tile_type
+                    == TileType::Floor
+                {
+                    //found corner
+                    tile_polygone.push(current_pos);
+                    //keep bottom left
+                    px_polygone.push((
+                        ((current_pos.0 * TILE_SIZE) - TILE_SIZE) as f32,
+                        (current_pos.1 * TILE_SIZE) as f32,
+                    ));
+                    next_dir = (0, -1);
+                } else {
+                    next_dir = (-1, 0);
+                }
+            } else {
+                tile_polygone.push(current_pos);
+                //keep bottom right
+                px_polygone.push((
+                    (current_pos.0 * TILE_SIZE) as f32,
+                    (current_pos.1 * TILE_SIZE) as f32,
+                ));
+                next_dir = (0, 1);
+            }
+        }
+        // if curent dir is right
+        if dir == (1, 0) {
+            // up is floor
+            if (grid[current_pos.0 as usize][current_pos.1 as usize - 1]).tile_type
+                == TileType::Floor
+            {
+                // right is floor
+                if grid[current_pos.0 as usize + 1][current_pos.1 as usize].tile_type
+                    == TileType::Floor
+                {
+                    //found corner
+                    tile_polygone.push(current_pos);
+                    // keep up right point
+                    px_polygone.push((
+                        (current_pos.0 * TILE_SIZE) as f32,
+                        ((current_pos.1 * TILE_SIZE) - TILE_SIZE) as f32,
+                    ));
+                    next_dir = (0, 1);
+                } else {
+                    next_dir = (1, 0);
+                }
+            } else {
+                tile_polygone.push(current_pos);
+                // keep up left point
+                px_polygone.push((
+                    ((current_pos.0 * TILE_SIZE) - TILE_SIZE) as f32,
+                    ((current_pos.1 * TILE_SIZE) - TILE_SIZE) as f32,
+                ));
+                next_dir = (0, -1);
+            }
+        }
+        // if current dir is up
+        if dir == (0, -1) {
+            // left is floor
+            if (grid[current_pos.0 as usize - 1][current_pos.1 as usize]).tile_type
+                == TileType::Floor
+            {
+                // up is floor
+                if grid[current_pos.0 as usize][current_pos.1 as usize - 1].tile_type
+                    == TileType::Floor
+                {
+                    //found corner
+                    tile_polygone.push(current_pos);
+                    // keep up left point
+                    px_polygone.push((
+                        ((current_pos.0 * TILE_SIZE) - TILE_SIZE) as f32,
+                        ((current_pos.1 * TILE_SIZE) - TILE_SIZE) as f32,
+                    ));
+                    next_dir = (1, 0);
+                } else {
+                    next_dir = (0, -1);
+                }
+            } else {
+                // found corner
+                tile_polygone.push(current_pos);
+                // keep bottom left point
+                px_polygone.push((
+                    ((current_pos.0 * TILE_SIZE) - TILE_SIZE) as f32,
+                    (current_pos.1 * TILE_SIZE) as f32,
+                ));
+                next_dir = (-1, 0);
+            }
+        }
+        dir = next_dir;
+        // flag current point to avoid scanning this polygon again later
+        grid[current_pos.0 as usize][current_pos.1 as usize].scanned = true;
+        // move to next point
+        current_pos.0 += dir.0;
+        current_pos.1 += dir.1;
+    }
+
+    // for debuging only
+    for point in tile_polygone {
+        grid[point.0 as usize][point.1 as usize].tile_type = TileType::Angle;
+    }
+
+    px_polygone
+}
+
+fn generate_map(seed: u64, map: Map) -> (Grid, (i32, i32)) {
     // The rng instance is created from the seed
     let mut rng: ChaCha8Rng = ChaCha8Rng::seed_from_u64(seed);
 
-    // Roll initial biome, which defines the out of bound tile type
-    // let biome = biomes[rng.gen_range(0..biomes.len())];
-    println!("-----For Biome {}", map.name);
     let oob_tiletype = map.oob_type;
 
     // Initialize map grid from initial biome and oob tile type
-    let mut grid: Grid = init_grid(500, 500, oob_tiletype);
+    let mut grid: Grid = init_grid(750, 750, oob_tiletype);
 
     // genrate walkable paths based on a random selection of possible biomes
     let mut center = map.generation_init_center;
@@ -243,35 +295,37 @@ fn generate_map(seed: u64, map: Map) -> Grid {
             generate_walkable_layout(&mut grid, &map.biomes[i], &mut rng, oob_tiletype, center);
     }
 
-    //TODO
-    // Centering and cropping maps, retry if oob
-
     // remove small clusters of oob tiles
-    remove_small_cluster(&mut grid, oob_tiletype, 3, false, true);
-    remove_small_cluster(&mut grid, oob_tiletype, 3, true, false);
-    remove_small_cluster(&mut grid, oob_tiletype, 3, false, true);
+    remove_small_cluster(&mut grid, oob_tiletype, 4, false, true);
+    remove_small_cluster(&mut grid, oob_tiletype, 4, true, false);
+    remove_small_cluster(&mut grid, oob_tiletype, 4, false, true);
 
-    // TODO
     // add Start of map, first center and last center
     draw_rectangle(&mut grid, TileType::Start, (2, 2), map_start);
     draw_rectangle(&mut grid, TileType::Boss, (2, 2), center);
 
-    // TODO
-    // add a map attribute bool, to remove or not the "inside shapes"
-    // start by flagging all
-    // Convert generated tile map oob to largest rectangle
-    // render_grid(&grid, map.name.clone() + "_before");
+    // resize_grid to it's minimum size
     resize_grid(&mut grid, 4);
 
-    println!(
-        "final size for {} is {} {}",
-        map.name,
-        grid.len(),
-        grid[0].len()
-    );
-    // print grid
-    render_grid(&grid, map.name.clone());
-    grid
+    let mut start_after_resize = (0, 0);
+    'outer: for x in 0..grid.len() {
+        for y in 0..grid[0].len() {
+            if grid[x][y].tile_type == TileType::Start {
+                start_after_resize = (x as i32, y as i32);
+                break 'outer;
+            }
+        }
+    }
+
+    // // print grid
+    // render_grid(&grid, map.name.clone());
+    (
+        grid,
+        (
+            (start_after_resize.0 * TILE_SIZE) - (TILE_SIZE / 2),
+            (start_after_resize.1 * TILE_SIZE) - (TILE_SIZE / 2),
+        ),
+    )
 }
 
 fn resize_grid(grid: &mut Grid, border_size: usize) {
@@ -580,6 +634,7 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
         for _ in 0..height {
             row.push(Tile {
                 tile_type: oob_tiletype,
+                scanned: false,
             })
         }
         grid.push(row)
@@ -587,7 +642,7 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
     grid
 }
 
-fn render_grid(grid: &Grid, file_name: String) {
+fn render_grid(grid: &Grid, file_name: String, show_outline: bool) {
     // Construct a new RGB ImageBuffer with the specified width and height.
     let width = grid.len();
     let height = grid[0].len();
@@ -597,19 +652,28 @@ fn render_grid(grid: &Grid, file_name: String) {
 
     for (i, x) in grid.iter().enumerate() {
         for (j, y) in x.iter().enumerate() {
-            img.put_pixel(
-                i.try_into().unwrap(),
-                j.try_into().unwrap(),
-                match y.tile_type {
-                    TileType::Boss => image::Rgb([0u8, 0u8, 0u8]),
-                    TileType::Floor => image::Rgb([230u8, 213u8, 168u8]),
-                    TileType::Wall => image::Rgb([122u8, 97u8, 31u8]),
-                    TileType::Start => image::Rgb([182u8, 51u8, 214u8]),
-                    TileType::Event => image::Rgb([181u8, 181u8, 181u8]),
-                    TileType::Water => image::Rgb([51u8, 114u8, 214u8]),
-                    TileType::Forest => image::Rgb([42u8, 117u8, 14u8]),
-                },
-            );
+            if y.scanned && show_outline {
+                img.put_pixel(
+                    i.try_into().unwrap(),
+                    j.try_into().unwrap(),
+                    image::Rgb([252u8, 40u8, 40u8]),
+                )
+            } else {
+                img.put_pixel(
+                    i.try_into().unwrap(),
+                    j.try_into().unwrap(),
+                    match y.tile_type {
+                        TileType::Boss => image::Rgb([0u8, 0u8, 0u8]),
+                        TileType::Floor => image::Rgb([230u8, 213u8, 168u8]),
+                        TileType::Wall => image::Rgb([122u8, 97u8, 31u8]),
+                        TileType::Start => image::Rgb([182u8, 51u8, 214u8]),
+                        TileType::Angle => image::Rgb([182u8, 51u8, 214u8]),
+                        TileType::Event => image::Rgb([181u8, 181u8, 181u8]),
+                        TileType::Water => image::Rgb([51u8, 114u8, 214u8]),
+                        TileType::Forest => image::Rgb([42u8, 117u8, 14u8]),
+                    },
+                )
+            };
         }
     }
     img.save("output/".to_string() + &file_name + ".png")

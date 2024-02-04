@@ -41,8 +41,8 @@ pub struct UdpMsgDownGameEntityUpdate {
     pub velocity_speed: ::std::option::Option<f32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.collider_dmg_in_rect)
     pub collider_dmg_in_rect: ::protobuf::MessageField<super::common::Point>,
-    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.collider_mvt_rect)
-    pub collider_mvt_rect: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.collider_mvt)
+    pub collider_mvt: ::protobuf::MessageField<UdpColliderMvt>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.health_current)
     pub health_current: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:UdpMsgDownGameEntityUpdate.is_self)
@@ -98,10 +98,10 @@ impl UdpMsgDownGameEntityUpdate {
             |m: &UdpMsgDownGameEntityUpdate| { &m.collider_dmg_in_rect },
             |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.collider_dmg_in_rect },
         ));
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
-            "collider_mvt_rect",
-            |m: &UdpMsgDownGameEntityUpdate| { &m.collider_mvt_rect },
-            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.collider_mvt_rect },
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, UdpColliderMvt>(
+            "collider_mvt",
+            |m: &UdpMsgDownGameEntityUpdate| { &m.collider_mvt },
+            |m: &mut UdpMsgDownGameEntityUpdate| { &mut m.collider_mvt },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "health_current",
@@ -155,7 +155,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
                     ::protobuf::rt::read_singular_message_into_field(is, &mut self.collider_dmg_in_rect)?;
                 },
                 58 => {
-                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.collider_mvt_rect)?;
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.collider_mvt)?;
                 },
                 64 => {
                     self.health_current = ::std::option::Option::Some(is.read_uint32()?);
@@ -199,7 +199,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
-        if let Some(v) = self.collider_mvt_rect.as_ref() {
+        if let Some(v) = self.collider_mvt.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
@@ -237,7 +237,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         if let Some(v) = self.collider_dmg_in_rect.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(6, v, os)?;
         }
-        if let Some(v) = self.collider_mvt_rect.as_ref() {
+        if let Some(v) = self.collider_mvt.as_ref() {
             ::protobuf::rt::write_message_field_with_cached_size(7, v, os)?;
         }
         if let Some(v) = self.health_current {
@@ -272,7 +272,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
         self.location_target_queue.clear();
         self.velocity_speed = ::std::option::Option::None;
         self.collider_dmg_in_rect.clear();
-        self.collider_mvt_rect.clear();
+        self.collider_mvt.clear();
         self.health_current = ::std::option::Option::None;
         self.is_self = false;
         self.cast.clear();
@@ -287,7 +287,7 @@ impl ::protobuf::Message for UdpMsgDownGameEntityUpdate {
             location_target_queue: ::std::vec::Vec::new(),
             velocity_speed: ::std::option::Option::None,
             collider_dmg_in_rect: ::protobuf::MessageField::none(),
-            collider_mvt_rect: ::protobuf::MessageField::none(),
+            collider_mvt: ::protobuf::MessageField::none(),
             health_current: ::std::option::Option::None,
             is_self: false,
             cast: ::protobuf::MessageField::none(),
@@ -311,6 +311,166 @@ impl ::std::fmt::Display for UdpMsgDownGameEntityUpdate {
 }
 
 impl ::protobuf::reflect::ProtobufValue for UdpMsgDownGameEntityUpdate {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:UdpColliderMvt)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpColliderMvt {
+    // message fields
+    // @@protoc_insertion_point(field:UdpColliderMvt.reversed)
+    pub reversed: bool,
+    // @@protoc_insertion_point(field:UdpColliderMvt.rect)
+    pub rect: ::protobuf::MessageField<super::common::Point>,
+    // @@protoc_insertion_point(field:UdpColliderMvt.poly)
+    pub poly: ::std::vec::Vec<super::common::Point>,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpColliderMvt.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpColliderMvt {
+    fn default() -> &'a UdpColliderMvt {
+        <UdpColliderMvt as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpColliderMvt {
+    pub fn new() -> UdpColliderMvt {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "reversed",
+            |m: &UdpColliderMvt| { &m.reversed },
+            |m: &mut UdpColliderMvt| { &mut m.reversed },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, super::common::Point>(
+            "rect",
+            |m: &UdpColliderMvt| { &m.rect },
+            |m: &mut UdpColliderMvt| { &mut m.rect },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "poly",
+            |m: &UdpColliderMvt| { &m.poly },
+            |m: &mut UdpColliderMvt| { &mut m.poly },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpColliderMvt>(
+            "UdpColliderMvt",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpColliderMvt {
+    const NAME: &'static str = "UdpColliderMvt";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.reversed = is.read_bool()?;
+                },
+                18 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.rect)?;
+                },
+                26 => {
+                    self.poly.push(is.read_message()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.reversed != false {
+            my_size += 1 + 1;
+        }
+        if let Some(v) = self.rect.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
+        for value in &self.poly {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.reversed != false {
+            os.write_bool(1, self.reversed)?;
+        }
+        if let Some(v) = self.rect.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
+        }
+        for v in &self.poly {
+            ::protobuf::rt::write_message_field_with_cached_size(3, v, os)?;
+        };
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpColliderMvt {
+        UdpColliderMvt::new()
+    }
+
+    fn clear(&mut self) {
+        self.reversed = false;
+        self.rect.clear();
+        self.poly.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpColliderMvt {
+        static instance: UdpColliderMvt = UdpColliderMvt {
+            reversed: false,
+            rect: ::protobuf::MessageField::none(),
+            poly: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpColliderMvt {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpColliderMvt").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpColliderMvt {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpColliderMvt {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -851,6 +1011,8 @@ pub struct UdpMsgDownAreaInit {
     pub walkable_x: ::std::vec::Vec<u32>,
     // @@protoc_insertion_point(field:UdpMsgDownAreaInit.walkable_y)
     pub walkable_y: ::std::vec::Vec<u32>,
+    // @@protoc_insertion_point(field:UdpMsgDownAreaInit.oob_polygons)
+    pub oob_polygons: ::std::vec::Vec<super::common::UdpPolygon>,
     // special fields
     // @@protoc_insertion_point(special_field:UdpMsgDownAreaInit.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -868,7 +1030,7 @@ impl UdpMsgDownAreaInit {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut fields = ::std::vec::Vec::with_capacity(5);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "width",
@@ -889,6 +1051,11 @@ impl UdpMsgDownAreaInit {
             "walkable_y",
             |m: &UdpMsgDownAreaInit| { &m.walkable_y },
             |m: &mut UdpMsgDownAreaInit| { &mut m.walkable_y },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "oob_polygons",
+            |m: &UdpMsgDownAreaInit| { &m.oob_polygons },
+            |m: &mut UdpMsgDownAreaInit| { &mut m.oob_polygons },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpMsgDownAreaInit>(
             "UdpMsgDownAreaInit",
@@ -926,6 +1093,9 @@ impl ::protobuf::Message for UdpMsgDownAreaInit {
                 32 => {
                     self.walkable_y.push(is.read_uint32()?);
                 },
+                42 => {
+                    self.oob_polygons.push(is.read_message()?);
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -950,6 +1120,10 @@ impl ::protobuf::Message for UdpMsgDownAreaInit {
         for value in &self.walkable_y {
             my_size += ::protobuf::rt::uint32_size(4, *value);
         };
+        for value in &self.oob_polygons {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -967,6 +1141,9 @@ impl ::protobuf::Message for UdpMsgDownAreaInit {
         };
         for v in &self.walkable_y {
             os.write_uint32(4, *v)?;
+        };
+        for v in &self.oob_polygons {
+            ::protobuf::rt::write_message_field_with_cached_size(5, v, os)?;
         };
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -989,6 +1166,7 @@ impl ::protobuf::Message for UdpMsgDownAreaInit {
         self.height = 0.;
         self.walkable_x.clear();
         self.walkable_y.clear();
+        self.oob_polygons.clear();
         self.special_fields.clear();
     }
 
@@ -998,6 +1176,7 @@ impl ::protobuf::Message for UdpMsgDownAreaInit {
             height: 0.,
             walkable_x: ::std::vec::Vec::new(),
             walkable_y: ::std::vec::Vec::new(),
+            oob_polygons: ::std::vec::Vec::new(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -1396,8 +1575,10 @@ pub enum UdpMsgDownType {
     USER_CREATE_WORDL_INSTANCE_SUCCESS = 6,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_JOIN_WORDL_INSTANCE_SUCCESS)
     USER_JOIN_WORDL_INSTANCE_SUCCESS = 7,
+    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_LEAVE_WORLD_INSTANCE_SUCCESS)
+    USER_LEAVE_WORLD_INSTANCE_SUCCESS = 8,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.AREA_INIT)
-    AREA_INIT = 8,
+    AREA_INIT = 9,
 }
 
 impl ::protobuf::Enum for UdpMsgDownType {
@@ -1416,7 +1597,8 @@ impl ::protobuf::Enum for UdpMsgDownType {
             5 => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
             6 => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
             7 => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
-            8 => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
+            8 => ::std::option::Option::Some(UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS),
+            9 => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
         }
     }
@@ -1430,6 +1612,7 @@ impl ::protobuf::Enum for UdpMsgDownType {
             "USER_DISCONNECT_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
             "USER_CREATE_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
             "USER_JOIN_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
+            "USER_LEAVE_WORLD_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS),
             "AREA_INIT" => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
         }
@@ -1443,6 +1626,7 @@ impl ::protobuf::Enum for UdpMsgDownType {
         UdpMsgDownType::USER_DISCONNECT_SUCCESS,
         UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS,
         UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS,
+        UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS,
         UdpMsgDownType::AREA_INIT,
     ];
 }
@@ -1462,7 +1646,8 @@ impl ::protobuf::EnumFull for UdpMsgDownType {
             UdpMsgDownType::USER_DISCONNECT_SUCCESS => 4,
             UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS => 5,
             UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS => 6,
-            UdpMsgDownType::AREA_INIT => 7,
+            UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS => 7,
+            UdpMsgDownType::AREA_INIT => 8,
         };
         Self::enum_descriptor().value_by_index(index)
     }
@@ -1481,7 +1666,7 @@ impl UdpMsgDownType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xd4\x04\n\x1aUdpMsgDownGameEn\
+    \n\x0eudp-down.proto\x1a\x0ccommon.proto\"\xcf\x04\n\x1aUdpMsgDownGameEn\
     tityUpdate\x12\x0e\n\x02id\x18\x01\x20\x01(\rR\x02id\x124\n\x0bobject_ty\
     pe\x18\x02\x20\x01(\x0e2\x13.GameEntityBaseTypeR\nobjectType\x126\n\x10l\
     ocation_current\x18\x03\x20\x01(\x0b2\x06.PointH\0R\x0flocationCurrent\
@@ -1489,42 +1674,47 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     ointR\x13locationTargetQueue\x12*\n\x0evelocity_speed\x18\x05\x20\x01(\
     \x02H\x01R\rvelocitySpeed\x88\x01\x01\x12<\n\x14collider_dmg_in_rect\x18\
     \x06\x20\x01(\x0b2\x06.PointH\x02R\x11colliderDmgInRect\x88\x01\x01\x127\
-    \n\x11collider_mvt_rect\x18\x07\x20\x01(\x0b2\x06.PointH\x03R\x0fcollide\
-    rMvtRect\x88\x01\x01\x12*\n\x0ehealth_current\x18\x08\x20\x01(\rH\x04R\r\
+    \n\x0ccollider_mvt\x18\x07\x20\x01(\x0b2\x0f.UdpColliderMvtH\x03R\x0bcol\
+    liderMvt\x88\x01\x01\x12*\n\x0ehealth_current\x18\x08\x20\x01(\rH\x04R\r\
     healthCurrent\x88\x01\x01\x12\x17\n\x07is_self\x18\t\x20\x01(\x08R\x06is\
     Self\x12!\n\x04cast\x18\n\x20\x01(\x0b2\x08.UdpCastH\x05R\x04cast\x88\
     \x01\x01B\x13\n\x11_location_currentB\x11\n\x0f_velocity_speedB\x17\n\
-    \x15_collider_dmg_in_rectB\x14\n\x12_collider_mvt_rectB\x11\n\x0f_health\
-    _currentB\x07\n\x05_cast\"f\n\x07UdpCast\x12\x1f\n\x05spell\x18\x01\x20\
-    \x01(\x0e2\t.UdpSpellR\x05spell\x12\x1e\n\x06target\x18\x02\x20\x01(\x0b\
-    2\x06.PointR\x06target\x12\x1a\n\x08duration\x18\x03\x20\x01(\rR\x08dura\
-    tion\"-\n\x1bUdpMsgDownGameEntityRemoved\x12\x0e\n\x02id\x18\x01\x20\x01\
-    (\rR\x02id\"B\n\x1bUdpMsgDownUserConnectFailed\x12#\n\rerror_message\x18\
-    \x01\x20\x01(\tR\x0cerrorMessage\":\n(UdpMsgDownUserCreateWorldInstanceS\
-    uccess\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\"\x80\x01\n\x12UdpMsgDo\
-    wnAreaInit\x12\x14\n\x05width\x18\x01\x20\x01(\x02R\x05width\x12\x16\n\
-    \x06height\x18\x02\x20\x01(\x02R\x06height\x12\x1d\n\nwalkable_x\x18\x03\
-    \x20\x03(\rR\twalkableX\x12\x1d\n\nwalkable_y\x18\x04\x20\x03(\rR\twalka\
-    bleY\"\xd7\x04\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\x01(\x0e2\x0f.U\
-    dpMsgDownTypeR\x04Type\x12N\n\x12game_entity_update\x18\x02\x20\x01(\x0b\
-    2\x1b.UdpMsgDownGameEntityUpdateH\0R\x10gameEntityUpdate\x88\x01\x01\x12\
-    Q\n\x13game_entity_removed\x18\x03\x20\x01(\x0b2\x1c.UdpMsgDownGameEntit\
-    yRemovedH\x01R\x11gameEntityRemoved\x88\x01\x01\x12Q\n\x13user_connect_f\
-    ailed\x18\x04\x20\x01(\x0b2\x1c.UdpMsgDownUserConnectFailedH\x02R\x11use\
-    rConnectFailed\x88\x01\x01\x12z\n\"user_create_world_instance_success\
-    \x18\x05\x20\x01(\x0b2).UdpMsgDownUserCreateWorldInstanceSuccessH\x03R\
-    \x1euserCreateWorldInstanceSuccess\x88\x01\x01\x125\n\tarea_init\x18\x06\
-    \x20\x01(\x0b2\x13.UdpMsgDownAreaInitH\x04R\x08areaInit\x88\x01\x01B\x15\
-    \n\x13_game_entity_updateB\x16\n\x14_game_entity_removedB\x16\n\x14_user\
-    _connect_failedB%\n#_user_create_world_instance_successB\x0c\n\n_area_in\
-    it\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\x18\x01\x20\x01(\
-    \x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\x0b2\x0b.UdpMsgDow\
-    nR\x08messages*\xee\x01\n\x0eUdpMsgDownType\x12\x16\n\x12GAME_ENTITY_UPD\
-    ATE\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01\x12\x18\n\x14USER_CON\
-    NECT_SUCCESS\x10\x03\x12\x17\n\x13USER_CONNECT_FAILED\x10\x04\x12\x1b\n\
-    \x17USER_DISCONNECT_SUCCESS\x10\x05\x12&\n\"USER_CREATE_WORDL_INSTANCE_S\
-    UCCESS\x10\x06\x12$\n\x20USER_JOIN_WORDL_INSTANCE_SUCCESS\x10\x07\x12\r\
-    \n\tAREA_INIT\x10\x08b\x06proto3\
+    \x15_collider_dmg_in_rectB\x0f\n\r_collider_mvtB\x11\n\x0f_health_curren\
+    tB\x07\n\x05_cast\"r\n\x0eUdpColliderMvt\x12\x1a\n\x08reversed\x18\x01\
+    \x20\x01(\x08R\x08reversed\x12\x1f\n\x04rect\x18\x02\x20\x01(\x0b2\x06.P\
+    ointH\0R\x04rect\x88\x01\x01\x12\x1a\n\x04poly\x18\x03\x20\x03(\x0b2\x06\
+    .PointR\x04polyB\x07\n\x05_rect\"f\n\x07UdpCast\x12\x1f\n\x05spell\x18\
+    \x01\x20\x01(\x0e2\t.UdpSpellR\x05spell\x12\x1e\n\x06target\x18\x02\x20\
+    \x01(\x0b2\x06.PointR\x06target\x12\x1a\n\x08duration\x18\x03\x20\x01(\r\
+    R\x08duration\"-\n\x1bUdpMsgDownGameEntityRemoved\x12\x0e\n\x02id\x18\
+    \x01\x20\x01(\rR\x02id\"B\n\x1bUdpMsgDownUserConnectFailed\x12#\n\rerror\
+    _message\x18\x01\x20\x01(\tR\x0cerrorMessage\":\n(UdpMsgDownUserCreateWo\
+    rldInstanceSuccess\x12\x0e\n\x02id\x18\x01\x20\x01(\tR\x02id\"\xb0\x01\n\
+    \x12UdpMsgDownAreaInit\x12\x14\n\x05width\x18\x01\x20\x01(\x02R\x05width\
+    \x12\x16\n\x06height\x18\x02\x20\x01(\x02R\x06height\x12\x1d\n\nwalkable\
+    _x\x18\x03\x20\x03(\rR\twalkableX\x12\x1d\n\nwalkable_y\x18\x04\x20\x03(\
+    \rR\twalkableY\x12.\n\x0coob_polygons\x18\x05\x20\x03(\x0b2\x0b.UdpPolyg\
+    onR\x0boobPolygons\"\xd7\x04\n\nUdpMsgDown\x12$\n\x05_type\x18\x01\x20\
+    \x01(\x0e2\x0f.UdpMsgDownTypeR\x04Type\x12N\n\x12game_entity_update\x18\
+    \x02\x20\x01(\x0b2\x1b.UdpMsgDownGameEntityUpdateH\0R\x10gameEntityUpdat\
+    e\x88\x01\x01\x12Q\n\x13game_entity_removed\x18\x03\x20\x01(\x0b2\x1c.Ud\
+    pMsgDownGameEntityRemovedH\x01R\x11gameEntityRemoved\x88\x01\x01\x12Q\n\
+    \x13user_connect_failed\x18\x04\x20\x01(\x0b2\x1c.UdpMsgDownUserConnectF\
+    ailedH\x02R\x11userConnectFailed\x88\x01\x01\x12z\n\"user_create_world_i\
+    nstance_success\x18\x05\x20\x01(\x0b2).UdpMsgDownUserCreateWorldInstance\
+    SuccessH\x03R\x1euserCreateWorldInstanceSuccess\x88\x01\x01\x125\n\tarea\
+    _init\x18\x06\x20\x01(\x0b2\x13.UdpMsgDownAreaInitH\x04R\x08areaInit\x88\
+    \x01\x01B\x15\n\x13_game_entity_updateB\x16\n\x14_game_entity_removedB\
+    \x16\n\x14_user_connect_failedB%\n#_user_create_world_instance_successB\
+    \x0c\n\n_area_init\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\
+    \x18\x01\x20\x01(\x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\
+    \x0b2\x0b.UdpMsgDownR\x08messages*\x95\x02\n\x0eUdpMsgDownType\x12\x16\n\
+    \x12GAME_ENTITY_UPDATE\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01\
+    \x12\x18\n\x14USER_CONNECT_SUCCESS\x10\x03\x12\x17\n\x13USER_CONNECT_FAI\
+    LED\x10\x04\x12\x1b\n\x17USER_DISCONNECT_SUCCESS\x10\x05\x12&\n\"USER_CR\
+    EATE_WORDL_INSTANCE_SUCCESS\x10\x06\x12$\n\x20USER_JOIN_WORDL_INSTANCE_S\
+    UCCESS\x10\x07\x12%\n!USER_LEAVE_WORLD_INSTANCE_SUCCESS\x10\x08\x12\r\n\
+    \tAREA_INIT\x10\tb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -1543,8 +1733,9 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::common::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(8);
+            let mut messages = ::std::vec::Vec::with_capacity(9);
             messages.push(UdpMsgDownGameEntityUpdate::generated_message_descriptor_data());
+            messages.push(UdpColliderMvt::generated_message_descriptor_data());
             messages.push(UdpCast::generated_message_descriptor_data());
             messages.push(UdpMsgDownGameEntityRemoved::generated_message_descriptor_data());
             messages.push(UdpMsgDownUserConnectFailed::generated_message_descriptor_data());

@@ -10,9 +10,10 @@ use bson::oid::ObjectId;
 use godot::builtin::Vector2;
 use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
 use rust_common::math::get_point_from_points_and_distance;
+use rust_common::proto::common::UdpPolygon;
 use rust_common::proto::udp_down::{
-    UdpMsgDown, UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate,
-    UdpMsgDownType, UdpMsgDownWrapper,
+    UdpColliderMvt, UdpMsgDown, UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved,
+    UdpMsgDownGameEntityUpdate, UdpMsgDownType, UdpMsgDownWrapper,
 };
 use rust_common::proto::udp_up::{MsgUp, MsgUpType};
 use tokio::sync::mpsc;
@@ -34,23 +35,30 @@ const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
 pub struct Game {
+    _id: ObjectId,
     players: HashMap<ObjectId, Player>,
-    peer_id_player_id_map: HashMap<u16, ObjectId>,
+    peer_id_user_id_map: HashMap<u16, ObjectId>,
     tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
     internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
     received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ecs_world: World,
     ecs_world_schedule: Schedule,
+    player_spawn_position: Vector2,
 }
 
 impl Game {
     pub fn new(
+        _id: ObjectId,
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
-        let area_gen = generate_area();
+        let area_gen = generate_area(1);
+        let player_spawn_position = Vector2::new(
+            area_gen.player_spawn_position.0 as f32,
+            area_gen.player_spawn_position.1 as f32,
+        );
         let mut world = World::new();
 
         world.init_resource::<Events<UpdateVelocityTarget>>();
@@ -66,9 +74,9 @@ impl Game {
             area_height: area_gen.height as f32 * 60.0,
             walkable_x: area_gen.walkable_x,
             walkable_y: area_gen.walkable_y,
+            oob_polygons: area_gen.oob_polygons,
         };
         world.insert_resource(PathfinderState::new(&area_config));
-        world.insert_resource(area_config);
 
         let mut world_schedule = Schedule::default();
 
@@ -117,30 +125,31 @@ impl Game {
         world_schedule.add_systems(inc_revision_removed_component);
 
         // Add Walls
-        let wall: WallBundle = WallBundle::new(
-            Vector2::new(1050.0, 1080.0),
-            Vector2 {
-                x: 1020.0,
-                y: 120.0,
-            },
-        );
-        world.spawn(wall);
-        let wall2: WallBundle =
-            WallBundle::new(Vector2::new(510.0, 510.0), Vector2 { x: 300.0, y: 300.0 });
-        world.spawn(wall2);
-        let wall3: WallBundle =
-            WallBundle::new(Vector2::new(1050.0, 510.0), Vector2 { x: 300.0, y: 300.0 });
-        world.spawn(wall3);
+        for shape in &area_config.oob_polygons {
+            let area_floor_wall: WallBundle = WallBundle::new_poly(
+                shape
+                    .points
+                    .iter()
+                    .map(|point| Vector2::new(point.0, point.1))
+                    .collect(),
+                !shape.inner_if_true,
+            );
+            world.spawn(area_floor_wall);
+        }
+
+        world.insert_resource(area_config);
 
         Game {
+            _id,
             players: HashMap::new(),
-            peer_id_player_id_map: HashMap::new(),
+            peer_id_user_id_map: HashMap::new(),
             tx_udp_sender,
             paused: false,
             internal_messages_in,
             received_udp_messages,
             ecs_world: world,
             ecs_world_schedule: world_schedule,
+            player_spawn_position,
         }
     }
 
@@ -150,7 +159,10 @@ impl Game {
         peer_id: u16,
         udp_tunnel: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     ) {
-        let player_entity = self.ecs_world.spawn(PlayerBundle::new()).id();
+        let player_entity = self
+            .ecs_world
+            .spawn(PlayerBundle::new(self.player_spawn_position))
+            .id();
 
         let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
         let new_player = Player::new(user_id, peer_id, udp_tunnel, player_entity);
@@ -162,6 +174,18 @@ impl Game {
                     height: area_config.area_height,
                     walkable_x: area_config.walkable_x.to_vec(),
                     walkable_y: area_config.walkable_y.to_vec(),
+                    oob_polygons: area_config
+                        .oob_polygons
+                        .iter()
+                        .map(|shape| UdpPolygon {
+                            points: shape
+                                .points
+                                .iter()
+                                .map(|point| vector2_to_point(&Vector2::new(point.0, point.1)))
+                                .collect(),
+                            ..Default::default()
+                        })
+                        .collect(),
                     ..Default::default()
                 })
                 .into(),
@@ -170,15 +194,29 @@ impl Game {
             ..Default::default()
         });
         self.players.insert(user_id, new_player);
-        self.peer_id_player_id_map.insert(peer_id, user_id);
+        self.peer_id_user_id_map.insert(peer_id, user_id);
 
-        println!("Created new Player({})", user_id);
+        println!(
+            "User {} joined instance {} it now have {} users.",
+            user_id,
+            self._id,
+            self.players.len()
+        );
     }
 
-    #[allow(dead_code)]
-    fn delete_player(&mut self, player_id: ObjectId) {
-        if let Some(removed_player) = self.players.remove(&player_id) {
-            self.ecs_world.despawn(removed_player.player_entity);
+    fn delete_player(&mut self, user_id: ObjectId) {
+        if let Some(removed_player) = self.players.remove(&user_id) {
+            let mut player_game_entity = self
+                .ecs_world
+                .get_mut::<GameEntity>(removed_player.player_entity)
+                .unwrap();
+            player_game_entity.pending_despwan = true;
+            println!(
+                "User {} left instance {} it now have {} users.",
+                user_id,
+                self._id,
+                self.players.len()
+            );
         }
     }
 
@@ -209,6 +247,24 @@ impl Game {
     }
 
     fn tick(&mut self, _: bool) {
+        if self.paused {
+            return;
+        }
+
+        let mut entities_to_despawn = Vec::new();
+        for (entity_id, game_entity) in self
+            .ecs_world
+            .query::<(Entity, &GameEntity)>()
+            .iter(&self.ecs_world)
+        {
+            if game_entity.pending_despwan {
+                entities_to_despawn.push(entity_id);
+            }
+        }
+        for entity_to_despawn in entities_to_despawn {
+            self.ecs_world.despawn(entity_to_despawn);
+        }
+
         let mut internal_messages = VecDeque::new();
         if let Ok(mut received_udp_messages) = self.internal_messages_in.lock() {
             while let Some(message) = received_udp_messages.pop_front() {
@@ -233,24 +289,6 @@ impl Game {
 
         while let Some((from_udp_peer_id, udp_msg_up)) = udp_messages.pop_front() {
             self.handle_upd_msg_up(from_udp_peer_id, udp_msg_up);
-        }
-
-        if self.paused {
-            return;
-        }
-
-        let mut entities_to_despawn = Vec::new();
-        for (entity_id, game_entity) in self
-            .ecs_world
-            .query::<(Entity, &GameEntity)>()
-            .iter(&self.ecs_world)
-        {
-            if game_entity.pending_despwan {
-                entities_to_despawn.push(entity_id);
-            }
-        }
-        for entity_to_despawn in entities_to_despawn {
-            self.ecs_world.despawn(entity_to_despawn);
         }
 
         self.ecs_world_schedule.run(&mut self.ecs_world);
@@ -280,7 +318,7 @@ impl Game {
 
                 if require_update {
                     let udp_msg_down_wrapper = player_udp_msg_down_wrapper_map
-                        .entry(player_mut.id)
+                        .entry(player_mut.user_id)
                         .or_insert(UdpMsgDownWrapper {
                             messages: Vec::new(),
                             ..Default::default()
@@ -318,9 +356,26 @@ impl Game {
                         let collider_dmg_in_rect = entity_ref
                             .get::<ColliderDmgIn>()
                             .map(|x| vector2_to_point(&x.rect));
-                        let collider_mvt_rect = entity_ref
-                            .get::<ColliderMvt>()
-                            .map(|x| vector2_to_point(&x.rect));
+                        let collider_mvt =
+                            entity_ref
+                                .get::<ColliderMvt>()
+                                .map(|collider| UdpColliderMvt {
+                                    reversed: collider.reversed,
+                                    rect: collider
+                                        .shape
+                                        .rect
+                                        .map(|rect| vector2_to_point(&rect))
+                                        .into(),
+                                    poly: collider
+                                        .shape
+                                        .poly
+                                        .clone()
+                                        .unwrap_or_default()
+                                        .iter()
+                                        .map(vector2_to_point)
+                                        .collect(),
+                                    ..Default::default()
+                                });
                         let health_current = entity_ref
                             .get::<Health>()
                             .map(|health| health.get_current());
@@ -337,7 +392,7 @@ impl Game {
                                     None => Vec::new(),
                                 },
                                 collider_dmg_in_rect: collider_dmg_in_rect.into(),
-                                collider_mvt_rect: collider_mvt_rect.into(),
+                                collider_mvt: collider_mvt.into(),
                                 velocity_speed,
                                 health_current,
                                 is_self: entity_id == player_mut.player_entity,
@@ -353,7 +408,9 @@ impl Game {
         }
 
         for player in self.players.values() {
-            if let Some(udp_msg_down_wrapper) = player_udp_msg_down_wrapper_map.remove(&player.id) {
+            if let Some(udp_msg_down_wrapper) =
+                player_udp_msg_down_wrapper_map.remove(&player.user_id)
+            {
                 if !udp_msg_down_wrapper.messages.is_empty() {
                     player.send_message(udp_msg_down_wrapper);
                 }
@@ -368,15 +425,16 @@ impl Game {
                 payload.udp_peer_id,
                 self.tx_udp_sender.clone(),
             ),
+            InboundAreaMessage::PlayerLeave(payload) => self.delete_player(payload.user_id),
         }
     }
 
     fn handle_upd_msg_up(&mut self, from_udp_peer_id: u16, udp_msg_up: MsgUp) {
-        let Some(from_player_id) = self.peer_id_player_id_map.get(&from_udp_peer_id) else {
+        let Some(from_user_id) = self.peer_id_user_id_map.get(&from_udp_peer_id) else {
             return;
         };
 
-        let Some(player) = self.players.get_mut(from_player_id) else {
+        let Some(player) = self.players.get_mut(from_user_id) else {
             return;
         };
 

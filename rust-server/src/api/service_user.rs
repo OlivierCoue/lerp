@@ -2,6 +2,8 @@ use bson::{doc, Document};
 use rust_common::proto::udp_down::*;
 use std::sync::{Arc, Mutex};
 
+use self::service_area::ApiServiceArea;
+
 use super::*;
 
 pub struct ApiServiceUser {}
@@ -114,33 +116,26 @@ impl ApiServiceUser {
     pub async fn disconnect(
         mongo_client: mongodb::Client,
         connections_state: Arc<Mutex<ConnectionsState>>,
-        udp_peer_id: u16,
+        user: &User,
     ) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
 
-        let opt_user_id;
+        ApiServiceArea::leave(user, connections_state.clone());
+
         {
             let mut connections_state_lock = connections_state.lock().unwrap();
-            let Some(user_id) = connections_state_lock
+            connections_state_lock
                 .udp_peer_id_user_id_map
-                .remove(&udp_peer_id)
-            else {
-                return None;
-            };
-            connections_state_lock.user_id_user_map.remove(&user_id);
-            opt_user_id = Some(user_id);
+                .remove(&user.udp_peer_id);
+            connections_state_lock.user_id_user_map.remove(&user._id);
         }
-
-        let Some(user_id) = opt_user_id else {
-            return None;
-        };
 
         let user_collection = mongo_client.database("main").collection::<Document>("user");
 
         let opt_mongo_user_in_word_instance = user_collection
             .find_one(
                 doc! {
-                    "_id": user_id,
+                    "_id": user._id,
                     "current_word_instance_id": { "$exists": true }
                 },
                 None,

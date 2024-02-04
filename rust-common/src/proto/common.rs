@@ -165,6 +165,129 @@ impl ::protobuf::reflect::ProtobufValue for Point {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
+// @@protoc_insertion_point(message:UdpPolygon)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct UdpPolygon {
+    // message fields
+    // @@protoc_insertion_point(field:UdpPolygon.points)
+    pub points: ::std::vec::Vec<Point>,
+    // special fields
+    // @@protoc_insertion_point(special_field:UdpPolygon.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a UdpPolygon {
+    fn default() -> &'a UdpPolygon {
+        <UdpPolygon as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UdpPolygon {
+    pub fn new() -> UdpPolygon {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "points",
+            |m: &UdpPolygon| { &m.points },
+            |m: &mut UdpPolygon| { &mut m.points },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<UdpPolygon>(
+            "UdpPolygon",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for UdpPolygon {
+    const NAME: &'static str = "UdpPolygon";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.points.push(is.read_message()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        for value in &self.points {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        for v in &self.points {
+            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
+        };
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> UdpPolygon {
+        UdpPolygon::new()
+    }
+
+    fn clear(&mut self) {
+        self.points.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static UdpPolygon {
+        static instance: UdpPolygon = UdpPolygon {
+            points: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for UdpPolygon {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("UdpPolygon").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for UdpPolygon {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UdpPolygon {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
 #[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
 // @@protoc_insertion_point(enum:GameEntityBaseType)
 pub enum GameEntityBaseType {
@@ -311,11 +434,13 @@ impl UdpSpell {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0ccommon.proto\"#\n\x05Point\x12\x0c\n\x01x\x18\x01\x20\x01(\x02R\
-    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y*Z\n\x12GameEntityBaseTyp\
-    e\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01\x12\t\n\x05ENEM\
-    Y\x10\x02\x12\x08\n\x04WALL\x10\x03\x12\x10\n\x0cMELEE_ATTACK\x10\x04*N\
-    \n\x08UdpSpell\x12\x14\n\x10SPELL_PROJECTILE\x10\0\x12\x14\n\x10SPELL_FR\
-    OZEN_ORB\x10\x01\x12\x16\n\x12SPELL_MELEE_ATTACK\x10\x02b\x06proto3\
+    \x01x\x12\x0c\n\x01y\x18\x02\x20\x01(\x02R\x01y\",\n\nUdpPolygon\x12\x1e\
+    \n\x06points\x18\x01\x20\x03(\x0b2\x06.PointR\x06points*Z\n\x12GameEntit\
+    yBaseType\x12\r\n\tCHARACTER\x10\0\x12\x0e\n\nPROJECTILE\x10\x01\x12\t\n\
+    \x05ENEMY\x10\x02\x12\x08\n\x04WALL\x10\x03\x12\x10\n\x0cMELEE_ATTACK\
+    \x10\x04*N\n\x08UdpSpell\x12\x14\n\x10SPELL_PROJECTILE\x10\0\x12\x14\n\
+    \x10SPELL_FROZEN_ORB\x10\x01\x12\x16\n\x12SPELL_MELEE_ATTACK\x10\x02b\
+    \x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -333,8 +458,9 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
     file_descriptor.get(|| {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(0);
-            let mut messages = ::std::vec::Vec::with_capacity(1);
+            let mut messages = ::std::vec::Vec::with_capacity(2);
             messages.push(Point::generated_message_descriptor_data());
+            messages.push(UdpPolygon::generated_message_descriptor_data());
             let mut enums = ::std::vec::Vec::with_capacity(2);
             enums.push(GameEntityBaseType::generated_enum_descriptor_data());
             enums.push(UdpSpell::generated_enum_descriptor_data());

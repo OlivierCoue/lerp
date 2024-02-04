@@ -9,7 +9,8 @@ enum UdpMsgDownType {
     USER_DISCONNECT_SUCCESS = 5;
     USER_CREATE_WORDL_INSTANCE_SUCCESS = 6;
     USER_JOIN_WORDL_INSTANCE_SUCCESS = 7;
-    AREA_INIT = 8;
+    USER_LEAVE_WORLD_INSTANCE_SUCCESS = 8;
+    AREA_INIT = 9;
 }
 
 message UdpMsgDownGameEntityUpdate {
@@ -19,10 +20,16 @@ message UdpMsgDownGameEntityUpdate {
     repeated Point location_target_queue = 4;
     optional float velocity_speed = 5;
     optional Point collider_dmg_in_rect = 6;
-    optional Point collider_mvt_rect = 7;
+    optional UdpColliderMvt collider_mvt = 7;
     optional uint32 health_current = 8;
     bool is_self = 9;
     optional UdpCast cast = 10;
+}
+
+message UdpColliderMvt {
+    bool reversed = 1;
+    optional Point rect = 2;
+    repeated Point poly = 3;
 }
 
 message UdpCast {
@@ -48,6 +55,7 @@ message UdpMsgDownAreaInit {
     float height = 2;
     repeated uint32 walkable_x = 3;
     repeated uint32 walkable_y = 4;
+    repeated UdpPolygon oob_polygons = 5;
 }
 
 

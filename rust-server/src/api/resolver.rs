@@ -58,7 +58,6 @@ impl ApiResolver {
                     if let Some(user) = opt_user {
                         opt_udp_messages_down = Self::handle_authenticated_msg(
                             mongo_client.clone(),
-                            udp_peer_id,
                             connections_state.clone(),
                             tx_udp_sender.clone(),
                             &udp_msg_up,
@@ -89,7 +88,6 @@ impl ApiResolver {
 
     async fn handle_authenticated_msg(
         mongo_client: mongodb::Client,
-        udp_peer_id: u16,
         connections_state: Arc<Mutex<ConnectionsState>>,
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         udp_msg_up: &MsgUp,
@@ -98,12 +96,8 @@ impl ApiResolver {
     ) -> Option<Vec<UdpMsgDown>> {
         match _type {
             MsgUpType::USER_DISCONNECT => {
-                ApiServiceUser::disconnect(
-                    mongo_client.clone(),
-                    connections_state.clone(),
-                    udp_peer_id,
-                )
-                .await
+                ApiServiceUser::disconnect(mongo_client.clone(), connections_state.clone(), user)
+                    .await
             }
             MsgUpType::USER_CREATE_WORLD_INSTANCE => {
                 ApiServiceArea::create(
@@ -126,6 +120,9 @@ impl ApiResolver {
                 } else {
                     None
                 }
+            }
+            MsgUpType::USER_LEAVE_WORLD_INSTANCE => {
+                ApiServiceArea::leave(user, connections_state.clone())
             }
             _ => {
                 ApiServiceArea::forward_msg(user, connections_state.clone(), udp_msg_up);

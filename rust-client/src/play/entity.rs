@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 
+use godot::engine::collision_polygon_2d::BuildMode;
 use godot::engine::global::HorizontalAlignment;
 use godot::engine::utilities::rad_to_deg;
 use godot::engine::{
-    AnimatedSprite2D, CharacterBody2D, CollisionShape2D, ConvexPolygonShape2D, ISprite2D, Label,
-    Polygon2D, ResourceLoader, Sprite2D, Texture2D,
+    AnimatedSprite2D, CharacterBody2D, CollisionPolygon2D, CollisionShape2D, ConvexPolygonShape2D,
+    ISprite2D, Label, Polygon2D, ResourceLoader, Sprite2D, Texture2D,
 };
 use godot::prelude::*;
 use rust_common::helper::point_to_vector2;
@@ -212,21 +213,73 @@ impl GameEntity {
             self.base_mut().add_child(polygon2d.upcast());
         }
 
-        if let Some(collider_mvt_rect) = entity_update.collider_mvt_rect.as_ref() {
-            let mut collision_shape_2d = CollisionShape2D::new_alloc();
-            let mut shape = ConvexPolygonShape2D::new_gd();
-            let mut packed_vector2_array = PackedVector2Array::new();
-            let a = Vector2::new(-(collider_mvt_rect.x / 2.0), -(collider_mvt_rect.y / 2.0));
-            let b = Vector2::new(collider_mvt_rect.x / 2.0, -(collider_mvt_rect.y / 2.0));
-            let c = Vector2::new(collider_mvt_rect.x / 2.0, collider_mvt_rect.y / 2.0);
-            let d = Vector2::new(-(collider_mvt_rect.x / 2.0), collider_mvt_rect.y / 2.0);
-            packed_vector2_array.insert(0, cart_to_iso(&a));
-            packed_vector2_array.insert(1, cart_to_iso(&b));
-            packed_vector2_array.insert(2, cart_to_iso(&c));
-            packed_vector2_array.insert(3, cart_to_iso(&d));
-            shape.set_points(packed_vector2_array);
-            collision_shape_2d.set_shape(shape.upcast());
-            self.base_mut().add_child(collision_shape_2d.upcast());
+        if let Some(collider_mvt) = entity_update.collider_mvt.as_ref() {
+            if let Some(rect) = collider_mvt.rect.as_ref() {
+                let mut collision_shape_2d = CollisionShape2D::new_alloc();
+                let mut shape = ConvexPolygonShape2D::new_gd();
+                let mut packed_vector2_array = PackedVector2Array::new();
+                let a = Vector2::new(-(rect.x / 2.0), -(rect.y / 2.0));
+                let b = Vector2::new(rect.x / 2.0, -(rect.y / 2.0));
+                let c = Vector2::new(rect.x / 2.0, rect.y / 2.0);
+                let d = Vector2::new(-(rect.x / 2.0), rect.y / 2.0);
+                packed_vector2_array.insert(0, cart_to_iso(&a));
+                packed_vector2_array.insert(1, cart_to_iso(&b));
+                packed_vector2_array.insert(2, cart_to_iso(&c));
+                packed_vector2_array.insert(3, cart_to_iso(&d));
+                shape.set_points(packed_vector2_array);
+                collision_shape_2d.set_shape(shape.upcast());
+                self.base_mut().add_child(collision_shape_2d.upcast());
+            } else if !collider_mvt.poly.is_empty() && collider_mvt.reversed {
+                // For reverse polygon, we have to create a polygon which cover all the map minus the shape of the given polygon
+                // This case is only used for the shape of the global map atm
+                let mut collision_shape_2d = CollisionPolygon2D::new_alloc();
+                let mut packed_vector2_array = PackedVector2Array::new();
+                for (index, point) in collider_mvt.poly.iter().enumerate() {
+                    packed_vector2_array.insert(index, cart_to_iso(&point_to_vector2(point)));
+                }
+                let start_point = point_to_vector2(&collider_mvt.poly[0]);
+
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&point_to_vector2(&collider_mvt.poly[0])),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(0.0, start_point.y)),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(0.0, 0.0)),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(100000.0, 0.0)),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(100000.0, 100000.0)),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(0.0, 100000.0)),
+                );
+                packed_vector2_array.insert(
+                    packed_vector2_array.len(),
+                    cart_to_iso(&Vector2::new(0.0, start_point.y)),
+                );
+
+                collision_shape_2d.set_build_mode(BuildMode::SEGMENTS);
+                collision_shape_2d.set_polygon(packed_vector2_array);
+                self.base_mut().add_child(collision_shape_2d.upcast());
+            } else if !collider_mvt.poly.is_empty() {
+                let mut collision_shape_2d = CollisionPolygon2D::new_alloc();
+                let mut packed_vector2_array = PackedVector2Array::new();
+                for (index, point) in collider_mvt.poly.iter().enumerate() {
+                    packed_vector2_array.insert(index, cart_to_iso(&point_to_vector2(point)));
+                }
+                collision_shape_2d.set_polygon(packed_vector2_array);
+                self.base_mut().add_child(collision_shape_2d.upcast());
+            }
         }
     }
 
