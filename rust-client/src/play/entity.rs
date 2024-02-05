@@ -26,6 +26,8 @@ pub struct GameEntity {
     is_current_player: bool,
     position_init: Vector2,
     position_target_queue: VecDeque<Vector2>,
+    server_position_current: Option<Vector2>,
+    allow_server_position_sync: bool,
     speed: f32,
     base_type: GameEntityBaseType,
     health_label: Option<Gd<Label>>,
@@ -44,6 +46,8 @@ impl ISprite2D for GameEntity {
             base,
             position_init: Vector2::ZERO,
             position_target_queue: VecDeque::new(),
+            server_position_current: None,
+            allow_server_position_sync: false,
             speed: 0.0,
             base_type: GameEntityBaseType::CHARACTER,
             is_current_player: false,
@@ -116,6 +120,7 @@ impl ISprite2D for GameEntity {
     }
 
     fn process(&mut self, delta: f64) {
+        // Remove first element of position_target_queue if current position is aprox equal to it
         if let Some(position_target) = self.position_target_queue.get(0) {
             let vd = *position_target - iso_to_cart(&self.base().get_position());
             let len = vd.length();
@@ -125,8 +130,10 @@ impl ISprite2D for GameEntity {
             }
         }
 
+        let mut is_moving = false;
+        // Move to target if some exist
         if let Some(position_target) = self.position_target_queue.get(0) {
-            let is_moving = *position_target != iso_to_cart(&self.base().get_position());
+            is_moving = *position_target != iso_to_cart(&self.base().get_position());
 
             if is_moving {
                 let velocity = iso_to_cart(&self.base().get_position())
@@ -137,6 +144,19 @@ impl ISprite2D for GameEntity {
                 self.base_mut().move_and_collide(cart_to_iso(&velocity));
             }
         }
+
+        // Slide to the exact server position to reduce desync
+        if !is_moving && self.allow_server_position_sync {
+            if let Some(server_position_current) = self.server_position_current {
+                let position_current = iso_to_cart(&self.base().get_position());
+                if position_current != server_position_current {
+                    godot_print!("sync");
+                    let new_position = position_current
+                        .move_toward(server_position_current, self.speed * delta as f32);
+                    self.base_mut().set_position(cart_to_iso(&new_position));
+                }
+            }
+        }
     }
 }
 
@@ -145,11 +165,7 @@ impl GameEntity {
     #[func]
     fn on_player_move_start(&mut self, _: Vector2) {}
     #[func]
-    fn on_player_throw_fireball_start(&mut self) {
-        if self.is_current_player {
-            self.position_target_queue.clear();
-        }
-    }
+    fn on_player_throw_fireball_start(&mut self) {}
 }
 
 impl GameEntity {
@@ -159,7 +175,7 @@ impl GameEntity {
             entity_update
                 .location_target_queue
                 .iter()
-                .map(|p| point_to_vector2(&p))
+                .map(point_to_vector2)
                 .collect::<Vec<_>>(),
         );
 
@@ -289,9 +305,11 @@ impl GameEntity {
             entity_update
                 .location_target_queue
                 .iter()
-                .map(|p| point_to_vector2(&p))
+                .map(point_to_vector2)
                 .collect::<Vec<_>>(),
         );
+
+        self.allow_server_position_sync = self.position_target_queue.is_empty();
 
         if entity_update.cast.is_some() {
             self.casting_target = Some(point_to_vector2(&entity_update.cast.target));
@@ -304,6 +322,7 @@ impl GameEntity {
         self.update_animated_sprite();
 
         let new_position_current = point_to_vector2(&entity_update.location_current);
+        self.server_position_current = Some(new_position_current);
         if iso_to_cart(&self.base().get_position()).distance_to(new_position_current) > 300.0 {
             self.base_mut()
                 .set_position(cart_to_iso(&new_position_current));
