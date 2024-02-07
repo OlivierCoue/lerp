@@ -39,7 +39,7 @@ impl ApiServiceUser {
             r#"SELECT uuid FROM users WHERE username = $1"#,
             username.clone()
         )
-        .fetch_optional(&app.pg_pool)
+        .fetch_optional(app.pg_pool())
         .await;
 
         let user = match user {
@@ -103,7 +103,7 @@ impl ApiServiceUser {
             user_uuid,
             username.clone()
         )
-        .fetch_all(&app.pg_pool)
+        .fetch_all(app.pg_pool())
         .await;
 
         match insert_result {

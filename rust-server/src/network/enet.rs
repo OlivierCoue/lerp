@@ -14,6 +14,8 @@ use std::{
 };
 
 use protobuf::Message;
+
+use crate::env::{ENV_UDP_ADDRESS, ENV_UDP_PORT};
 pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 
 unsafe impl Sync for ENetPeerPtrWrapper {}
@@ -27,8 +29,6 @@ pub struct ENetEventWrapper(_ENetEvent);
 unsafe impl Sync for ENetEventWrapper {}
 unsafe impl Send for ENetEventWrapper {}
 
-const ADDRESS: &str = "127.0.0.1";
-const PORT: u16 = 34254;
 const MAX_PEERS_COUNT: usize = 10;
 
 pub fn enet_start(
@@ -62,14 +62,17 @@ fn enet_receive(
 
     println!("[ENet] initialized.");
 
+    let address_str = String::from(std::env::var(ENV_UDP_ADDRESS).unwrap().as_str());
+    let port = std::env::var(ENV_UDP_PORT).unwrap().parse::<u16>().unwrap();
+
     let address: MaybeUninit<ENetAddress> = MaybeUninit::uninit();
     let mut address = unsafe { address.assume_init() };
-    address.port = PORT;
+    address.port = port;
 
-    let address_hostname = CString::new(ADDRESS).unwrap();
+    let address_hostname = CString::new(std::env::var(ENV_UDP_ADDRESS).unwrap().as_str()).unwrap();
 
     if unsafe { enet_address_set_hostname(&mut address, address_hostname.as_ptr()) } != 0 {
-        panic!("[ENet] Invalid hostname \"{}\".", ADDRESS);
+        panic!("[ENet] Invalid hostname \"{}\".", address_str);
     }
 
     let host =

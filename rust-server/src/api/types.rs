@@ -44,7 +44,7 @@ pub struct UsersState {
 #[derive(Clone)]
 pub struct App {
     users_state: Arc<Mutex<UsersState>>,
-    pub pg_pool: sqlx::Pool<Postgres>,
+    pg_pool: sqlx::Pool<Postgres>,
     pub tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
 }
 impl App {
@@ -61,5 +61,9 @@ impl App {
 
     pub fn get_users_state_lock(&self) -> std::sync::MutexGuard<'_, UsersState> {
         self.users_state.lock().unwrap()
+    }
+
+    pub fn pg_pool(&self) -> &sqlx::Pool<Postgres> {
+        &self.pg_pool
     }
 }

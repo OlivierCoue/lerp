@@ -16,7 +16,7 @@ impl ApiServiceArea {
 
         let world_instance_uuid = Uuid::new_v4();
 
-        let mut tx = app.pg_pool.begin().await.unwrap();
+        let mut tx = app.pg_pool().begin().await.unwrap();
 
         if let Err(err) = sqlx::query!(
             "INSERT INTO world_instances VALUES ($1);",
@@ -144,7 +144,7 @@ impl ApiServiceArea {
                 world_instance_uuid,
                 user.uuid,
             )
-            .execute(&app.pg_pool)
+            .execute(app.pg_pool())
             .await
             .unwrap();
         }
