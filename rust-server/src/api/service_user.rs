@@ -1,6 +1,5 @@
-use bson::{doc, Document};
 use rust_common::proto::udp_down::*;
-use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 use self::service_area::ApiServiceArea;
 
@@ -8,20 +7,13 @@ use super::*;
 
 pub struct ApiServiceUser {}
 impl ApiServiceUser {
-    pub async fn connect(
-        mongo_client: mongodb::Client,
-        udp_peer_id: u16,
-        connections_state: Arc<Mutex<ConnectionsState>>,
-        username: String,
-    ) -> Option<Vec<UdpMsgDown>> {
+    pub async fn connect(app: App, udp_peer_id: u16, username: String) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
-        let user_collection = mongo_client.database("main").collection::<Document>("user");
 
         // If a user is already localy register with the incoming udp_peer_id send an error
-        if connections_state
-            .lock()
-            .unwrap()
-            .udp_peer_id_user_id_map
+        if app
+            .get_users_state_lock()
+            .udp_peer_id_user_uuid_map
             .get(&udp_peer_id)
             .is_some()
         {
@@ -33,125 +25,135 @@ impl ApiServiceUser {
                 })
                 .into(),
                 ..Default::default()
-            })
-        } else {
-            let existing_db_user = user_collection
-                .find_one(
-                    doc! {
-                          "username": username.clone()
-                    },
-                    None,
-                )
-                .await;
+            });
 
-            // If the user exist in DB, check if he is already localy registered, if yes send error else register it localy and send success
-            if let Ok(Some(existing_db_user)) = existing_db_user {
-                let _id = existing_db_user.get_object_id("_id").unwrap();
-                let mut connections_state_lock = connections_state.lock().unwrap();
-                if connections_state_lock.user_id_user_map.get(&_id).is_some() {
-                    udp_messages.push(UdpMsgDown {
-                        _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
-                        user_connect_failed: Some(UdpMsgDownUserConnectFailed {
-                            error_message: "User is already connected from another client.".into(),
-                            ..Default::default()
-                        })
-                        .into(),
+            return Some(udp_messages);
+        };
+
+        struct PgResult {
+            uuid: Uuid,
+        }
+
+        let user = sqlx::query_as!(
+            PgResult,
+            r#"SELECT uuid FROM users WHERE username = $1"#,
+            username.clone()
+        )
+        .fetch_optional(&app.pg_pool)
+        .await;
+
+        let user = match user {
+            Ok(opt_user) => opt_user,
+            Err(err) => {
+                println!(
+                    "[ApiServiceUser][connect] Failed to query user, error: {}",
+                    err
+                );
+                udp_messages.push(UdpMsgDown {
+                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    user_connect_failed: Some(UdpMsgDownUserConnectFailed {
+                        error_message: "Failed to query user.".into(),
                         ..Default::default()
                     })
-                } else {
-                    connections_state_lock
-                        .user_id_user_map
-                        .insert(_id, User::new(_id, udp_peer_id));
-                    connections_state_lock
-                        .udp_peer_id_user_id_map
-                        .insert(udp_peer_id, _id);
+                    .into(),
+                    ..Default::default()
+                });
+                return Some(udp_messages);
+            }
+        };
 
-                    udp_messages.push(UdpMsgDown {
-                        _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
+        // If the user exist in DB, check if he is already localy registered, if yes send error else register it localy and send success
+        if let Some(user) = user {
+            let mut users_state_lock = app.get_users_state_lock();
+            if users_state_lock
+                .user_uuid_user_map
+                .get(&user.uuid)
+                .is_some()
+            {
+                udp_messages.push(UdpMsgDown {
+                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    user_connect_failed: Some(UdpMsgDownUserConnectFailed {
+                        error_message: "User is already connected from another client.".into(),
                         ..Default::default()
                     })
-                }
-            // Else if the user does not exist in DB, create it register it localy and send success
+                    .into(),
+                    ..Default::default()
+                })
             } else {
-                let new_user_doc = doc! {
-                   "username": username.clone()
-                };
+                users_state_lock
+                    .user_uuid_user_map
+                    .insert(user.uuid, User::new(user.uuid, udp_peer_id));
+                users_state_lock
+                    .udp_peer_id_user_uuid_map
+                    .insert(udp_peer_id, user.uuid);
 
-                let insert_result = user_collection.insert_one(new_user_doc.clone(), None).await;
+                udp_messages.push(UdpMsgDown {
+                    _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
+                    ..Default::default()
+                })
+            }
 
-                if let Ok(insert_success) = insert_result {
-                    let _id = insert_success.inserted_id.as_object_id().unwrap();
+            return Some(udp_messages);
+        }
 
-                    {
-                        let mut connections_state_lock = connections_state.lock().unwrap();
-                        connections_state_lock
-                            .user_id_user_map
-                            .insert(_id, User::new(_id, udp_peer_id));
-                        connections_state_lock
-                            .udp_peer_id_user_id_map
-                            .insert(udp_peer_id, _id);
-                    }
+        // Else if the user does not exist in DB, create it register it localy and send success
+        let user_uuid = Uuid::new_v4();
+        let insert_result = sqlx::query!(
+            "INSERT INTO users (uuid, username) VALUES ($1, $2)",
+            user_uuid,
+            username.clone()
+        )
+        .fetch_all(&app.pg_pool)
+        .await;
 
-                    udp_messages.push(UdpMsgDown {
-                        _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
-                        ..Default::default()
-                    })
-                } else {
-                    udp_messages.push(UdpMsgDown {
-                        _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
-                        user_connect_failed: Some(UdpMsgDownUserConnectFailed {
-                            error_message: "Failed to register user.".into(),
-                            ..Default::default()
-                        })
-                        .into(),
-                        ..Default::default()
-                    })
+        match insert_result {
+            Ok(_) => {
+                {
+                    let mut users_state_lock = app.get_users_state_lock();
+                    users_state_lock
+                        .user_uuid_user_map
+                        .insert(user_uuid, User::new(user_uuid, udp_peer_id));
+                    users_state_lock
+                        .udp_peer_id_user_uuid_map
+                        .insert(udp_peer_id, user_uuid);
                 }
+
+                udp_messages.push(UdpMsgDown {
+                    _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
+                    ..Default::default()
+                })
+            }
+            Err(err) => {
+                println!(
+                    "[ApiServiceUser][connect] Failed to insert user, error: {}",
+                    err
+                );
+                udp_messages.push(UdpMsgDown {
+                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    user_connect_failed: Some(UdpMsgDownUserConnectFailed {
+                        error_message: "Failed to register user.".into(),
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..Default::default()
+                });
             }
         }
 
         Some(udp_messages)
     }
 
-    pub async fn disconnect(
-        mongo_client: mongodb::Client,
-        connections_state: Arc<Mutex<ConnectionsState>>,
-        user: &User,
-    ) -> Option<Vec<UdpMsgDown>> {
+    pub async fn disconnect(app: App, user: &User) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
 
-        ApiServiceArea::leave(user, connections_state.clone());
+        ApiServiceArea::leave(app.clone(), user);
 
         {
-            let mut connections_state_lock = connections_state.lock().unwrap();
-            connections_state_lock
-                .udp_peer_id_user_id_map
+            let mut users_state_lock = app.get_users_state_lock();
+            users_state_lock
+                .udp_peer_id_user_uuid_map
                 .remove(&user.udp_peer_id);
-            connections_state_lock.user_id_user_map.remove(&user._id);
-        }
-
-        let user_collection = mongo_client.database("main").collection::<Document>("user");
-
-        let opt_mongo_user_in_word_instance = user_collection
-            .find_one(
-                doc! {
-                    "_id": user._id,
-                    "current_word_instance_id": { "$exists": true }
-                },
-                None,
-            )
-            .await
-            .unwrap();
-
-        if let Some(mongo_user_in_word_instance) = opt_mongo_user_in_word_instance {
-            println!(
-                "user is currently in world: {}",
-                mongo_user_in_word_instance
-                    .get_object_id("current_word_instance_id")
-                    .unwrap()
-            );
-        } else {
-            println!("user is not in any world");
+            users_state_lock.user_uuid_user_map.remove(&user.uuid);
         }
 
         udp_messages.push(UdpMsgDown {

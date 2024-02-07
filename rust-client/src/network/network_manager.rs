@@ -1,3 +1,4 @@
+use godot::prelude::*;
 use std::{
     collections::VecDeque,
     rc::Rc,
@@ -9,27 +10,21 @@ use std::{
 };
 
 use crate::network::prelude::*;
-use godot::prelude::*;
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 
-pub trait NetworkListener {
-    fn on_message(&mut self, udp_msg_down_wrapper: UdpMsgDownWrapper);
-}
+use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 
 #[derive(GodotClass)]
 #[class(base=Node)]
 pub struct NetworkManager {
     base: Base<Node>,
-
     pub udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
     pub tx_enet_sender: Sender<MsgUpWrapper>,
     pub rx_enet_receiver: Rc<Receiver<UdpMsgDownWrapper>>,
 }
 
 #[godot_api]
-impl NetworkManager {
-    #[allow(clippy::new_without_default)]
-    pub fn init(base: Base<Node>) -> Self {
+impl INode for NetworkManager {
+    fn init(base: Base<Node>) -> Self {
         let udp_msg_down_wrappers = Arc::new(Mutex::new(VecDeque::<UdpMsgDownWrapper>::new()));
         let (tx_enet_sender, rx_enet_sender) = mpsc::channel();
         let (tx_enet_receiver, rx_enet_receiver) = mpsc::channel();
@@ -50,7 +45,9 @@ impl NetworkManager {
             rx_enet_receiver,
         }
     }
+}
 
+impl NetworkManager {
     pub fn send(&self, udp_msg_up_wrapper: MsgUpWrapper) {
         self.tx_enet_sender
             .send(udp_msg_up_wrapper)

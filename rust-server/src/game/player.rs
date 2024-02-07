@@ -1,12 +1,12 @@
 use bevy_ecs::entity::Entity;
-use bson::oid::ObjectId;
 use rust_common::proto::udp_down::UdpMsgDownWrapper;
+use uuid::Uuid;
 
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 
 pub struct Player {
-    pub user_id: ObjectId,
+    pub user_uuid: Uuid,
     pub enet_peer_id: u16,
     pub tx_enet_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     pub player_entity: Entity,
@@ -14,13 +14,13 @@ pub struct Player {
 }
 impl Player {
     pub fn new(
-        user_id: ObjectId,
+        user_id: Uuid,
         enet_peer_id: u16,
         tx_enet_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         player_entity: Entity,
     ) -> Player {
         Player {
-            user_id,
+            user_uuid: user_id,
             enet_peer_id,
             tx_enet_sender,
             player_entity,

@@ -5,5 +5,5 @@ edition = "2021"
 
 
 [dependencies]
-godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [ "experimental-threads" ] }
 protobuf = "3.3.0"

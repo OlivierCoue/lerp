@@ -1,14 +1,24 @@
 version: '3'
 
 services:
-  # MongoDb
-  mongo-global:
-    build: ./docker-mongo-replica
-    container_name: 'lerp-mongo'
+  postgres:
+    image: 'postgres:16'
+    container_name: 'lerp-postgres'
     volumes:
-      - './local/docker/mongo:/data/db'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      - './local/docker/postgresql:/var/lib/postgresql/data'
     ports:
-      - '27017:27017'
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: 'admin'
+      POSTGRES_PASSWORD: 'password'
+      POSTGRES_DB: 'lerp-local'
+  adminer:
+    image: 'adminer:4.7'
+    container_name: 'lerp-adminer'
+    links:
+      - 'postgres:postgres'
+    ports:
+      - '3010:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: 'postgres'
+      ADMINER_DESIGN: 'pappu687'

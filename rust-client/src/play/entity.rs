@@ -150,7 +150,6 @@ impl ISprite2D for GameEntity {
             if let Some(server_position_current) = self.server_position_current {
                 let position_current = iso_to_cart(&self.base().get_position());
                 if position_current != server_position_current {
-                    godot_print!("sync");
                     let new_position = position_current
                         .move_toward(server_position_current, self.speed * delta as f32);
                     self.base_mut().set_position(cart_to_iso(&new_position));
@@ -165,7 +164,11 @@ impl GameEntity {
     #[func]
     fn on_player_move_start(&mut self, _: Vector2) {}
     #[func]
-    fn on_player_throw_fireball_start(&mut self) {}
+    fn on_player_throw_fireball_start(&mut self) {
+        if self.is_current_player {
+            self.position_target_queue.clear();
+        }
+    }
 }
 
 impl GameEntity {

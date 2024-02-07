@@ -6,7 +6,6 @@ pub mod internal_message;
 pub mod player;
 
 use bevy_ecs::prelude::*;
-use bson::oid::ObjectId;
 use godot::builtin::Vector2;
 use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
 use rust_common::math::get_point_from_points_and_distance;
@@ -17,6 +16,7 @@ use rust_common::proto::udp_down::{
 };
 use rust_common::proto::udp_up::{MsgUp, MsgUpType};
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 use std::cmp::max;
 use std::collections::HashMap;
@@ -35,9 +35,9 @@ const UPDATE_USERS_EVERY_N_TICK: u32 = 1;
 const GAME_TIME_TICK_DURATION_MILLIS: u32 = 30;
 
 pub struct Game {
-    _id: ObjectId,
-    players: HashMap<ObjectId, Player>,
-    peer_id_user_id_map: HashMap<u16, ObjectId>,
+    uuid: Uuid,
+    players: HashMap<Uuid, Player>,
+    peer_id_user_id_map: HashMap<u16, Uuid>,
     tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
     internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
@@ -49,7 +49,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(
-        _id: ObjectId,
+        uuid: Uuid,
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
@@ -140,7 +140,7 @@ impl Game {
         world.insert_resource(area_config);
 
         Game {
-            _id,
+            uuid,
             players: HashMap::new(),
             peer_id_user_id_map: HashMap::new(),
             tx_udp_sender,
@@ -155,7 +155,7 @@ impl Game {
 
     fn add_player(
         &mut self,
-        user_id: ObjectId,
+        user_uuid: Uuid,
         peer_id: u16,
         udp_tunnel: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     ) {
@@ -165,7 +165,7 @@ impl Game {
             .id();
 
         let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
-        let new_player = Player::new(user_id, peer_id, udp_tunnel, player_entity);
+        let new_player = Player::new(user_uuid, peer_id, udp_tunnel, player_entity);
         new_player.send_message(UdpMsgDownWrapper {
             messages: vec![UdpMsgDown {
                 _type: UdpMsgDownType::AREA_INIT.into(),
@@ -193,19 +193,19 @@ impl Game {
             }],
             ..Default::default()
         });
-        self.players.insert(user_id, new_player);
-        self.peer_id_user_id_map.insert(peer_id, user_id);
+        self.players.insert(user_uuid, new_player);
+        self.peer_id_user_id_map.insert(peer_id, user_uuid);
 
         println!(
             "User {} joined instance {} it now have {} users.",
-            user_id,
-            self._id,
+            user_uuid,
+            self.uuid,
             self.players.len()
         );
     }
 
-    fn delete_player(&mut self, user_id: ObjectId) {
-        if let Some(removed_player) = self.players.remove(&user_id) {
+    fn delete_player(&mut self, user_uuid: Uuid) {
+        if let Some(removed_player) = self.players.remove(&user_uuid) {
             let mut player_game_entity = self
                 .ecs_world
                 .get_mut::<GameEntity>(removed_player.player_entity)
@@ -213,8 +213,8 @@ impl Game {
             player_game_entity.pending_despwan = true;
             println!(
                 "User {} left instance {} it now have {} users.",
-                user_id,
-                self._id,
+                user_uuid,
+                self.uuid,
                 self.players.len()
             );
         }
@@ -318,7 +318,7 @@ impl Game {
 
                 if require_update {
                     let udp_msg_down_wrapper = player_udp_msg_down_wrapper_map
-                        .entry(player_mut.user_id)
+                        .entry(player_mut.user_uuid)
                         .or_insert(UdpMsgDownWrapper {
                             messages: Vec::new(),
                             ..Default::default()
@@ -409,7 +409,7 @@ impl Game {
 
         for player in self.players.values() {
             if let Some(udp_msg_down_wrapper) =
-                player_udp_msg_down_wrapper_map.remove(&player.user_id)
+                player_udp_msg_down_wrapper_map.remove(&player.user_uuid)
             {
                 if !udp_msg_down_wrapper.messages.is_empty() {
                     player.send_message(udp_msg_down_wrapper);
@@ -421,11 +421,11 @@ impl Game {
     fn handle_internal_message(&mut self, message: InboundAreaMessage) {
         match message {
             InboundAreaMessage::PlayerInit(payload) => self.add_player(
-                payload.user_id,
+                payload.user_uuid,
                 payload.udp_peer_id,
                 self.tx_udp_sender.clone(),
             ),
-            InboundAreaMessage::PlayerLeave(payload) => self.delete_player(payload.user_id),
+            InboundAreaMessage::PlayerLeave(payload) => self.delete_player(payload.user_uuid),
         }
     }
 

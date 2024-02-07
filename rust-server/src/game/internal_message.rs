@@ -1,4 +1,4 @@
-use bson::oid::ObjectId;
+use uuid::Uuid;
 
 pub enum InboundAreaMessage {
     PlayerInit(PlayerInitPayload),
@@ -6,10 +6,10 @@ pub enum InboundAreaMessage {
 }
 
 pub struct PlayerInitPayload {
-    pub user_id: ObjectId,
+    pub user_uuid: Uuid,
     pub udp_peer_id: u16,
 }
 
 pub struct PlayerLeavePayload {
-    pub user_id: ObjectId,
+    pub user_uuid: Uuid,
 }

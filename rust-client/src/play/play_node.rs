@@ -274,11 +274,14 @@ impl PlayNode {
 
         godot_print!("shape count: {}", area_init.oob_polygons.len());
 
-        godot_print!(
-            "init_tile_map: {}:{}",
-            area_init.walkable_x.len(),
-            area_init.walkable_x.len()
-        );
+        godot_print!("init_tile_map: {}:{}", area_init.width, area_init.height);
+
+        for x in 0..(area_init.width as usize / 60) {
+            for y in 0..(area_init.height as usize / 60) {
+                let cell = tile_map.set_cell_ex(0, Vector2i::new(x as i32 - 1, y as i32));
+                cell.atlas_coords(Vector2i::new(10, 2)).source_id(0).done();
+            }
+        }
 
         for i in 0..area_init.walkable_x.len() {
             let cell = tile_map.set_cell_ex(
