@@ -89,10 +89,21 @@ impl ApiResolver {
                     None
                 }
             }
-            MsgUpType::USER_LEAVE_WORLD_INSTANCE => ApiServiceArea::leave(app, user),
+            MsgUpType::USER_LEAVE_WORLD_INSTANCE => ApiServiceArea::leave(app, user).await,
             _ => {
                 ApiServiceArea::forward_msg(app, user, udp_msg_up);
                 None
+            }
+        }
+    }
+
+    pub async fn handle_outbound_area_message(
+        app: App,
+        outbound_area_message: OutboundAreaMessage,
+    ) {
+        match outbound_area_message {
+            OutboundAreaMessage::AreaClosing(payload) => {
+                ApiServiceArea::close(app, payload.area_uuid).await;
             }
         }
     }

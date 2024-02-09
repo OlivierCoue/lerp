@@ -23,13 +23,25 @@ cargo build
 Start server:
 
 ```
-cargo run
+cargo run -p rust-server
 ```
 
 Start client (in godot editor):
 
 ```
 godot godot/project.godot
+```
+
+## Architecture
+
+```
+godot
+rust-client
+rust-common
+rust-server-common
+rust-server-auth
+rust-server-lobby
+rust-server-game
 ```
 
 ## Deployment

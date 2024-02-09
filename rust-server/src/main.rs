@@ -19,8 +19,14 @@ async fn main() -> Result<(), ()> {
 
     let (tx_enet_sender, rx_enet_sender) = mpsc::channel(1000);
     let (tx_enet_receiver, rx_enet_receiver) = mpsc::channel(100);
+    let (tx_from_instance_internal_messages, rx_from_instance_internal_messages) =
+        mpsc::channel(100);
 
-    let app = App::new(pg_pool_init().await, tx_enet_sender.clone());
+    let app = App::new(
+        pg_pool_init().await,
+        tx_enet_sender,
+        tx_from_instance_internal_messages,
+    );
 
     let mut join_handlers = Vec::new();
     join_handlers.push(thread::spawn(move || {
@@ -30,8 +36,7 @@ async fn main() -> Result<(), ()> {
     let mut set = JoinSet::new();
 
     set.spawn(async move {
-        let mut users_manager = Api::new(app, rx_enet_receiver);
-        users_manager.run().await;
+        Api::run(app, rx_enet_receiver, rx_from_instance_internal_messages).await;
     });
 
     set.join_next().await;

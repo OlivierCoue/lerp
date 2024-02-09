@@ -16,35 +16,17 @@ impl ApiServiceArea {
 
         let world_instance_uuid = Uuid::new_v4();
 
-        let mut tx = app.pg_pool().begin().await.unwrap();
-
         if let Err(err) = sqlx::query!(
-            "INSERT INTO world_instances VALUES ($1);",
-            world_instance_uuid
+            "INSERT INTO world_instances (uuid, created_by) VALUES ($1, $2);",
+            world_instance_uuid,
+            user.uuid,
         )
-        .execute(&mut *tx)
+        .execute(app.pg_pool())
         .await
         {
             println!("[ApiServiceArea][create] Error: {}", err);
             return None;
         }
-
-        if let Err(err) = sqlx::query!(
-            "UPDATE users SET current_world_instance_uuid = $1 WHERE uuid = $2;",
-            world_instance_uuid,
-            user.uuid
-        )
-        .execute(&mut *tx)
-        .await
-        {
-            println!("[ApiServiceArea][create] Error: {}", err);
-            return None;
-        };
-
-        if let Err(err) = tx.commit().await {
-            println!("[ApiServiceArea][create] Error: {}", err);
-            return None;
-        };
 
         let mut users_state_lock = app.get_users_state_lock();
 
@@ -55,12 +37,14 @@ impl ApiServiceArea {
         let udp_msg_up_dequeue_2 = Arc::clone(&udp_msg_up_dequeue_1);
 
         let tx_udp_sender = app.tx_udp_sender.clone();
+        let tx_from_instance_internal_messages = app.tx_from_instance_internal_messages.clone();
 
         let thread_join_handle = thread::spawn(move || {
             let mut game: Game = Game::new(
                 world_instance_uuid,
                 tx_udp_sender,
                 received_internal_messages_1,
+                tx_from_instance_internal_messages,
                 udp_msg_up_dequeue_1,
             );
             game.start();
@@ -69,9 +53,9 @@ impl ApiServiceArea {
         users_state_lock.world_instance_map.insert(
             world_instance_uuid,
             WorldInstance {
-                _id: world_instance_uuid,
+                uuid: world_instance_uuid,
                 user_uuids: HashMap::new(),
-                received_internal_messages: received_internal_messages_2,
+                to_instance_internal_messages: received_internal_messages_2,
                 udp_msg_up_dequeue: udp_msg_up_dequeue_2,
                 thread_join_handle,
             },
@@ -97,27 +81,42 @@ impl ApiServiceArea {
     ) -> Option<Vec<UdpMsgDown>> {
         let Ok(world_instance_uuid) = Uuid::from_str(&world_instance_uuid) else {
             println!(
-                "[user_join_world_instance] invalid world_instance_uuid: {}",
+                "[ApiServiceArea][join] Invalid world_instance_uuid: {}",
                 world_instance_uuid
             );
             return None;
         };
 
+        let mut pg_tx = app.pg_pool().begin().await.unwrap();
+
+        let update_result = sqlx::query!(
+            "UPDATE users SET current_world_instance_uuid = $1 WHERE uuid = $2 AND current_world_instance_uuid IS NULL;",
+            world_instance_uuid,
+            user.uuid,
+        )
+        .execute(&mut *pg_tx)
+        .await.unwrap();
+
+        if update_result.rows_affected() != 1 {
+            println!("[ApiServiceArea][join] User is already in an instance (globaly).");
+            return None;
+        }
+
         let mut success = false;
         {
             let mut users_state_lock = app.get_users_state_lock();
-            if let Some(mut wolrd_instance) = users_state_lock
+            if let Some(mut world_instance) = users_state_lock
                 .world_instance_map
                 .remove(&world_instance_uuid)
             {
                 if let Some(user) = users_state_lock.user_uuid_user_map.get_mut(&user.uuid) {
-                    if wolrd_instance.user_uuids.get(&user.uuid).is_none()
-                        && user.current_world_instance_uuid != Some(world_instance_uuid)
+                    if world_instance.user_uuids.get(&user.uuid).is_none()
+                        && user.current_world_instance_uuid.is_none()
                     {
                         user.current_world_instance_uuid = Some(world_instance_uuid);
-                        wolrd_instance.user_uuids.insert(user.uuid, true);
+                        world_instance.user_uuids.insert(user.uuid, true);
                         if let Ok(mut received_internal_messages) =
-                            wolrd_instance.received_internal_messages.lock()
+                            world_instance.to_instance_internal_messages.lock()
                         {
                             received_internal_messages.push_back(InboundAreaMessage::PlayerInit(
                                 PlayerInitPayload {
@@ -127,59 +126,86 @@ impl ApiServiceArea {
                             ));
                             success = true;
                         } else {
-                            println!("[user_join_world_instance] Failed to get received_internal_messages lock, area may have crashed.")
+                            println!("[ApiServiceArea][join] Failed to get received_internal_messages lock, area may have crashed.")
                         }
+                    } else {
+                        println!("[ApiServiceArea][join] User is already in an instance (localy).")
                     }
                 }
 
                 users_state_lock
                     .world_instance_map
-                    .insert(world_instance_uuid, wolrd_instance);
+                    .insert(world_instance_uuid, world_instance);
             }
         }
 
         if success {
-            sqlx::query!(
-                "UPDATE users SET current_world_instance_uuid = $1 WHERE uuid = $2;",
-                world_instance_uuid,
-                user.uuid,
-            )
-            .execute(app.pg_pool())
-            .await
-            .unwrap();
+            pg_tx.commit().await.unwrap();
+        } else {
+            pg_tx.rollback().await.unwrap();
         }
 
         None
     }
 
-    pub fn leave(app: App, user: &User) -> Option<Vec<UdpMsgDown>> {
+    pub async fn close(app: App, area_uuid: Uuid) {
+        {
+            let mut users_state = app.get_users_state_lock();
+            if let Some(area_instance) = users_state.world_instance_map.remove(&area_uuid) {
+                for (user_uuid, _) in area_instance.user_uuids {
+                    if let Some(user) = users_state.user_uuid_user_map.get_mut(&user_uuid) {
+                        if user.current_world_instance_uuid == Some(area_uuid) {
+                            user.current_world_instance_uuid = None;
+                        }
+                    }
+                }
+            }
+        }
+
+        sqlx::query!(r#"DELETE FROM world_instances WHERE uuid = $1;"#, area_uuid)
+            .execute(app.pg_pool())
+            .await
+            .unwrap();
+    }
+
+    pub async fn leave(app: App, user: &User) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
 
-        let Some(instance_id) = user.current_world_instance_uuid else {
+        let Some(instance_uuid) = user.current_world_instance_uuid else {
             return None;
         };
 
-        let mut users_state_lock = app.get_users_state_lock();
-        let Some(user_mut) = users_state_lock.user_uuid_user_map.get_mut(&user.uuid) else {
-            return None;
-        };
-        user_mut.current_world_instance_uuid = None;
+        {
+            let mut users_state_lock = app.get_users_state_lock();
+            let Some(user_mut) = users_state_lock.user_uuid_user_map.get_mut(&user.uuid) else {
+                return None;
+            };
+            user_mut.current_world_instance_uuid = None;
 
-        let Some(instance) = users_state_lock.world_instance_map.get_mut(&instance_id) else {
-            return None;
-        };
+            let Some(instance) = users_state_lock.world_instance_map.get_mut(&instance_uuid) else {
+                return None;
+            };
 
-        instance
-            .received_internal_messages
-            .lock()
-            .unwrap()
-            .push_back(InboundAreaMessage::PlayerLeave(PlayerLeavePayload {
-                user_uuid: user.uuid,
-            }));
-        instance.user_uuids.remove(&user.uuid);
+            instance
+                .to_instance_internal_messages
+                .lock()
+                .unwrap()
+                .push_back(InboundAreaMessage::PlayerLeave(PlayerLeavePayload {
+                    user_uuid: user.uuid,
+                }));
+            instance.user_uuids.remove(&user.uuid);
+        }
+
+        sqlx::query!(
+            "UPDATE users SET current_world_instance_uuid = NULL WHERE uuid = $1;",
+            user.uuid,
+        )
+        .execute(app.pg_pool())
+        .await
+        .unwrap();
 
         udp_messages.push(UdpMsgDown {
-            _type: UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS.into(),
+            _type: UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS.into(),
             ..Default::default()
         });
 

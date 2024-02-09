@@ -87,7 +87,6 @@ impl INode2D for PlayNode {
                 #[allow(clippy::single_match)]
                 match udp_msg_down._type.unwrap() {
                     UdpMsgDownType::AREA_INIT => {
-                        godot_print!("AREA_INIT");
                         let area_config = udp_msg_down.area_init.into_option().unwrap();
                         self.init_tile_map(&area_config);
                     }
@@ -101,7 +100,7 @@ impl INode2D for PlayNode {
                             self.remove_entity(entity_removed);
                         }
                     }
-                    UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS => {
+                    UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS => {
                         if let Some(root) = self.root.as_mut() {
                             root.bind_mut().change_scene(Scenes::Lobby);
                         }

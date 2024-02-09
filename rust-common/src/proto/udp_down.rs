@@ -1573,12 +1573,10 @@ pub enum UdpMsgDownType {
     USER_DISCONNECT_SUCCESS = 5,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_CREATE_WORDL_INSTANCE_SUCCESS)
     USER_CREATE_WORDL_INSTANCE_SUCCESS = 6,
-    // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_JOIN_WORDL_INSTANCE_SUCCESS)
-    USER_JOIN_WORDL_INSTANCE_SUCCESS = 7,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.USER_LEAVE_WORLD_INSTANCE_SUCCESS)
-    USER_LEAVE_WORLD_INSTANCE_SUCCESS = 8,
+    USER_LEAVE_WORLD_INSTANCE_SUCCESS = 7,
     // @@protoc_insertion_point(enum_value:UdpMsgDownType.AREA_INIT)
-    AREA_INIT = 9,
+    AREA_INIT = 8,
 }
 
 impl ::protobuf::Enum for UdpMsgDownType {
@@ -1596,9 +1594,8 @@ impl ::protobuf::Enum for UdpMsgDownType {
             4 => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_FAILED),
             5 => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
             6 => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
-            7 => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
-            8 => ::std::option::Option::Some(UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS),
-            9 => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
+            7 => ::std::option::Option::Some(UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS),
+            8 => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
         }
     }
@@ -1611,7 +1608,6 @@ impl ::protobuf::Enum for UdpMsgDownType {
             "USER_CONNECT_FAILED" => ::std::option::Option::Some(UdpMsgDownType::USER_CONNECT_FAILED),
             "USER_DISCONNECT_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_DISCONNECT_SUCCESS),
             "USER_CREATE_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS),
-            "USER_JOIN_WORDL_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS),
             "USER_LEAVE_WORLD_INSTANCE_SUCCESS" => ::std::option::Option::Some(UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS),
             "AREA_INIT" => ::std::option::Option::Some(UdpMsgDownType::AREA_INIT),
             _ => ::std::option::Option::None
@@ -1625,7 +1621,6 @@ impl ::protobuf::Enum for UdpMsgDownType {
         UdpMsgDownType::USER_CONNECT_FAILED,
         UdpMsgDownType::USER_DISCONNECT_SUCCESS,
         UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS,
-        UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS,
         UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS,
         UdpMsgDownType::AREA_INIT,
     ];
@@ -1645,9 +1640,8 @@ impl ::protobuf::EnumFull for UdpMsgDownType {
             UdpMsgDownType::USER_CONNECT_FAILED => 3,
             UdpMsgDownType::USER_DISCONNECT_SUCCESS => 4,
             UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS => 5,
-            UdpMsgDownType::USER_JOIN_WORDL_INSTANCE_SUCCESS => 6,
-            UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS => 7,
-            UdpMsgDownType::AREA_INIT => 8,
+            UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS => 6,
+            UdpMsgDownType::AREA_INIT => 7,
         };
         Self::enum_descriptor().value_by_index(index)
     }
@@ -1708,13 +1702,12 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x16\n\x14_user_connect_failedB%\n#_user_create_world_instance_successB\
     \x0c\n\n_area_init\"]\n\x11UdpMsgDownWrapper\x12\x1f\n\x0bserver_time\
     \x18\x01\x20\x01(\x04R\nserverTime\x12'\n\x08messages\x18\x02\x20\x03(\
-    \x0b2\x0b.UdpMsgDownR\x08messages*\x95\x02\n\x0eUdpMsgDownType\x12\x16\n\
+    \x0b2\x0b.UdpMsgDownR\x08messages*\xef\x01\n\x0eUdpMsgDownType\x12\x16\n\
     \x12GAME_ENTITY_UPDATE\x10\0\x12\x17\n\x13GAME_ENTITY_REMOVED\x10\x01\
     \x12\x18\n\x14USER_CONNECT_SUCCESS\x10\x03\x12\x17\n\x13USER_CONNECT_FAI\
     LED\x10\x04\x12\x1b\n\x17USER_DISCONNECT_SUCCESS\x10\x05\x12&\n\"USER_CR\
-    EATE_WORDL_INSTANCE_SUCCESS\x10\x06\x12$\n\x20USER_JOIN_WORDL_INSTANCE_S\
-    UCCESS\x10\x07\x12%\n!USER_LEAVE_WORLD_INSTANCE_SUCCESS\x10\x08\x12\r\n\
-    \tAREA_INIT\x10\tb\x06proto3\
+    EATE_WORDL_INSTANCE_SUCCESS\x10\x06\x12%\n!USER_LEAVE_WORLD_INSTANCE_SUC\
+    CESS\x10\x07\x12\r\n\tAREA_INIT\x10\x08b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

@@ -24,9 +24,11 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use crate::game::internal_message::AreaClosingPayload;
+
 use self::area_gen::generate_area;
 use self::ecs::prelude::*;
-use self::internal_message::InboundAreaMessage;
+use self::internal_message::{InboundAreaMessage, OutboundAreaMessage};
 use self::player::Player;
 
 const TICK_RATE_MILLIS: u128 = 30;
@@ -41,10 +43,12 @@ pub struct Game {
     tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
     paused: bool,
     internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
+    tx_from_instance_internal_messages: mpsc::Sender<OutboundAreaMessage>,
     received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ecs_world: World,
     ecs_world_schedule: Schedule,
     player_spawn_position: Vector2,
+    is_closed: bool,
 }
 
 impl Game {
@@ -52,6 +56,7 @@ impl Game {
         uuid: Uuid,
         tx_udp_sender: mpsc::Sender<(u16, UdpMsgDownWrapper)>,
         internal_messages_in: Arc<Mutex<VecDeque<InboundAreaMessage>>>,
+        tx_from_instance_internal_messages: mpsc::Sender<OutboundAreaMessage>,
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
         let area_gen = generate_area(0);
@@ -146,10 +151,12 @@ impl Game {
             tx_udp_sender,
             paused: false,
             internal_messages_in,
+            tx_from_instance_internal_messages,
             received_udp_messages,
             ecs_world: world,
             ecs_world_schedule: world_schedule,
             player_spawn_position,
+            is_closed: false,
         }
     }
 
@@ -197,9 +204,9 @@ impl Game {
         self.peer_id_user_id_map.insert(peer_id, user_uuid);
 
         println!(
-            "User {} joined instance {} it now have {} users.",
-            user_uuid,
+            "[Game][{}] User {} joined, it now have {} users.",
             self.uuid,
+            user_uuid,
             self.players.len()
         );
     }
@@ -211,18 +218,28 @@ impl Game {
                 .get_mut::<GameEntity>(removed_player.player_entity)
                 .unwrap();
             player_game_entity.pending_despwan = true;
+
             println!(
-                "User {} left instance {} it now have {} users.",
-                user_uuid,
+                "[Game][{}] User {} left, it now have {} users.",
                 self.uuid,
+                user_uuid,
                 self.players.len()
             );
+
+            if self.players.is_empty() {
+                self.is_closed = true;
+                self.tx_from_instance_internal_messages
+                    .blocking_send(OutboundAreaMessage::AreaClosing(AreaClosingPayload {
+                        area_uuid: self.uuid,
+                    }))
+                    .unwrap();
+            }
         }
     }
 
     pub fn start(&mut self) {
         let mut tick_count = 0;
-        loop {
+        while !self.is_closed {
             let started_at: u128 = get_timestamp_nanos();
             tick_count += 1;
             self.tick(tick_count == UPDATE_USERS_EVERY_N_TICK);
@@ -244,6 +261,8 @@ impl Game {
             self.ecs_world.get_resource_mut::<Time>().unwrap().delta =
                 (get_timestamp_nanos() - started_at) as f32 / 1000000000.0;
         }
+
+        println!("[Game][{}] Is now closed.", self.uuid);
     }
 
     fn tick(&mut self, _: bool) {

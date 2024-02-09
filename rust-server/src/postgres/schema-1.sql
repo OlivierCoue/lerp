@@ -14,9 +14,13 @@ CREATE UNIQUE INDEX uidx_users_username ON users(UPPER(username));
 
 CREATE TABLE world_instances (
     uuid UUID NOT NULL,
+    created_by UUID NOT NULL,
 
     CONSTRAINT world_instances_pkey PRIMARY KEY (uuid)
 );
 
-ALTER TABLE users ADD CONSTRAINT fk_current_world_instance_uuid_world_instances FOREIGN KEY (current_world_instance_uuid) REFERENCES world_instances(uuid) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE world_instances ADD CONSTRAINT fk_created_by_users FOREIGN KEY (created_by) REFERENCES users(uuid);
+CREATE INDEX idx_created_by_users ON world_instances(created_by);
+
+ALTER TABLE users ADD CONSTRAINT fk_current_world_instance_uuid_world_instances FOREIGN KEY (current_world_instance_uuid) REFERENCES world_instances(uuid) ON DELETE SET NULL ON UPDATE CASCADE;
 CREATE INDEX idx_users_current_world_instance_uuid ON users(current_world_instance_uuid);

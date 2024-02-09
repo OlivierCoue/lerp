@@ -13,3 +13,11 @@ pub struct PlayerInitPayload {
 pub struct PlayerLeavePayload {
     pub user_uuid: Uuid,
 }
+
+pub enum OutboundAreaMessage {
+    AreaClosing(AreaClosingPayload),
+}
+
+pub struct AreaClosingPayload {
+    pub area_uuid: Uuid,
+}

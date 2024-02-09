@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use godot::{
-    engine::{Button, Label, LineEdit},
+    engine::{Button, HttpClient, HttpRequest, Label, LineEdit},
     prelude::*,
 };
 use rust_common::proto::{

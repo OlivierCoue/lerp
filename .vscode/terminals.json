@@ -1,0 +1,21 @@
+{
+    "terminals": [
+      {
+        "name": "Root",
+        "open": true
+      },
+      {
+        "name": "godot",
+        "open": true
+      },
+      {
+        "name": "rust-client",
+        "open": true
+      },
+      {
+        "name": "rust-server",
+        "open": true
+      }
+    ]
+  }
+  

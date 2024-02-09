@@ -146,7 +146,7 @@ impl ApiServiceUser {
     pub async fn disconnect(app: App, user: &User) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
 
-        ApiServiceArea::leave(app.clone(), user);
+        ApiServiceArea::leave(app.clone(), user).await;
 
         {
             let mut users_state_lock = app.get_users_state_lock();
