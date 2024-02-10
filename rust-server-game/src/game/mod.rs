@@ -142,6 +142,15 @@ impl Game {
             world.spawn(area_floor_wall);
         }
 
+        // Add Enemies
+        for enemy in &area_gen.enemies {
+            let enemy_bundle = EnemyBundle::new(
+                Vector2::new(enemy.point.0 as f32, enemy.point.1 as f32),
+                false,
+            );
+            world.spawn(enemy_bundle);
+        }
+
         world.insert_resource(area_config);
 
         Game {

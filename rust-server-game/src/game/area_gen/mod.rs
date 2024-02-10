@@ -1,16 +1,19 @@
 // Custom
-use floor_pattern::{FloorPattern, Map, Tile, TileType};
+use maps::{FloorPattern, Map, Tile, TileType};
 // RNG
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 // Image creation
 use image::ImageBuffer;
 
-mod floor_pattern;
+use self::maps::MobPack;
+
+mod maps;
 
 type Grid = Vec<Vec<Tile>>;
 
 const TILE_SIZE: i32 = 60;
+const MOB_SIZE: i32 = 20;
 
 pub struct AreaGenerationOutput {
     pub width: u32,
@@ -19,6 +22,7 @@ pub struct AreaGenerationOutput {
     pub walkable_y: Vec<u32>,
     pub oob_polygons: Vec<Shape>, // bool is true when outer oob shape, false when inner
     pub player_spawn_position: (i32, i32),
+    pub enemies: Vec<Enemy>, // pub ennemies: Vec<enemy>,
 }
 
 pub struct Shape {
@@ -26,14 +30,28 @@ pub struct Shape {
     pub inner_if_true: bool,
 }
 
+#[derive(Clone)]
+pub enum EnemyType {
+    Ranged,
+    Melee,
+}
+
+pub struct Enemy {
+    pub point: (u32, u32),
+    pub mob_type: EnemyType,
+}
+
 pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Create random generator from seed
     // fixed seed
-    // let seed: u64 = 8863375687041853504;
+    // let seed: u64 = ;
     // random seed
     let seed: u64 = rand::random();
+    // The rng instance is created from the seed
+    let mut rng: ChaCha8Rng = ChaCha8Rng::seed_from_u64(seed);
+    println!("{}", seed);
 
-    let mut maps = floor_pattern::define_floor_patterns();
+    let mut maps = maps::define_floor_patterns();
     //------------------------------------------------------//
     //               Generate maps                          //
     //------------------------------------------------------//
@@ -42,35 +60,41 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     let map = maps.remove(map_index);
     let map_name = map.name.clone();
     // Generate map grid
-    let (mut grid, player_spawn_position) = generate_map(seed, map);
+    let (mut grid, player_spawn_position, packs) = generate_map(&mut rng, map);
 
     //------------------------------------------------------//
     //               Find oob polygons                      //
     //------------------------------------------------------//
     let oob_polygons = find_oob_polygons(&mut grid);
-    render_grid(&grid, map_name.clone() + "_outline", true);
     render_grid(&grid, map_name.clone(), false);
+
+    // render_grid(&grid, map_name.clone() + "_outline", true);
+
+    //------------------------------------------------------//
+    //               Generate mobs                          //
+    //------------------------------------------------------//
+
+    let enemies = generate_mobs(&packs, &mut rng);
 
     // Initiate module outputf
     let mut walkable_x = Vec::new();
     let mut walkable_y = Vec::new();
     for x in 0..grid.len() {
         for y in 0..grid[0].len() {
-            if grid[x][y].tile_type == TileType::Floor
-                || grid[x][y].tile_type == TileType::Start
-                || grid[x][y].tile_type == TileType::Boss
-            {
+            if grid[x][y].walkable {
                 walkable_x.push(x as u32);
                 walkable_y.push(y as u32);
             }
         }
     }
     println!(
-        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles",
+        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles\n    Packs : {} \n    Monsters : {}",
         seed,
         map_name,
         grid.len(),
-        grid[0].len()
+        grid[0].len(),
+        packs.len(),
+        enemies.len(),
     );
     AreaGenerationOutput {
         oob_polygons,
@@ -79,14 +103,115 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         walkable_x,
         walkable_y,
         player_spawn_position,
+        enemies,
     }
+}
+
+fn generate_mobs(packs: &Vec<MobPack>, rng: &mut ChaCha8Rng) -> Vec<Enemy> {
+    let mut mobs = Vec::new();
+    let max_mobs_per_pack = (TILE_SIZE / MOB_SIZE) * (TILE_SIZE / MOB_SIZE);
+    let tile_size = TILE_SIZE as usize;
+    let mob_size = MOB_SIZE as usize;
+    for pack in packs {
+        let mut x_offset = 0;
+        let mut y_offset = 0;
+        let nb_monsters = rng.gen_range(0..max_mobs_per_pack);
+        for _ in 0..=nb_monsters {
+            if (pack.tile_coords.0 * tile_size) + x_offset + mob_size
+                <= (pack.tile_coords.0 + 1) * tile_size
+            {
+                x_offset += mob_size;
+            } else {
+                x_offset = 0;
+                y_offset += mob_size;
+            }
+            let mob_coord_x = (pack.tile_coords.0 * tile_size) + x_offset + (mob_size / 2);
+            let mob_coord_y = (pack.tile_coords.1 * tile_size) + y_offset + (mob_size / 2);
+
+            let mob_type = match rng.gen_range(0u8..=1u8) {
+                0 => EnemyType::Melee,
+                1 => EnemyType::Ranged,
+                _ => EnemyType::Melee,
+            };
+            mobs.push(Enemy {
+                mob_type: mob_type.clone(),
+                point: (mob_coord_x as u32, mob_coord_y as u32),
+            });
+            // debug monster position
+            // println!(
+            //     "tile:{} {}, {} monsters, mob_coords: {} {}, type: {}",
+            //     pack.tile_coords.0,
+            //     pack.tile_coords.1,
+            //     nb_monsters + 1,
+            //     mob_coord_x,
+            //     mob_coord_y,
+            //     match mob_type {
+            //         EnemyType::Melee => "Melee",
+            //         EnemyType::Ranged => "Ranged",
+            //     }
+            // );
+        }
+    }
+
+    mobs
+}
+
+fn add_mob_packs(grid: &mut Grid, rng: &mut ChaCha8Rng, density: f64) -> Vec<MobPack> {
+    let mut nb_walkable = 0;
+    let mut packs = Vec::new();
+    for row in grid.iter_mut() {
+        for tile in row {
+            if tile.walkable {
+                nb_walkable += 1;
+            }
+        }
+    }
+    let nb_packs = (density * nb_walkable as f64) as i32;
+    let tiles_iter = nb_walkable / nb_packs;
+    // Pas utiliser directement tiles_iter, mais le randomisser de 0 a tile_itter
+    let mut iter = 0;
+    let mut next_iter = tiles_iter;
+    let grid_copy = grid.to_vec();
+    for (x, row) in grid.iter_mut().enumerate() {
+        for (y, tile) in row.iter_mut().enumerate() {
+            if tile.walkable
+                && iter >= next_iter
+                && tile.spawnable
+                // No monsters next to walls
+                && grid_copy[x+1][y].walkable
+                && grid_copy[x-1][y].walkable
+                && grid_copy[x][y+1].walkable
+                && grid_copy[x][y-1].walkable
+            {
+                tile.mob_pack = Some(maps::MobPack {
+                    tile_coords: (x, y),
+                });
+                packs.push(maps::MobPack {
+                    tile_coords: (x, y),
+                });
+
+                iter = 0;
+                next_iter = rng.gen_range((tiles_iter as f64 * 0.7) as i32..tiles_iter);
+            }
+            if tile.walkable {
+                iter += 1;
+            }
+        }
+    }
+    // reset scanned tracker
+    for row in grid.iter_mut() {
+        for tile in row {
+            tile.scanned = false;
+        }
+    }
+    packs
 }
 
 fn find_oob_polygons(grid: &mut Grid) -> Vec<Shape> {
     // Find a first point on the map contour
     let mut oob_polygons = Vec::new();
     let mut current_pos = (0, (grid[0].len() / 2) as i32);
-    while grid[current_pos.0 as usize][current_pos.1 as usize].tile_type != TileType::Floor {
+    while !grid[current_pos.0 as usize][current_pos.1 as usize].walkable {
         current_pos.0 += 1;
     }
     // Take a step
@@ -102,13 +227,11 @@ fn find_oob_polygons(grid: &mut Grid) -> Vec<Shape> {
         for x in 1..grid.len() - 1 {
             for y in 1..grid[0].len() - 1 {
                 if !grid[x][y].scanned
-                    && grid[x][y].tile_type != TileType::Floor
-                    && grid[x][y].tile_type != TileType::Boss
-                    && grid[x][y].tile_type != TileType::Start
-                    && (grid[x + 1][y].tile_type == TileType::Floor
-                        || grid[x - 1][y].tile_type == TileType::Floor
-                        || grid[x][y + 1].tile_type == TileType::Floor
-                        || grid[x][y - 1].tile_type == TileType::Floor)
+                    && !grid[x][y].walkable
+                    && (grid[x + 1][y].walkable
+                        || grid[x - 1][y].walkable
+                        || grid[x][y + 1].walkable
+                        || grid[x][y - 1].walkable)
                 {
                     oob_polygons.push(Shape {
                         points: find_oob_polygone((x as i32, y as i32), grid, (0, -1)),
@@ -141,13 +264,9 @@ fn find_oob_polygone(
         // if current dir is down
         if dir == (0, 1) {
             // right is floor
-            if (grid[current_pos.0 as usize + 1][current_pos.1 as usize]).tile_type
-                == TileType::Floor
-            {
+            if (grid[current_pos.0 as usize + 1][current_pos.1 as usize]).walkable {
                 // down is floor
-                if grid[current_pos.0 as usize][current_pos.1 as usize + 1].tile_type
-                    == TileType::Floor
-                {
+                if grid[current_pos.0 as usize][current_pos.1 as usize + 1].walkable {
                     //found corner
                     tile_polygone.push(current_pos);
                     //keep bottom right point
@@ -173,13 +292,9 @@ fn find_oob_polygone(
         // if curent dir is left
         if dir == (-1, 0) {
             // bottom is floor
-            if (grid[current_pos.0 as usize][current_pos.1 as usize + 1]).tile_type
-                == TileType::Floor
-            {
+            if (grid[current_pos.0 as usize][current_pos.1 as usize + 1]).walkable {
                 // left is floor
-                if grid[current_pos.0 as usize - 1][current_pos.1 as usize].tile_type
-                    == TileType::Floor
-                {
+                if grid[current_pos.0 as usize - 1][current_pos.1 as usize].walkable {
                     //found corner
                     tile_polygone.push(current_pos);
                     //keep bottom left
@@ -204,13 +319,9 @@ fn find_oob_polygone(
         // if curent dir is right
         if dir == (1, 0) {
             // up is floor
-            if (grid[current_pos.0 as usize][current_pos.1 as usize - 1]).tile_type
-                == TileType::Floor
-            {
+            if (grid[current_pos.0 as usize][current_pos.1 as usize - 1]).walkable {
                 // right is floor
-                if grid[current_pos.0 as usize + 1][current_pos.1 as usize].tile_type
-                    == TileType::Floor
-                {
+                if grid[current_pos.0 as usize + 1][current_pos.1 as usize].walkable {
                     //found corner
                     tile_polygone.push(current_pos);
                     // keep up right point
@@ -235,13 +346,9 @@ fn find_oob_polygone(
         // if current dir is up
         if dir == (0, -1) {
             // left is floor
-            if (grid[current_pos.0 as usize - 1][current_pos.1 as usize]).tile_type
-                == TileType::Floor
-            {
+            if (grid[current_pos.0 as usize - 1][current_pos.1 as usize]).walkable {
                 // up is floor
-                if grid[current_pos.0 as usize][current_pos.1 as usize - 1].tile_type
-                    == TileType::Floor
-                {
+                if grid[current_pos.0 as usize][current_pos.1 as usize - 1].walkable {
                     //found corner
                     tile_polygone.push(current_pos);
                     // keep up left point
@@ -279,22 +386,20 @@ fn find_oob_polygone(
     px_polygone
 }
 
-fn generate_map(seed: u64, map: Map) -> (Grid, (i32, i32)) {
-    // The rng instance is created from the seed
-    let mut rng: ChaCha8Rng = ChaCha8Rng::seed_from_u64(seed);
-
+fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (Grid, (i32, i32), Vec<MobPack>) {
     let oob_tiletype = map.oob_type;
 
+    let grid_size = 1500;
+
     // Initialize map grid from initial biome and oob tile type
-    let mut grid: Grid = init_grid(750, 750, oob_tiletype);
+    let mut grid: Grid = init_grid(grid_size, grid_size, oob_tiletype);
 
     // genrate walkable paths based on a random selection of possible biomes
-    let mut center = map.generation_init_center;
+    let mut center = (grid_size / 2, grid_size / 2);
     let map_start = center;
-
+    // Add
     for i in 0..map.biomes.len() {
-        center =
-            generate_walkable_layout(&mut grid, &map.biomes[i], &mut rng, oob_tiletype, center);
+        center = generate_walkable_layout(&mut grid, &map.biomes[i], rng, center);
     }
 
     // remove small clusters of oob tiles
@@ -303,8 +408,8 @@ fn generate_map(seed: u64, map: Map) -> (Grid, (i32, i32)) {
     remove_small_cluster(&mut grid, oob_tiletype, 4, false, true);
 
     // add Start of map, first center and last center
-    draw_rectangle(&mut grid, TileType::Start, (2, 2), map_start);
-    draw_rectangle(&mut grid, TileType::Boss, (2, 2), center);
+    draw_rectangle(&mut grid, TileType::Start, (5, 5), map_start, true, false);
+    draw_rectangle(&mut grid, TileType::Boss, (1, 1), center, true, true);
 
     // resize_grid to it's minimum size
     resize_grid(&mut grid, 4);
@@ -319,6 +424,12 @@ fn generate_map(seed: u64, map: Map) -> (Grid, (i32, i32)) {
         }
     }
 
+    // add events on map, tag them as non spawnable
+    // TODO
+
+    // add mob packs
+    let mob_packs = add_mob_packs(&mut grid, rng, map.density);
+
     // // print grid
     // render_grid(&grid, map.name.clone());
     (
@@ -327,6 +438,7 @@ fn generate_map(seed: u64, map: Map) -> (Grid, (i32, i32)) {
             (start_after_resize.0 * TILE_SIZE) - (TILE_SIZE / 2),
             (start_after_resize.1 * TILE_SIZE) - (TILE_SIZE / 2),
         ),
+        mob_packs,
     )
 }
 
@@ -336,7 +448,7 @@ fn resize_grid(grid: &mut Grid, border_size: usize) {
     let height = grid[0].len();
     'outer: loop {
         for y in 0..height {
-            if grid[border_size][y].tile_type == TileType::Floor {
+            if grid[border_size][y].walkable {
                 break 'outer;
             }
         }
@@ -347,7 +459,7 @@ fn resize_grid(grid: &mut Grid, border_size: usize) {
 
     'outer: loop {
         for y in 0..height {
-            if grid[x - border_size][y].tile_type == TileType::Floor {
+            if grid[x - border_size][y].walkable {
                 break 'outer;
             }
         }
@@ -359,7 +471,7 @@ fn resize_grid(grid: &mut Grid, border_size: usize) {
     let width = grid.len();
     'outer: loop {
         for x in 0..width {
-            if grid[x][y + border_size].tile_type == TileType::Floor {
+            if grid[x][y + border_size].walkable {
                 break 'outer;
             }
         }
@@ -375,7 +487,7 @@ fn resize_grid(grid: &mut Grid, border_size: usize) {
 
     'outer: loop {
         for x in 0..width {
-            if grid[x][y - border_size].tile_type == TileType::Floor {
+            if grid[x][y - border_size].walkable {
                 break 'outer;
             }
         }
@@ -414,19 +526,19 @@ fn remove_small_cluster(
                 let mut floor_left_at = 0;
                 let mut floor_right_at = 0;
                 for i in 1..cluster_size {
-                    if grid[x + i][y].tile_type == TileType::Floor {
+                    if grid[x + i][y].walkable {
                         is_floor_right = true;
                         floor_right_at = i;
                     }
-                    if grid[x - i][y].tile_type == TileType::Floor {
+                    if grid[x - i][y].walkable {
                         is_floor_left = true;
                         floor_left_at = i;
                     }
-                    if grid[x][y + i].tile_type == TileType::Floor {
+                    if grid[x][y + i].walkable {
                         is_floor_bottom = true;
                         floor_bottom_at = i;
                     }
-                    if grid[x][y - i].tile_type == TileType::Floor {
+                    if grid[x][y - i].walkable {
                         is_floor_up = true;
                         floor_up_at = i;
                     }
@@ -473,14 +585,13 @@ fn remove_small_cluster(
     }
     // after full scan, update tileset
     for tile in tiles_to_fill {
-        add_tile(grid, tile.0, tile.1, TileType::Floor);
+        add_tile(grid, tile.0, tile.1, TileType::Floor, true, false);
     }
 }
 fn generate_walkable_layout(
     grid: &mut Grid,
     biome: &FloorPattern,
     rng: &mut ChaCha8Rng,
-    oob_tiletype: TileType,
     start_center: (i32, i32),
 ) -> (i32, i32) {
     draw_rectangle(
@@ -501,6 +612,8 @@ fn generate_walkable_layout(
             .round() as i32,
         ),
         start_center,
+        true,
+        true,
     );
 
     let mut center: (i32, i32) = start_center;
@@ -515,7 +628,7 @@ fn generate_walkable_layout(
             let direction: (i32, i32) =
                 biome.allowed_directions[rng.gen_range(0..biome.allowed_directions.len())];
 
-            center = find_point_on_edge(grid, center, oob_tiletype, direction);
+            center = find_point_on_edge(grid, center, direction);
             draw_rectangle(
                 grid,
                 TileType::Floor,
@@ -534,7 +647,10 @@ fn generate_walkable_layout(
                     .round() as i32,
                 ),
                 center,
+                true,
+                true,
             );
+            // Add mob pack at the center of the square
         }
     }
     center
@@ -543,7 +659,6 @@ fn generate_walkable_layout(
 fn find_point_on_edge(
     grid: &Grid,
     previous_center: (i32, i32),
-    oob_tiletype: TileType,
     direction: (i32, i32),
 ) -> (i32, i32) {
     let mut current_position = previous_center;
@@ -553,8 +668,7 @@ fn find_point_on_edge(
         && (current_position.1 - 1) > 0
         && grid[(current_position.0 + direction.0) as usize]
             [(current_position.1 + direction.1) as usize]
-            .tile_type
-            != oob_tiletype
+            .walkable
     {
         current_position = (
             (current_position.0 + direction.0),
@@ -583,7 +697,14 @@ fn find_point_on_edge(
 //     chosen_direction
 // }
 
-fn draw_rectangle(grid: &mut Grid, tiletype: TileType, size: (i32, i32), center: (i32, i32)) {
+fn draw_rectangle(
+    grid: &mut Grid,
+    tiletype: TileType,
+    size: (i32, i32),
+    center: (i32, i32),
+    walkable: bool,
+    spawnable: bool,
+) {
     for x in 0..size.0 {
         for y in 0..size.1 {
             add_tile(
@@ -591,41 +712,25 @@ fn draw_rectangle(grid: &mut Grid, tiletype: TileType, size: (i32, i32), center:
                 ((center.0 - (size.0 / 2)) + x) as usize,
                 ((center.1 - (size.1 / 2)) + y) as usize,
                 tiletype,
+                walkable,
+                spawnable,
             )
         }
     }
 }
-// input taille, coordonees du centre
 
-// fn draw_circle(
-//     grid: &mut Grid,
-//     tiletype: TileType,
-//     inbound: bool,
-//     center: (f32, f32),
-//     radius: f32,
-// ) {
-//     let width = grid.len();
-//     let height = grid[0].len();
-
-//     // println!("Maps is {} wide and {} tall ", center_x, center_y);
-//     for x in 0..width {
-//         for y in 0..height {
-//             let dx = f32::abs(x as f32 - center.0);
-//             let dy = f32::abs(y as f32 - center.1);
-//             if dx * dx + dy * dy <= radius * radius {
-//                 if inbound {
-//                     add_tile(grid, x, y, tiletype)
-//                 }
-//             } else if !inbound {
-//                 add_tile(grid, x, y, tiletype)
-//             }
-//         }
-//     }
-// }
-
-fn add_tile(grid: &mut Grid, x: usize, y: usize, tile_type: TileType) {
+fn add_tile(
+    grid: &mut Grid,
+    x: usize,
+    y: usize,
+    tile_type: TileType,
+    walkable: bool,
+    spawnable: bool,
+) {
     if x < grid.len() && y < grid.len() {
         grid[x][y].tile_type = tile_type;
+        grid[x][y].walkable = walkable;
+        grid[x][y].spawnable = spawnable;
     }
 }
 
@@ -637,6 +742,9 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
             row.push(Tile {
                 tile_type: oob_tiletype,
                 scanned: false,
+                walkable: false,
+                mob_pack: None,
+                spawnable: false,
             })
         }
         grid.push(row)
@@ -659,6 +767,12 @@ fn render_grid(grid: &Grid, file_name: String, show_outline: bool) {
                     i.try_into().unwrap(),
                     j.try_into().unwrap(),
                     image::Rgb([252u8, 40u8, 40u8]),
+                )
+            } else if y.mob_pack.is_some() {
+                img.put_pixel(
+                    i.try_into().unwrap(),
+                    j.try_into().unwrap(),
+                    image::Rgb([252u8, 119u8, 3u8]),
                 )
             } else {
                 img.put_pixel(
