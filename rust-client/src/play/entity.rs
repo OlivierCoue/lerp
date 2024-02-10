@@ -101,7 +101,7 @@ impl ISprite2D for GameEntity {
         if self.is_current_player {
             let mut camera = Camera2D::new_alloc();
             camera.set_enabled(true);
-            camera.set_zoom(Vector2::new(1.5, 1.5));
+            camera.set_zoom(Vector2::new(1.8, 1.8));
             self.base_mut().add_child(camera.upcast());
         }
 
