@@ -6,16 +6,30 @@ mod postgres;
 mod utils;
 use api::Api;
 
+use game::area_gen::generate_area;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 
 use crate::{api::types::App, env::init_env, network::enet::enet_start, postgres::pg_pool_init};
 
 use std::thread;
+const DEBUG_GC: bool = false;
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     init_env();
+
+    if DEBUG_GC {
+        let mut handlers = Vec::new();
+        for i in 0..5 {
+            handlers.push(thread::spawn(move || {
+                generate_area(i);
+            }));
+        }
+        for handler in handlers {
+            handler.join().unwrap();
+        }
+    }
 
     let (tx_enet_sender, rx_enet_sender) = mpsc::channel(1000);
     let (tx_enet_receiver, rx_enet_receiver) = mpsc::channel(100);

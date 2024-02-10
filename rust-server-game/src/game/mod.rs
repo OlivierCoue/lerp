@@ -1,4 +1,4 @@
-mod area_gen;
+pub mod area_gen;
 mod ecs;
 mod pathfinder;
 
@@ -59,7 +59,7 @@ impl Game {
         tx_from_instance_internal_messages: mpsc::Sender<OutboundAreaMessage>,
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
-        let area_gen = generate_area(0);
+        let area_gen = generate_area(3);
         let player_spawn_position = Vector2::new(
             area_gen.player_spawn_position.0 as f32,
             area_gen.player_spawn_position.1 as f32,

@@ -88,11 +88,12 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         }
     }
     println!(
-        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles\n    Packs : {} \n    Monsters : {}",
+        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles\n    walkable : {}\n    Packs : {} \n    Monsters : {}",
         seed,
         map_name,
         grid.len(),
         grid[0].len(),
+        walkable_x.len(),
         packs.len(),
         enemies.len(),
     );

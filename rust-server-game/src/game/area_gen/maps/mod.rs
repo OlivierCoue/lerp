@@ -46,7 +46,7 @@ pub fn define_floor_patterns() -> Vec<Map> {
     //------------------------------------------------------//
     let large_all_dir = FloorPattern {
         // odds: 1.0,
-        rng_range_multiplicator_rectangle_size: (0.1, 0.2),
+        rng_range_multiplicator_rectangle_size: (0.04, 0.08),
         rng_range_number_of_direction_changes: (4, 5),
         rng_range_direction_repeat: (1, 3),
         allowed_directions: vec![
@@ -62,14 +62,14 @@ pub fn define_floor_patterns() -> Vec<Map> {
         generation_area_size: (345, 345),
     };
     let small_cross_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.02, 0.06),
+        rng_range_multiplicator_rectangle_size: (0.015, 0.025),
         rng_range_number_of_direction_changes: (20, 30),
         rng_range_direction_repeat: (5, 10),
         allowed_directions: vec![(0, -1), (0, 1), (-1, 0), (1, 0)],
         generation_area_size: (345, 345),
     };
     let small_all_dir = FloorPattern {
-        rng_range_multiplicator_rectangle_size: (0.02, 0.04),
+        rng_range_multiplicator_rectangle_size: (0.015, 0.025),
         rng_range_number_of_direction_changes: (15, 25),
         rng_range_direction_repeat: (10, 15),
         allowed_directions: vec![
@@ -109,13 +109,14 @@ pub fn define_floor_patterns() -> Vec<Map> {
     //------------------------------------------------------//
     //                Define Maps Content                   //
     //------------------------------------------------------//
+    // Godd Walakable tiles value [5000-10000]
 
     let maps: Vec<Map> = vec![
         Map {
             name: String::from("Island"),
             oob_type: TileType::Water,
             biomes: vec![many_tiny_all_dir.clone(), small_all_dir.clone()],
-            density: 0.008,
+            density: 0.01,
         },
         Map {
             name: String::from("Ledge"),
@@ -124,13 +125,13 @@ pub fn define_floor_patterns() -> Vec<Map> {
                 long_path_bottom_right_dir.clone(),
                 long_path_bottom_right_dir.clone(),
             ],
-            density: 0.1,
+            density: 0.01,
         },
         Map {
             name: String::from("Desert"),
             oob_type: TileType::Wall,
             biomes: vec![long_path_bottom_right_dir.clone(), large_all_dir.clone()],
-            density: 0.008,
+            density: 0.01,
         },
         Map {
             name: String::from("Forest"),
@@ -147,7 +148,6 @@ pub fn define_floor_patterns() -> Vec<Map> {
             oob_type: TileType::Wall,
             biomes: vec![
                 short_path_bottom_right_dir.clone(),
-                many_tiny_all_dir.clone(),
                 many_tiny_all_dir.clone(),
                 short_path_bottom_right_dir.clone(),
             ],
