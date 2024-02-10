@@ -63,7 +63,7 @@ impl INode2D for PlayNode {
         }
 
         if let Some(workd_instance_id) = &self.world_instance_id {
-            network.bind().send(MsgUpWrapper {
+            network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     _type: MsgUpType::USER_JOIN_WOLD_INSTANCE.into(),
                     user_join_world_instance: Some(MsgUpUserJoinWorldInstance {
@@ -81,7 +81,7 @@ impl INode2D for PlayNode {
     }
 
     fn process(&mut self, delta: f64) {
-        let rx_enet_receiver = Rc::clone(&self.network.as_ref().unwrap().bind().rx_enet_receiver);
+        let rx_enet_receiver = Rc::clone(&self.network.as_ref().unwrap().bind().rx_udp_receiver);
         while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
             for udp_msg_down in udp_msg_down_wrapper.messages {
                 #[allow(clippy::single_match)]
@@ -166,10 +166,14 @@ impl INode2D for PlayNode {
             }
 
             if !actions.is_empty() {
-                self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                    messages: actions,
-                    ..Default::default()
-                })
+                self.network
+                    .as_ref()
+                    .unwrap()
+                    .bind()
+                    .send_udp(MsgUpWrapper {
+                        messages: actions,
+                        ..Default::default()
+                    })
             }
         }
     }
@@ -181,73 +185,93 @@ impl INode2D for PlayNode {
             self.base_mut()
                 .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
 
-            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_MOVE.into(),
-                    player_move: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
+            self.network
+                .as_ref()
+                .unwrap()
+                .bind()
+                .send_udp(MsgUpWrapper {
+                    messages: vec![MsgUp {
+                        _type: MsgUpType::PLAYER_MOVE.into(),
+                        player_move: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
                         ..Default::default()
-                    })
-                    .into(),
+                    }],
                     ..Default::default()
-                }],
-                ..Default::default()
-            })
+                })
         } else if event.is_action_pressed("key_e".into()) {
             godot_print!("Key E pressed");
             let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
             self.base_mut()
                 .emit_signal("player_throw_fireball_start".into(), &[]);
 
-            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
-                    player_throw_frozen_orb: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
+            self.network
+                .as_ref()
+                .unwrap()
+                .bind()
+                .send_udp(MsgUpWrapper {
+                    messages: vec![MsgUp {
+                        _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                        player_throw_frozen_orb: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
                         ..Default::default()
-                    })
-                    .into(),
+                    }],
                     ..Default::default()
-                }],
-                ..Default::default()
-            })
+                })
         } else if event.is_action_pressed("key_r".into()) {
             godot_print!("Key R pressed");
             let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
 
-            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_TELEPORT.into(),
-                    player_teleport: Some(Point {
-                        x: mouse_position.x,
-                        y: mouse_position.y,
+            self.network
+                .as_ref()
+                .unwrap()
+                .bind()
+                .send_udp(MsgUpWrapper {
+                    messages: vec![MsgUp {
+                        _type: MsgUpType::PLAYER_TELEPORT.into(),
+                        player_teleport: Some(Point {
+                            x: mouse_position.x,
+                            y: mouse_position.y,
+                            ..Default::default()
+                        })
+                        .into(),
                         ..Default::default()
-                    })
-                    .into(),
+                    }],
                     ..Default::default()
-                }],
-                ..Default::default()
-            })
+                })
         } else if event.is_action_pressed("key_n".into()) {
             godot_print!("Key N pressed");
 
-            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    _type: MsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
+            self.network
+                .as_ref()
+                .unwrap()
+                .bind()
+                .send_udp(MsgUpWrapper {
+                    messages: vec![MsgUp {
+                        _type: MsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
+                        ..Default::default()
+                    }],
                     ..Default::default()
-                }],
-                ..Default::default()
-            })
+                })
         } else if event.is_action_pressed("key_escape".into()) {
-            self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    _type: MsgUpType::USER_LEAVE_WORLD_INSTANCE.into(),
+            self.network
+                .as_ref()
+                .unwrap()
+                .bind()
+                .send_udp(MsgUpWrapper {
+                    messages: vec![MsgUp {
+                        _type: MsgUpType::USER_LEAVE_WORLD_INSTANCE.into(),
+                        ..Default::default()
+                    }],
                     ..Default::default()
-                }],
-                ..Default::default()
-            })
+                })
         }
     }
 }

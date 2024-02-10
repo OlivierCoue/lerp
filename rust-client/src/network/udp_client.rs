@@ -2,7 +2,6 @@ use enet_cs_sys::*;
 use godot::log::godot_print;
 use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
 use std::{
-    collections::VecDeque,
     ffi::CString,
     mem::MaybeUninit,
     ptr::null,
@@ -25,10 +24,9 @@ const ADDRESS: &str = "127.0.0.1";
 
 const PORT: u16 = 34254;
 
-pub fn enet_start(
-    udp_msg_down_wrappers: Arc<Mutex<VecDeque<UdpMsgDownWrapper>>>,
-    rx_enet_sender: Receiver<MsgUpWrapper>,
-    tx_enet_receiver: Sender<UdpMsgDownWrapper>,
+pub fn udp_client_start(
+    rx_udp_sender: Receiver<MsgUpWrapper>,
+    tx_udp_receiver: Sender<UdpMsgDownWrapper>,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));
     let peers_for_manage = Arc::clone(&peers);
@@ -87,19 +85,11 @@ pub fn enet_start(
                             )
                         };
                         // println!("{}", unsafe { (*event.packet).dataLength });
-                        let udp_msg_down_wrapper: UdpMsgDownWrapper =
-                            UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
-                                .expect("Failed to parse UdpMsgDownWrapper");
-
-                        udp_msg_down_wrappers
-                            .lock()
-                            .unwrap()
-                            .push_back(udp_msg_down_wrapper);
 
                         let udp_msg_down_wrapper: UdpMsgDownWrapper =
                             UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
                                 .expect("Failed to parse UdpMsgDownWrapper");
-                        tx_enet_receiver.send(udp_msg_down_wrapper).unwrap();
+                        tx_udp_receiver.send(udp_msg_down_wrapper).unwrap();
                     }
                     _ENetEventType_ENET_EVENT_TYPE_NONE => {}
                     _ => unreachable!(),
@@ -111,7 +101,7 @@ pub fn enet_start(
     let enet_sender = thread::spawn(move || {
         thread::sleep(Duration::from_millis(2000));
 
-        for msg_to_send in &rx_enet_sender {
+        for msg_to_send in &rx_udp_sender {
             if let Some(peer) = &*peers_for_send.lock().unwrap() {
                 let out_bytes = msg_to_send.write_to_bytes().unwrap();
                 let packet: *mut _ENetPacket = unsafe {

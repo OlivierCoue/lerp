@@ -11,6 +11,6 @@ fn main() {
         .input("proto/udp-down.proto")
         .input("proto/udp-up.proto")
         // Specify output directory relative to Cargo output directory.
-        .out_dir("../rust-common/src/proto")
+        .out_dir("src/proto")
         .run_from_script();
 }

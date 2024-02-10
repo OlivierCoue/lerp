@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use godot::{
-    engine::{Button, HttpClient, HttpRequest, Label, LineEdit},
+    engine::{Button, Label, LineEdit},
     prelude::*,
 };
 use rust_common::proto::{
@@ -18,31 +18,42 @@ use crate::{
 #[class(base=Node2D)]
 pub struct AuthNode {
     base: Base<Node2D>,
-    root: Option<Gd<Root>>,
-    network: Option<Gd<NetworkManager>>,
-    label_auth_error: Option<Gd<Label>>,
-    line_edit_username: Option<Gd<LineEdit>>,
+    root: OnReady<Gd<Root>>,
+    network: OnReady<Gd<NetworkManager>>,
+    label_auth_error: OnReady<Gd<Label>>,
+    line_edit_username: OnReady<Gd<LineEdit>>,
 }
 
 #[godot_api]
 impl INode2D for AuthNode {
     fn init(base: Base<Node2D>) -> Self {
+        println!("AuthNode: init");
         Self {
             base,
-            root: None,
-            network: None,
-            label_auth_error: None,
-            line_edit_username: None,
+            root: OnReady::manual(),
+            network: OnReady::manual(),
+            label_auth_error: OnReady::manual(),
+            line_edit_username: OnReady::manual(),
         }
     }
 
     fn ready(&mut self) {
-        self.root = Some(self.base().get_node_as::<Root>(PATH_ROOT));
-        self.network = Some(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
+        println!("AuthNode: ready");
+        self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
+        self.network
+            .init(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
 
         let auth_ui_scene = load::<PackedScene>("res://auth_ui.tscn");
         let auth_ui = auth_ui_scene.instantiate_as::<Node>();
         self.base_mut().add_child(auth_ui.upcast());
+
+        self.label_auth_error.init(self.base().get_node_as::<Label>(
+            String::from(PATH_AUTH) + "/AuthUi/Control/VBoxContainer/label_auth_error",
+        ));
+        self.line_edit_username
+            .init(self.base().get_node_as::<LineEdit>(
+                String::from(PATH_AUTH) + "/AuthUi/Control/VBoxContainer/line_edit_username",
+            ));
 
         let mut connect_button = self.base().get_node_as::<Button>(
             String::from(PATH_AUTH) + "/AuthUi/Control/VBoxContainer/connect_button",
@@ -52,30 +63,24 @@ impl INode2D for AuthNode {
             self.base().callable("on_connect_button_pressed"),
         );
 
-        self.label_auth_error = Some(self.base().get_node_as::<Label>(
-            String::from(PATH_AUTH) + "/AuthUi/Control/VBoxContainer/label_auth_error",
-        ));
-        self.line_edit_username = Some(self.base().get_node_as::<LineEdit>(
-            String::from(PATH_AUTH) + "/AuthUi/Control/VBoxContainer/line_edit_username",
-        ));
+        let on_http_success = self.base().callable("on_http_success");
+        self.network.connect("http_success".into(), on_http_success);
     }
 
     fn process(&mut self, _: f64) {
-        let rx_enet_receiver = Rc::clone(&self.network.as_ref().unwrap().bind().rx_enet_receiver);
+        let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
         while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
             for udp_msg_down in udp_msg_down_wrapper.messages {
                 match udp_msg_down._type.unwrap() {
                     UdpMsgDownType::USER_CONNECT_SUCCESS => {
-                        if let Some(root) = self.root.as_mut() {
-                            root.bind_mut().change_scene(Scenes::Lobby);
-                        }
+                        self.root.bind_mut().change_scene(Scenes::Lobby);
                     }
                     UdpMsgDownType::USER_CONNECT_FAILED => {
-                        if let (Some(label_auth_error), Some(user_connect_failed)) = (
-                            self.label_auth_error.as_mut(),
-                            udp_msg_down.user_connect_failed.into_option(),
-                        ) {
-                            label_auth_error.set_text(user_connect_failed.error_message.into());
+                        if let Some(user_connect_failed) =
+                            udp_msg_down.user_connect_failed.into_option()
+                        {
+                            self.label_auth_error
+                                .set_text(user_connect_failed.error_message.into());
                         }
                     }
                     _ => {}
@@ -88,18 +93,26 @@ impl INode2D for AuthNode {
 impl AuthNode {
     #[func]
     fn on_connect_button_pressed(&mut self) {
-        let input_username = self.line_edit_username.as_ref().unwrap().get_text();
+        println!("on_connect_button_pressed");
+        let input_username = self.line_edit_username.get_text();
         if input_username.is_empty() {
             return;
         }
 
-        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+        self.network.bind().send_http(input_username.to_string());
+        self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
                 _type: MsgUpType::USER_CONNECT.into(),
                 user_connect_username: Some(input_username.to_string()),
                 ..Default::default()
             }],
             ..Default::default()
-        })
+        });
+    }
+
+    #[func]
+    fn on_http_success(&mut self, v: Variant) {
+        let http_response = v.to::<Gd<HttpResponse>>();
+        godot_print!("Received: on_http_success {}", http_response.bind().value);
     }
 }

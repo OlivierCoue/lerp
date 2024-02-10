@@ -1,5 +1,5 @@
 [package]
-name = "rust-server"
+name = "rust-server-game"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,11 +13,8 @@ protobuf = "3.3.0"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 rust-common = { path = "../rust-common" }
+rust-server-common = { path = "../rust-server-common" }
 spin_sleep = "1.1.1"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
 tokio = { version = "1", features = ["full"] }
 uuid = "1.7.0"
-
-[build-dependencies]
-protobuf-codegen = "3.3.0"
-protoc-bin-vendored = "3.0.0"

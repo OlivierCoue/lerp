@@ -18,8 +18,8 @@ use crate::{
 #[class(base=Node2D)]
 pub struct LobbyNode {
     base: Base<Node2D>,
-    root: Option<Gd<Root>>,
-    network: Option<Gd<NetworkManager>>,
+    root: OnReady<Gd<Root>>,
+    network: OnReady<Gd<NetworkManager>>,
     line_edit_join_game_id: Option<Gd<LineEdit>>,
 }
 
@@ -28,15 +28,16 @@ impl INode2D for LobbyNode {
     fn init(base: Base<Node2D>) -> Self {
         Self {
             base,
-            root: None,
-            network: None,
+            root: OnReady::manual(),
+            network: OnReady::manual(),
             line_edit_join_game_id: None,
         }
     }
 
     fn ready(&mut self) {
-        self.root = Some(self.base().get_node_as::<Root>(PATH_ROOT));
-        self.network = Some(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
+        self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
+        self.network
+            .init(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
 
         let lobby_ui_scene = load::<PackedScene>("res://lobby_ui.tscn");
         let lobby_ui = lobby_ui_scene.instantiate_as::<Node>();
@@ -72,17 +73,13 @@ impl INode2D for LobbyNode {
     }
 
     fn process(&mut self, _: f64) {
-        let rx_enet_receiver = Rc::clone(&self.network.as_ref().unwrap().bind().rx_enet_receiver);
+        let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
         while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
             for udp_msg_down in udp_msg_down_wrapper.messages {
                 #[allow(clippy::single_match)]
                 match udp_msg_down._type.unwrap() {
                     UdpMsgDownType::USER_DISCONNECT_SUCCESS => {
-                        self.root
-                            .as_mut()
-                            .unwrap()
-                            .bind_mut()
-                            .change_scene(Scenes::Auth);
+                        self.root.bind_mut().change_scene(Scenes::Auth);
                     }
                     UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS => {
                         let payload = udp_msg_down
@@ -90,11 +87,7 @@ impl INode2D for LobbyNode {
                             .into_option()
                             .unwrap();
                         godot_print!("USER_CREATE_WORDL_INSTANCE_SUCCESS: (id: {})", payload.id);
-                        self.root
-                            .as_mut()
-                            .unwrap()
-                            .bind_mut()
-                            .change_scene(Scenes::Play(payload.id));
+                        self.root.bind_mut().change_scene(Scenes::Play(payload.id));
                     }
                     _ => {}
                 }
@@ -106,7 +99,7 @@ impl INode2D for LobbyNode {
 impl LobbyNode {
     #[func]
     fn on_button_create_game_pressed(&mut self) {
-        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+        self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
                 _type: MsgUpType::USER_CREATE_WORLD_INSTANCE.into(),
                 ..Default::default()
@@ -122,14 +115,12 @@ impl LobbyNode {
         }
 
         self.root
-            .as_mut()
-            .unwrap()
             .bind_mut()
             .change_scene(Scenes::Play(input_wolrd_instance_id.into()));
     }
     #[func]
     fn on_button_logout_pressed(&mut self) {
-        self.network.as_ref().unwrap().bind().send(MsgUpWrapper {
+        self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
                 _type: MsgUpType::USER_DISCONNECT.into(),
                 ..Default::default()

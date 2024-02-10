@@ -63,16 +63,16 @@ impl Root {
     pub fn change_scene(&mut self, scene: Scenes) {
         match &self.current_scene {
             Scenes::Auth => {
-                let auth_node = self.base().get_node_as::<AuthNode>(PATH_AUTH);
-                self.base_mut().remove_child(auth_node.upcast());
+                let mut auth_node = self.base().get_node_as::<AuthNode>(PATH_AUTH);
+                auth_node.queue_free();
             }
             Scenes::Lobby => {
-                let lobby_node = self.base().get_node_as::<LobbyNode>(PATH_LOBBY);
-                self.base_mut().remove_child(lobby_node.upcast());
+                let mut lobby_node = self.base().get_node_as::<LobbyNode>(PATH_LOBBY);
+                lobby_node.queue_free();
             }
             Scenes::Play(_) => {
-                let play_node = self.base().get_node_as::<PlayNode>(PATH_PLAY);
-                self.base_mut().remove_child(play_node.upcast());
+                let mut play_node = self.base().get_node_as::<PlayNode>(PATH_PLAY);
+                play_node.queue_free();
             }
         }
 
