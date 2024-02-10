@@ -88,11 +88,10 @@ impl Root {
                 self.base_mut().add_child(lobby_node.upcast());
             }
             Scenes::Play(world_instance_id) => {
-                let mut play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(PlayNode::init);
+                let mut play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(|base| {
+                    PlayNode::init(base, world_instance_id.clone())
+                });
                 play_node.set_name(NODE_PLAY.into());
-                play_node
-                    .bind_mut()
-                    .init_state(String::from(world_instance_id));
                 self.base_mut().add_child(play_node.upcast());
             }
         }

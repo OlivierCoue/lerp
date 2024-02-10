@@ -2,7 +2,10 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::collisions::{collide_point_to_poly, collide_rect_to_rect};
 
-use crate::game::ecs::{components::prelude::*, events::prelude::*, resources::prelude::*};
+use crate::game::{
+    ecs::{components::prelude::*, events::prelude::*, resources::prelude::*},
+    Enemie,
+};
 
 fn wolrd_bounded_x(area_config: &AreaConfig, x: f32) -> f32 {
     f32::min(f32::max(0.0, x), area_config.area_width)
@@ -27,7 +30,7 @@ fn is_oob(area_config: &AreaConfig, position: &Vector2) -> bool {
 }
 
 pub fn update_pathfinder_state(
-    query: Query<(Entity, &Position, &ColliderMvt)>,
+    query: Query<(Entity, &Position, &ColliderMvt), Without<Enemie>>,
     mut pathfinder_state: ResMut<PathfinderState>,
     area_config: Res<AreaConfig>,
     time: Res<Time>,

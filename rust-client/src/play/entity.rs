@@ -32,6 +32,7 @@ pub struct GameEntity {
     base_type: GameEntityBaseType,
     health_label: Option<Gd<Label>>,
     is_dead: bool,
+    animated_splite_2d_scene: Option<Gd<PackedScene>>,
     animated_sprite_2d: Option<Gd<AnimatedSprite2D>>,
     base: Base<CharacterBody2D>,
     direction: Direction,
@@ -53,6 +54,7 @@ impl ISprite2D for GameEntity {
             is_current_player: false,
             health_label: None,
             is_dead: false,
+            animated_splite_2d_scene: None,
             animated_sprite_2d: None,
             direction: Direction::N,
             is_casting: false,
@@ -67,10 +69,11 @@ impl ISprite2D for GameEntity {
         self.base_mut().set_position(cart_to_iso(&position_init));
         match self.base_type {
             GameEntityBaseType::CHARACTER => {
-                let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
-                let mut animated_sprite_2d =
-                    animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
+                let mut animated_sprite_2d = self
+                    .animated_splite_2d_scene
+                    .clone()
+                    .unwrap()
+                    .instantiate_as::<AnimatedSprite2D>();
                 animated_sprite_2d.play();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
@@ -86,10 +89,11 @@ impl ISprite2D for GameEntity {
                 self.base_mut().add_child(sprite_2d.upcast());
             }
             GameEntityBaseType::ENEMY => {
-                let animated_sprite_2d_scene =
-                    load::<PackedScene>("res://animated_sprite_2d/warrior.tscn");
-                let mut animated_sprite_2d =
-                    animated_sprite_2d_scene.instantiate_as::<AnimatedSprite2D>();
+                let mut animated_sprite_2d = self
+                    .animated_splite_2d_scene
+                    .clone()
+                    .unwrap()
+                    .instantiate_as::<AnimatedSprite2D>();
                 animated_sprite_2d.play();
                 animated_sprite_2d.set_scale(Vector2::new(3.0, 3.0));
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
@@ -172,7 +176,12 @@ impl GameEntity {
 }
 
 impl GameEntity {
-    pub fn set_init_state(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
+    pub fn set_init_state(
+        &mut self,
+        entity_update: &UdpMsgDownGameEntityUpdate,
+        animated_splite_2d_scene: Gd<PackedScene>,
+    ) {
+        self.animated_splite_2d_scene = Some(animated_splite_2d_scene);
         self.position_init = point_to_vector2(&entity_update.location_current);
         self.position_target_queue = VecDeque::from_iter(
             entity_update
