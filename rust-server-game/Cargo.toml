@@ -9,7 +9,7 @@ dotenvy = "0.15.7"
 enet-cs-sys = "0.1.1"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [ "experimental-threads" ] }
 image = "0.24.8"
-protobuf = "3.3.0"
+prost = "0.12"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 rust-common = { path = "../rust-common" }

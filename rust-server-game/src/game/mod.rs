@@ -9,12 +9,7 @@ use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
 use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
 use rust_common::math::get_point_from_points_and_distance;
-use rust_common::proto::common::UdpPolygon;
-use rust_common::proto::udp_down::{
-    UdpColliderMvt, UdpMsgDown, UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved,
-    UdpMsgDownGameEntityUpdate, UdpMsgDownType, UdpMsgDownWrapper,
-};
-use rust_common::proto::udp_up::{MsgUp, MsgUpType};
+use rust_common::proto::*;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -184,7 +179,7 @@ impl Game {
         let new_player = Player::new(user_uuid, peer_id, udp_tunnel, player_entity);
         new_player.send_message(UdpMsgDownWrapper {
             messages: vec![UdpMsgDown {
-                _type: UdpMsgDownType::AREA_INIT.into(),
+                r#type: UdpMsgDownType::AreaInit.into(),
                 area_init: Some(UdpMsgDownAreaInit {
                     width: area_config.area_width,
                     height: area_config.area_height,
@@ -199,12 +194,9 @@ impl Game {
                                 .iter()
                                 .map(|point| vector2_to_point(&Vector2::new(point.0, point.1)))
                                 .collect(),
-                            ..Default::default()
                         })
                         .collect(),
-                    ..Default::default()
-                })
-                .into(),
+                }),
                 ..Default::default()
             }],
             ..Default::default()
@@ -354,12 +346,10 @@ impl Game {
 
                     if game_entity.pending_despwan {
                         udp_msg_down_wrapper.messages.push(UdpMsgDown {
-                            _type: UdpMsgDownType::GAME_ENTITY_REMOVED.into(),
+                            r#type: UdpMsgDownType::GameEntityRemoved.into(),
                             game_entity_removed: (Some(UdpMsgDownGameEntityRemoved {
                                 id: game_entity.id,
-                                ..Default::default()
-                            }))
-                            .into(),
+                            })),
                             ..Default::default()
                         })
                     } else {
@@ -389,11 +379,7 @@ impl Game {
                                 .get::<ColliderMvt>()
                                 .map(|collider| UdpColliderMvt {
                                     reversed: collider.reversed,
-                                    rect: collider
-                                        .shape
-                                        .rect
-                                        .map(|rect| vector2_to_point(&rect))
-                                        .into(),
+                                    rect: collider.shape.rect.map(|rect| vector2_to_point(&rect)),
                                     poly: collider
                                         .shape
                                         .poly
@@ -402,7 +388,6 @@ impl Game {
                                         .iter()
                                         .map(vector2_to_point)
                                         .collect(),
-                                    ..Default::default()
                                 });
                         let health_current = entity_ref
                             .get::<Health>()
@@ -410,24 +395,22 @@ impl Game {
                         let cast = entity_ref.get::<Cast>().map(|cast| cast.to_proto());
 
                         udp_msg_down_wrapper.messages.push(UdpMsgDown {
-                            _type: UdpMsgDownType::GAME_ENTITY_UPDATE.into(),
+                            r#type: UdpMsgDownType::GameEntityUpdate.into(),
                             game_entity_update: (Some(UdpMsgDownGameEntityUpdate {
                                 id: game_entity.id,
                                 object_type: game_entity._type.into(),
-                                location_current: location_current.into(),
+                                location_current,
                                 location_target_queue: match location_target_queue {
                                     Some(x) => x,
                                     None => Vec::new(),
                                 },
-                                collider_dmg_in_rect: collider_dmg_in_rect.into(),
-                                collider_mvt: collider_mvt.into(),
-                                velocity_speed,
-                                health_current,
+                                collider_dmg_in_rect,
+                                collider_mvt,
+                                velocity_speed: velocity_speed.unwrap_or_default(),
+                                health_current: health_current.unwrap_or_default(),
                                 is_self: entity_id == player_mut.player_entity,
-                                cast: cast.into(),
-                                ..Default::default()
-                            }))
-                            .into(),
+                                cast,
+                            })),
                             ..Default::default()
                         })
                     }
@@ -466,10 +449,10 @@ impl Game {
             return;
         };
 
-        match udp_msg_up._type.unwrap() {
-            MsgUpType::GAME_PAUSE => self.paused = !self.paused,
-            MsgUpType::PLAYER_MOVE => {
-                if let Some(ok_coord) = &udp_msg_up.player_move.0 {
+        match MsgUpType::try_from(udp_msg_up.r#type) {
+            Ok(MsgUpType::GamePause) => self.paused = !self.paused,
+            Ok(MsgUpType::PlayerMove) => {
+                if let Some(ok_coord) = &udp_msg_up.player_move {
                     let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
                     self.ecs_world
                         .send_event(UpdateVelocityTargetWithPathFinder {
@@ -481,8 +464,8 @@ impl Game {
                         });
                 }
             }
-            MsgUpType::PLAYER_TELEPORT => {
-                if let Some(ok_coord) = &udp_msg_up.player_teleport.0 {
+            Ok(MsgUpType::PlayerTeleport) => {
+                if let Some(ok_coord) = &udp_msg_up.player_teleport {
                     let area_config = self.ecs_world.get_resource::<AreaConfig>().unwrap();
                     self.ecs_world.send_event(UpdatePositionCurrent {
                         entity: player.player_entity,
@@ -494,8 +477,8 @@ impl Game {
                     });
                 }
             }
-            MsgUpType::PLAYER_THROW_FROZEN_ORB => {
-                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+            Ok(MsgUpType::PlayerThrowFrozenOrb) => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb {
                     let player_position = self
                         .ecs_world
                         .get::<Position>(player.player_entity)
@@ -516,8 +499,8 @@ impl Game {
                     });
                 }
             }
-            MsgUpType::PLAYER_THROW_PROJECTILE => {
-                if let Some(ok_coord) = &udp_msg_up.player_throw_projectile.0 {
+            Ok(MsgUpType::PlayerThrowProjectile) => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_projectile {
                     let player_position = self
                         .ecs_world
                         .get::<Position>(player.player_entity)
@@ -538,8 +521,8 @@ impl Game {
                     });
                 }
             }
-            MsgUpType::PLAYER_MELEE_ATTACK => {
-                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb.0 {
+            Ok(MsgUpType::PlayerMeleeAttack) => {
+                if let Some(ok_coord) = &udp_msg_up.player_throw_frozen_orb {
                     let player_position = self
                         .ecs_world
                         .get::<Position>(player.player_entity)
@@ -559,7 +542,7 @@ impl Game {
                     });
                 }
             }
-            MsgUpType::SETTINGS_TOGGLE_ENEMIES => {
+            Ok(MsgUpType::SettingsToggleEnemies) => {
                 let mut enemmies_state = self.ecs_world.get_resource_mut::<EnemiesState>().unwrap();
                 enemmies_state.toggle_enable();
             }

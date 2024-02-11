@@ -4,9 +4,9 @@ use godot::{
     engine::{Button, Label, LineEdit},
     prelude::*,
 };
-use rust_common::proto::{
-    udp_down::UdpMsgDownType,
-    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
+use rust_common::{
+    api_auth::ApiAuthRequest,
+    proto::{HttpLoginInput, MsgUp, MsgUpType, MsgUpWrapper, UdpMsgDownType},
 };
 
 use crate::{
@@ -63,22 +63,21 @@ impl INode2D for AuthNode {
             self.base().callable("on_connect_button_pressed"),
         );
 
-        let on_http_success = self.base().callable("on_http_success");
-        self.network.connect("http_success".into(), on_http_success);
+        let on_http_success = self.base().callable("on_http_response");
+        self.network
+            .connect("http_response".into(), on_http_success);
     }
 
     fn process(&mut self, _: f64) {
         let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
         while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
             for udp_msg_down in udp_msg_down_wrapper.messages {
-                match udp_msg_down._type.unwrap() {
-                    UdpMsgDownType::USER_CONNECT_SUCCESS => {
+                match UdpMsgDownType::try_from(udp_msg_down.r#type) {
+                    Ok(UdpMsgDownType::UserConnectSuccess) => {
                         self.root.bind_mut().change_scene(Scenes::Lobby);
                     }
-                    UdpMsgDownType::USER_CONNECT_FAILED => {
-                        if let Some(user_connect_failed) =
-                            udp_msg_down.user_connect_failed.into_option()
-                        {
+                    Ok(UdpMsgDownType::UserConnectFailed) => {
+                        if let Some(user_connect_failed) = udp_msg_down.user_connect_failed {
                             self.label_auth_error
                                 .set_text(user_connect_failed.error_message.into());
                         }
@@ -99,20 +98,25 @@ impl AuthNode {
             return;
         }
 
-        self.network.bind().send_http(input_username.to_string());
+        self.network
+            .bind()
+            .send_http(ApiAuthRequest::Login(HttpLoginInput {
+                username: input_username.to_string(),
+                password: "abc".into(),
+            }));
+
         self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
-                _type: MsgUpType::USER_CONNECT.into(),
-                user_connect_username: Some(input_username.to_string()),
+                r#type: MsgUpType::UserConnect.into(),
+                user_connect_username: input_username.to_string(),
                 ..Default::default()
             }],
-            ..Default::default()
         });
     }
 
     #[func]
-    fn on_http_success(&mut self, v: Variant) {
-        let http_response = v.to::<Gd<HttpResponse>>();
-        godot_print!("Received: on_http_success {}", http_response.bind().value);
+    fn on_http_response(&mut self, v: Variant) {
+        let _ = v.to::<Gd<GdApiAuthResponse>>().bind().response;
+        godot_print!("Received: on_http_success");
     }
 }

@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
-use protobuf::MessageField;
+
 use rust_common::{
     helper::vector2_to_point,
-    proto::{common::UdpSpell, udp_down::UdpCast},
+    proto::{UdpCast, UdpSpell},
 };
 
 use crate::game::ecs::{components::prelude::Team, resources::prelude::Time};
@@ -38,10 +38,9 @@ impl Cast {
         };
 
         UdpCast {
-            spell: UdpSpell::SPELL_MELEE_ATTACK.into(),
-            target: MessageField::from(Some(vector2_to_point(&target))),
+            spell: UdpSpell::SpellMeleeAttack.into(),
+            target: Some(vector2_to_point(&target)),
             duration: self.duration_millis,
-            ..Default::default()
         }
     }
 }

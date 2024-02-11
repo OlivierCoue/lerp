@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
-use rust_common::proto::common::GameEntityBaseType;
+use rust_common::proto::GameEntityBaseType;
 
 use crate::game::ecs::components::prelude::*;
 
@@ -22,7 +22,7 @@ pub struct ProjectileBundle {
 impl ProjectileBundle {
     pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
         Self {
-            game_entity: GameEntity::new(GameEntityBaseType::PROJECTILE),
+            game_entity: GameEntity::new(GameEntityBaseType::Projectile),
             projectile: Projectile::default(),
             position: Position::new(position_current),
             velocity: Velocity::new(Some(velocity_target), 1000.0, true),
@@ -53,7 +53,7 @@ pub struct FrozenOrbMainProjectileBundle {
 impl FrozenOrbMainProjectileBundle {
     pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
         Self {
-            game_entity: GameEntity::new(GameEntityBaseType::PROJECTILE),
+            game_entity: GameEntity::new(GameEntityBaseType::Projectile),
             frozen_orb_main_projectile: FrozenOrbMainProjectile::default(),
             position: Position::new(position_current),
             velocity: Velocity::new(Some(velocity_target), 1000.0, false),
@@ -79,7 +79,7 @@ pub struct MeleeAttackBundle {
 impl MeleeAttackBundle {
     pub fn new(position_current: Vector2, team: Team) -> Self {
         Self {
-            game_entity: GameEntity::new(GameEntityBaseType::MELEE_ATTACK),
+            game_entity: GameEntity::new(GameEntityBaseType::MeleeAttack),
             position: Position::new(position_current),
             collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 30.0, y: 30.0 }),
             damage_on_hit: DamageOnHit {

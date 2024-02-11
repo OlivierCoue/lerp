@@ -8,7 +8,7 @@ use crate::game::internal_message::OutboundAreaMessage;
 use self::resolver::ApiResolver;
 use self::types::*;
 
-use rust_common::proto::udp_up::MsgUpWrapper;
+use rust_common::proto::MsgUpWrapper;
 use tokio::sync::mpsc;
 
 pub struct Api {}

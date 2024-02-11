@@ -1,8 +1,7 @@
 use godot::engine::{ISprite2D, Panel, Sprite2D, StyleBoxFlat};
 use godot::prelude::*;
 use rust_common::helper::point_to_vector2;
-
-use rust_common::proto::udp_down::UdpMsgDownGameEntityUpdate;
+use rust_common::proto::UdpMsgDownGameEntityUpdate;
 
 use crate::utils::cart_to_iso;
 
@@ -31,14 +30,16 @@ impl ISprite2D for GameServerEntity {
 
 impl GameServerEntity {
     pub fn set_init_state(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
-        self.position_init = point_to_vector2(&entity_update.location_current);
+        self.position_init = point_to_vector2(&entity_update.location_current.clone().unwrap());
 
         // Draw shape outline
         let mut shape_pannel = Panel::new_alloc();
-        shape_pannel.set_size(point_to_vector2(&entity_update.collider_dmg_in_rect));
+        shape_pannel.set_size(point_to_vector2(
+            &entity_update.collider_dmg_in_rect.clone().unwrap(),
+        ));
         shape_pannel.set_position(Vector2 {
-            x: -(&entity_update.collider_dmg_in_rect.x / 2.0),
-            y: -(&entity_update.collider_dmg_in_rect.y / 2.0),
+            x: -(&entity_update.collider_dmg_in_rect.clone().unwrap().x / 2.0),
+            y: -(&entity_update.collider_dmg_in_rect.clone().unwrap().y / 2.0),
         });
 
         let mut stylebox_outline: Gd<StyleBoxFlat> = shape_pannel
@@ -55,7 +56,8 @@ impl GameServerEntity {
     }
 
     pub fn update_from_server(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
-        let new_position_current = point_to_vector2(&entity_update.location_current);
+        let new_position_current =
+            point_to_vector2(&entity_update.location_current.clone().unwrap());
 
         self.base_mut()
             .set_position(cart_to_iso(&new_position_current));

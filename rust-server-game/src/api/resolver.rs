@@ -1,4 +1,4 @@
-use rust_common::proto::{udp_down::*, udp_up::*};
+use rust_common::proto::*;
 
 use self::service_area::ApiServiceArea;
 use self::service_user::ApiServiceUser;
@@ -15,22 +15,18 @@ impl ApiResolver {
         let mut opt_udp_messages_down = None;
 
         for udp_msg_up in udp_msg_up_wrapper.messages {
-            let udp_msg_up_type = match udp_msg_up._type.enum_value() {
-                Ok(udp_msg_up_type) => udp_msg_up_type,
-                Err(err) => {
-                    println!("[ApiService][handle_msg_up_wrapper] Received invalid _type in udp_msg_up, error: {}", err);
-                    continue;
-                }
-            };
-
-            match udp_msg_up_type {
-                MsgUpType::USER_CONNECT => {
-                    if let Some(username) = udp_msg_up.user_connect_username {
-                        opt_udp_messages_down =
-                            ApiServiceUser::connect(app.clone(), udp_peer_id, username).await;
+            match MsgUpType::try_from(udp_msg_up.r#type) {
+                Ok(MsgUpType::UserConnect) => {
+                    if !udp_msg_up.user_connect_username.is_empty() {
+                        opt_udp_messages_down = ApiServiceUser::connect(
+                            app.clone(),
+                            udp_peer_id,
+                            udp_msg_up.user_connect_username,
+                        )
+                        .await;
                     }
                 }
-                _ => {
+                Ok(udp_msg_up_type) => {
                     let mut opt_user = None;
                     {
                         let users_state_lock: std::sync::MutexGuard<'_, UsersState> =
@@ -53,6 +49,9 @@ impl ApiResolver {
                         )
                         .await;
                     };
+                }
+                Err(_) => {
+                    println!("handle_msg_up_wrapper: invalid enum value");
                 }
             };
         }
@@ -80,16 +79,16 @@ impl ApiResolver {
         user: &User,
     ) -> Option<Vec<UdpMsgDown>> {
         match _type {
-            MsgUpType::USER_DISCONNECT => ApiServiceUser::disconnect(app, user).await,
-            MsgUpType::USER_CREATE_WORLD_INSTANCE => ApiServiceArea::create(app, user).await,
-            MsgUpType::USER_JOIN_WOLD_INSTANCE => {
-                if let Some(payload) = udp_msg_up.user_join_world_instance.clone().into_option() {
-                    ApiServiceArea::join(app, user, payload.id).await
+            MsgUpType::UserDisconnect => ApiServiceUser::disconnect(app, user).await,
+            MsgUpType::UserCreateWorldInstance => ApiServiceArea::create(app, user).await,
+            MsgUpType::UserJoinWoldInstance => {
+                if let Some(payload) = &udp_msg_up.user_join_world_instance {
+                    ApiServiceArea::join(app, user, payload.id.clone()).await
                 } else {
                     None
                 }
             }
-            MsgUpType::USER_LEAVE_WORLD_INSTANCE => ApiServiceArea::leave(app, user).await,
+            MsgUpType::UserLeaveWorldInstance => ApiServiceArea::leave(app, user).await,
             _ => {
                 ApiServiceArea::forward_msg(app, user, udp_msg_up);
                 None

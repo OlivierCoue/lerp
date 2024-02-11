@@ -1,4 +1,4 @@
-use rust_common::proto::{udp_down::*, udp_up::*};
+use rust_common::proto::*;
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -62,12 +62,10 @@ impl ApiServiceArea {
         );
 
         udp_messages.push(UdpMsgDown {
-            _type: UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS.into(),
+            r#type: UdpMsgDownType::UserCreateWordlInstanceSuccess.into(),
             user_create_world_instance_success: Some(UdpMsgDownUserCreateWorldInstanceSuccess {
                 id: world_instance_uuid.to_string(),
-                ..Default::default()
-            })
-            .into(),
+            }),
             ..Default::default()
         });
 
@@ -205,7 +203,7 @@ impl ApiServiceArea {
         .unwrap();
 
         udp_messages.push(UdpMsgDown {
-            _type: UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS.into(),
+            r#type: UdpMsgDownType::UserLeaveWorldInstanceSuccess.into(),
             ..Default::default()
         });
 

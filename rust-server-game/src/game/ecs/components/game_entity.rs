@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use rust_common::proto::common::GameEntityBaseType;
+use rust_common::proto::GameEntityBaseType;
 
 use crate::utils::get_id;
 

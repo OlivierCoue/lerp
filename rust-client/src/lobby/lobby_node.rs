@@ -4,10 +4,7 @@ use godot::{
     engine::{Button, LineEdit},
     prelude::*,
 };
-use rust_common::proto::{
-    udp_down::UdpMsgDownType,
-    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
-};
+use rust_common::proto::{MsgUp, MsgUpType, MsgUpWrapper, UdpMsgDownType};
 
 use crate::{
     network::prelude::*,
@@ -77,15 +74,12 @@ impl INode2D for LobbyNode {
         while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
             for udp_msg_down in udp_msg_down_wrapper.messages {
                 #[allow(clippy::single_match)]
-                match udp_msg_down._type.unwrap() {
-                    UdpMsgDownType::USER_DISCONNECT_SUCCESS => {
+                match UdpMsgDownType::try_from(udp_msg_down.r#type) {
+                    Ok(UdpMsgDownType::UserDisconnectSuccess) => {
                         self.root.bind_mut().change_scene(Scenes::Auth);
                     }
-                    UdpMsgDownType::USER_CREATE_WORDL_INSTANCE_SUCCESS => {
-                        let payload = udp_msg_down
-                            .user_create_world_instance_success
-                            .into_option()
-                            .unwrap();
+                    Ok(UdpMsgDownType::UserCreateWordlInstanceSuccess) => {
+                        let payload = udp_msg_down.user_create_world_instance_success.unwrap();
                         godot_print!("USER_CREATE_WORDL_INSTANCE_SUCCESS: (id: {})", payload.id);
                         self.root.bind_mut().change_scene(Scenes::Play(payload.id));
                     }
@@ -101,10 +95,9 @@ impl LobbyNode {
     fn on_button_create_game_pressed(&mut self) {
         self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
-                _type: MsgUpType::USER_CREATE_WORLD_INSTANCE.into(),
+                r#type: MsgUpType::UserCreateWorldInstance.into(),
                 ..Default::default()
             }],
-            ..Default::default()
         })
     }
     #[func]
@@ -122,10 +115,9 @@ impl LobbyNode {
     fn on_button_logout_pressed(&mut self) {
         self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
-                _type: MsgUpType::USER_DISCONNECT.into(),
+                r#type: MsgUpType::UserDisconnect.into(),
                 ..Default::default()
             }],
-            ..Default::default()
         })
     }
 }

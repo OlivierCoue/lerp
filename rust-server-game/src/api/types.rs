@@ -1,4 +1,4 @@
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUp};
+use rust_common::proto::*;
 use sqlx::Postgres;
 use std::{
     collections::{HashMap, VecDeque},

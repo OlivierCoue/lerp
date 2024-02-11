@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use godot::builtin::Vector2;
-use rust_common::{collisions::ColliderShape, proto::common::GameEntityBaseType};
+use rust_common::{collisions::ColliderShape, proto::GameEntityBaseType};
 
 use crate::game::ecs::components::prelude::*;
 
@@ -24,7 +24,7 @@ pub struct EnemyBundle {
 impl EnemyBundle {
     pub fn new(position_current: Vector2, is_wizard: bool) -> Self {
         Self {
-            game_entity: GameEntity::new(GameEntityBaseType::ENEMY),
+            game_entity: GameEntity::new(GameEntityBaseType::Enemy),
             enemie: Enemie {
                 last_action_at_millis: 0,
                 is_wizard,

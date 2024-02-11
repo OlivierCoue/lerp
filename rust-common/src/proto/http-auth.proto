@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package lerp;
+
+import "common.proto";
+
+message HttpError {
+    string message = 1;
+}
+
+message HttpLoginInput {
+    string username = 1;
+    string password = 2;
+}
+
+message HttpLoginResponse {
+    string uuid = 1;
+    string username = 2;
+}
+
+message HttpRegisterInput {
+    string username = 1;
+    string password = 2;
+}

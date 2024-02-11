@@ -4,13 +4,7 @@ use godot::{
     engine::{ISprite2D, InputEvent, TileMap},
     prelude::*,
 };
-use rust_common::proto::{
-    common::Point,
-    udp_down::{
-        UdpMsgDownAreaInit, UdpMsgDownGameEntityRemoved, UdpMsgDownGameEntityUpdate, UdpMsgDownType,
-    },
-    udp_up::{MsgUp, MsgUpType, MsgUpUserJoinWorldInstance, MsgUpWrapper},
-};
+use rust_common::proto::*;
 
 use crate::{
     network::prelude::*,
@@ -54,15 +48,12 @@ impl INode2D for PlayNode {
 
         self.network.bind().send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
-                _type: MsgUpType::USER_JOIN_WOLD_INSTANCE.into(),
+                r#type: MsgUpType::UserJoinWoldInstance.into(),
                 user_join_world_instance: Some(MsgUpUserJoinWorldInstance {
                     id: self.world_instance_id.clone(),
-                    ..Default::default()
-                })
-                .into(),
+                }),
                 ..Default::default()
             }],
-            ..Default::default()
         })
     }
 
@@ -70,23 +61,23 @@ impl INode2D for PlayNode {
         let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
         while let Ok(udp_msg_down_wrapper) = &rx_enet_receiver.try_recv() {
             for udp_msg_down in &udp_msg_down_wrapper.messages {
-                match udp_msg_down._type.unwrap() {
-                    UdpMsgDownType::AREA_INIT => {
-                        if let Some(area_config) = &udp_msg_down.area_init.0 {
+                match UdpMsgDownType::try_from(udp_msg_down.r#type) {
+                    Ok(UdpMsgDownType::AreaInit) => {
+                        if let Some(area_config) = &udp_msg_down.area_init {
                             self.init_tile_map(area_config);
                         }
                     }
-                    UdpMsgDownType::GAME_ENTITY_UPDATE => {
-                        if let Some(entity_update) = &udp_msg_down.game_entity_update.0 {
+                    Ok(UdpMsgDownType::GameEntityUpdate) => {
+                        if let Some(entity_update) = &udp_msg_down.game_entity_update {
                             self.update_entity(entity_update);
                         }
                     }
-                    UdpMsgDownType::GAME_ENTITY_REMOVED => {
-                        if let Some(entity_removed) = &udp_msg_down.game_entity_removed.0 {
+                    Ok(UdpMsgDownType::GameEntityRemoved) => {
+                        if let Some(entity_removed) = &udp_msg_down.game_entity_removed {
                             self.remove_entity(entity_removed);
                         }
                     }
-                    UdpMsgDownType::USER_LEAVE_WORLD_INSTANCE_SUCCESS => {
+                    Ok(UdpMsgDownType::UserLeaveWorldInstanceSuccess) => {
                         self.root.bind_mut().change_scene(Scenes::Lobby);
                     }
                     _ => {}
@@ -104,13 +95,11 @@ impl INode2D for PlayNode {
                 self.base_mut()
                     .emit_signal("player_throw_fireball_start".into(), &[]);
                 actions.push(MsgUp {
-                    _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                    r#type: MsgUpType::PlayerThrowFrozenOrb.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 });
             }
@@ -120,13 +109,11 @@ impl INode2D for PlayNode {
                 self.base_mut()
                     .emit_signal("player_throw_fireball_start".into(), &[]);
                 actions.push(MsgUp {
-                    _type: MsgUpType::PLAYER_MELEE_ATTACK.into(),
+                    r#type: MsgUpType::PlayerMeleeAttack.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 });
             }
@@ -138,22 +125,19 @@ impl INode2D for PlayNode {
                 self.base_mut()
                     .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
                 actions.push(MsgUp {
-                    _type: MsgUpType::PLAYER_MOVE.into(),
+                    r#type: MsgUpType::PlayerMove.into(),
                     player_move: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 });
             }
 
             if !actions.is_empty() {
-                self.network.bind().send_udp(MsgUpWrapper {
-                    messages: actions,
-                    ..Default::default()
-                })
+                self.network
+                    .bind()
+                    .send_udp(MsgUpWrapper { messages: actions })
             }
         }
     }
@@ -167,16 +151,13 @@ impl INode2D for PlayNode {
 
             self.network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_MOVE.into(),
+                    r#type: MsgUpType::PlayerMove.into(),
                     player_move: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 }],
-                ..Default::default()
             })
         } else if event.is_action_pressed("key_e".into()) {
             godot_print!("Key E pressed");
@@ -186,16 +167,13 @@ impl INode2D for PlayNode {
 
             self.network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_THROW_FROZEN_ORB.into(),
+                    r#type: MsgUpType::PlayerThrowFrozenOrb.into(),
                     player_throw_frozen_orb: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 }],
-                ..Default::default()
             })
         } else if event.is_action_pressed("key_r".into()) {
             godot_print!("Key R pressed");
@@ -203,34 +181,29 @@ impl INode2D for PlayNode {
 
             self.network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
-                    _type: MsgUpType::PLAYER_TELEPORT.into(),
+                    r#type: MsgUpType::PlayerTeleport.into(),
                     player_teleport: Some(Point {
                         x: mouse_position.x,
                         y: mouse_position.y,
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 }],
-                ..Default::default()
             })
         } else if event.is_action_pressed("key_n".into()) {
             godot_print!("Key N pressed");
 
             self.network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
-                    _type: MsgUpType::SETTINGS_TOGGLE_ENEMIES.into(),
+                    r#type: MsgUpType::SettingsToggleEnemies.into(),
                     ..Default::default()
                 }],
-                ..Default::default()
             })
         } else if event.is_action_pressed("key_escape".into()) {
             self.network.bind().send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
-                    _type: MsgUpType::USER_LEAVE_WORLD_INSTANCE.into(),
+                    r#type: MsgUpType::UserLeaveWorldInstance.into(),
                     ..Default::default()
                 }],
-                ..Default::default()
             })
         }
     }

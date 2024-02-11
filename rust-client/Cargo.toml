@@ -9,5 +9,6 @@ crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
 [dependencies]
 enet-cs-sys = "0.1.1"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [ "experimental-threads" ] }
-protobuf = "3.3.0"
+prost = "0.12"
+reqwest = { version = "0.11.24", features = ["blocking"] }
 rust-common = { path = "../rust-common" }

@@ -9,8 +9,7 @@ use godot::engine::{
 };
 use godot::prelude::*;
 use rust_common::helper::point_to_vector2;
-use rust_common::proto::common::GameEntityBaseType;
-use rust_common::proto::udp_down::UdpMsgDownGameEntityUpdate;
+use rust_common::proto::{GameEntityBaseType, UdpMsgDownGameEntityUpdate};
 
 use crate::root::{DEBUG, PATH_PLAY};
 use crate::utils::{
@@ -50,7 +49,7 @@ impl ISprite2D for GameEntity {
             server_position_current: None,
             allow_server_position_sync: false,
             speed: 0.0,
-            base_type: GameEntityBaseType::CHARACTER,
+            base_type: GameEntityBaseType::Character,
             is_current_player: false,
             health_label: None,
             is_dead: false,
@@ -68,7 +67,7 @@ impl ISprite2D for GameEntity {
         let position_init = self.position_init;
         self.base_mut().set_position(cart_to_iso(&position_init));
         match self.base_type {
-            GameEntityBaseType::CHARACTER => {
+            GameEntityBaseType::Character => {
                 let mut animated_sprite_2d = self
                     .animated_splite_2d_scene
                     .clone()
@@ -79,7 +78,7 @@ impl ISprite2D for GameEntity {
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base_mut().add_child(animated_sprite_2d.upcast());
             }
-            GameEntityBaseType::PROJECTILE => {
+            GameEntityBaseType::Projectile => {
                 let mut sprite_2d = Sprite2D::new_alloc();
                 let texture = ResourceLoader::singleton()
                     .load("res://sprite/fireball.png".into())
@@ -88,7 +87,7 @@ impl ISprite2D for GameEntity {
                 sprite_2d.set_texture(texture);
                 self.base_mut().add_child(sprite_2d.upcast());
             }
-            GameEntityBaseType::ENEMY => {
+            GameEntityBaseType::Enemy => {
                 let mut animated_sprite_2d = self
                     .animated_splite_2d_scene
                     .clone()
@@ -99,8 +98,8 @@ impl ISprite2D for GameEntity {
                 self.animated_sprite_2d = Some(animated_sprite_2d.clone());
                 self.base_mut().add_child(animated_sprite_2d.upcast());
             }
-            GameEntityBaseType::WALL => {}
-            GameEntityBaseType::MELEE_ATTACK => {}
+            GameEntityBaseType::Wall => {}
+            GameEntityBaseType::MeleeAttack => {}
         };
         if self.is_current_player {
             let mut camera = Camera2D::new_alloc();
@@ -182,7 +181,7 @@ impl GameEntity {
         animated_splite_2d_scene: Gd<PackedScene>,
     ) {
         self.animated_splite_2d_scene = Some(animated_splite_2d_scene);
-        self.position_init = point_to_vector2(&entity_update.location_current);
+        self.position_init = point_to_vector2(&entity_update.location_current.clone().unwrap());
         self.position_target_queue = VecDeque::from_iter(
             entity_update
                 .location_target_queue
@@ -191,54 +190,54 @@ impl GameEntity {
                 .collect::<Vec<_>>(),
         );
 
-        if let Some(speed) = entity_update.velocity_speed {
-            self.speed = speed;
-        }
-        self.base_type = entity_update.object_type.unwrap();
+        self.speed = entity_update.velocity_speed;
+
+        self.base_type = GameEntityBaseType::try_from(entity_update.object_type).unwrap();
         self.is_current_player = entity_update.is_self;
 
         // Draw health
-        if let Some(health_current) = entity_update.health_current {
+        if entity_update.health_current > 0 {
             let mut health_label = Label::new_alloc();
-            health_label.set_text(health_current.to_string().into());
+            health_label.set_text(entity_update.health_current.to_string().into());
             health_label.set_horizontal_alignment(HorizontalAlignment::CENTER);
-            health_label.set_position(Vector2 {
-                x: 0.0,
-                y: -(&entity_update.collider_dmg_in_rect.y / 2.0 + 40.0),
-            });
+            if let Some(collider_dmg_in_rect) = &entity_update.collider_dmg_in_rect {
+                health_label.set_position(Vector2 {
+                    x: 0.0,
+                    y: -(collider_dmg_in_rect.y / 2.0 + 40.0),
+                });
+            };
             health_label.set_z_index(3);
             self.health_label = Some(health_label.clone());
             self.base_mut().add_child(health_label.upcast());
         }
 
         if DEBUG {
-            // Draw hitbox
-            let a = Vector2::new(
-                -(entity_update.collider_dmg_in_rect.x / 2.0),
-                -(entity_update.collider_dmg_in_rect.y / 2.0),
-            );
-            let b = Vector2::new(
-                entity_update.collider_dmg_in_rect.x / 2.0,
-                -(entity_update.collider_dmg_in_rect.y / 2.0),
-            );
-            let c = Vector2::new(
-                entity_update.collider_dmg_in_rect.x / 2.0,
-                entity_update.collider_dmg_in_rect.y / 2.0,
-            );
-            let d = Vector2::new(
-                -(entity_update.collider_dmg_in_rect.x / 2.0),
-                entity_update.collider_dmg_in_rect.y / 2.0,
-            );
-            let mut polygon2d = Polygon2D::new_alloc();
-            let mut packed_vector2_array = PackedVector2Array::new();
-            packed_vector2_array.insert(0, cart_to_iso(&a));
-            packed_vector2_array.insert(1, cart_to_iso(&b));
-            packed_vector2_array.insert(2, cart_to_iso(&c));
-            packed_vector2_array.insert(3, cart_to_iso(&d));
-            polygon2d.set_polygon(packed_vector2_array);
-            polygon2d.set_color(Color::from_rgba(255.0, 0.0, 0.0, 0.5));
-            polygon2d.set_z_index(10);
-            self.base_mut().add_child(polygon2d.upcast());
+            if let Some(collider_dmg_in_rect) = &entity_update.collider_dmg_in_rect {
+                // Draw hitbox
+                let a = Vector2::new(
+                    -(collider_dmg_in_rect.x / 2.0),
+                    -(collider_dmg_in_rect.y / 2.0),
+                );
+                let b = Vector2::new(
+                    collider_dmg_in_rect.x / 2.0,
+                    -(collider_dmg_in_rect.y / 2.0),
+                );
+                let c = Vector2::new(collider_dmg_in_rect.x / 2.0, collider_dmg_in_rect.y / 2.0);
+                let d = Vector2::new(
+                    -(collider_dmg_in_rect.x / 2.0),
+                    collider_dmg_in_rect.y / 2.0,
+                );
+                let mut polygon2d = Polygon2D::new_alloc();
+                let mut packed_vector2_array = PackedVector2Array::new();
+                packed_vector2_array.insert(0, cart_to_iso(&a));
+                packed_vector2_array.insert(1, cart_to_iso(&b));
+                packed_vector2_array.insert(2, cart_to_iso(&c));
+                packed_vector2_array.insert(3, cart_to_iso(&d));
+                polygon2d.set_polygon(packed_vector2_array);
+                polygon2d.set_color(Color::from_rgba(255.0, 0.0, 0.0, 0.5));
+                polygon2d.set_z_index(10);
+                self.base_mut().add_child(polygon2d.upcast());
+            }
         }
 
         if let Some(collider_mvt) = entity_update.collider_mvt.as_ref() {
@@ -312,7 +311,7 @@ impl GameEntity {
     }
 
     pub fn update_from_server(&mut self, entity_update: &UdpMsgDownGameEntityUpdate) {
-        self.speed = entity_update.velocity_speed.unwrap();
+        self.speed = entity_update.velocity_speed;
         self.position_target_queue = VecDeque::from_iter(
             entity_update
                 .location_target_queue
@@ -323,8 +322,8 @@ impl GameEntity {
 
         self.allow_server_position_sync = self.position_target_queue.is_empty();
 
-        if entity_update.cast.is_some() {
-            self.casting_target = Some(point_to_vector2(&entity_update.cast.target));
+        if let Some(cast) = &entity_update.cast {
+            self.casting_target = Some(point_to_vector2(&cast.target.clone().unwrap()));
             self.is_casting = true;
         } else {
             self.casting_target = None;
@@ -333,7 +332,8 @@ impl GameEntity {
 
         self.update_animated_sprite();
 
-        let new_position_current = point_to_vector2(&entity_update.location_current);
+        let new_position_current =
+            point_to_vector2(&entity_update.location_current.clone().unwrap());
         self.server_position_current = Some(new_position_current);
         if iso_to_cart(&self.base().get_position()).distance_to(new_position_current) > 300.0 {
             self.base_mut()
@@ -341,15 +341,13 @@ impl GameEntity {
         }
 
         if let Some(health_label) = &mut self.health_label {
-            if let Some(new_health_current) = entity_update.health_current {
-                health_label.set_text(new_health_current.to_string().into());
-                if new_health_current == 0 {
-                    self.base_mut().set_visible(false);
-                    self.is_dead = true;
-                } else {
-                    self.base_mut().set_visible(true);
-                    self.is_dead = false;
-                }
+            health_label.set_text(entity_update.health_current.to_string().into());
+            if entity_update.health_current == 0 {
+                self.base_mut().set_visible(false);
+                self.is_dead = true;
+            } else {
+                self.base_mut().set_visible(true);
+                self.is_dead = false;
             }
         }
     }

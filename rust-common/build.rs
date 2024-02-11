@@ -1,16 +1,20 @@
+extern crate prost_build;
+
 fn main() {
-    protobuf_codegen::Codegen::new()
-        // Use `protoc` parser, optional.
-        .protoc()
-        // Use `protoc-bin-vendored` bundled protoc command, optional.
-        .protoc_path(&protoc_bin_vendored::protoc_bin_path().unwrap())
-        // All inputs and imports from the inputs must reside in `includes` directories.
-        .includes(["proto"])
-        // Inputs must reside in some of include paths.
-        .input("proto/common.proto")
-        .input("proto/udp-down.proto")
-        .input("proto/udp-up.proto")
-        // Specify output directory relative to Cargo output directory.
-        .out_dir("src/proto")
-        .run_from_script();
+    dotenvy::dotenv().unwrap();
+    std::env::set_var("OUT_DIR", "src/proto");
+    let proto_gen = std::env::var("PROTO_GEN").expect("env var PROTO_GEN is not set");
+
+    if proto_gen == "true" {
+        prost_build::compile_protos(
+            &[
+                "src/proto/common.proto",
+                "src/proto/udp-down.proto",
+                "src/proto/udp-up.proto",
+                "src/proto/http-auth.proto",
+            ],
+            &["src/proto"],
+        )
+        .unwrap();
+    }
 }

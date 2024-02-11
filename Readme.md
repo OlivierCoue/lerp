@@ -48,8 +48,11 @@ cargo build
 Start rust-server-auth:
 
 ```
-./rust-server-auth cargo lambda watch -a 127.0.0.1 -p 3000
+cargo lambda watch -a 127.0.0.1 -p 3000
+// http://127.0.0.1:3000/lambda-url/rust-server-auth
 ```
+
+
 
 Start rust-server-game:
 

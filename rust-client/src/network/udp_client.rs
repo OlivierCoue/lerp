@@ -1,6 +1,6 @@
 use enet_cs_sys::*;
 use godot::log::godot_print;
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
+use rust_common::proto::{MsgUpWrapper, UdpMsgDownWrapper};
 use std::{
     ffi::CString,
     mem::MaybeUninit,
@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use protobuf::Message;
+use prost::Message;
 pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 
 unsafe impl Sync for ENetPeerPtrWrapper {}
@@ -86,9 +86,8 @@ pub fn udp_client_start(
                         };
                         // println!("{}", unsafe { (*event.packet).dataLength });
 
-                        let udp_msg_down_wrapper: UdpMsgDownWrapper =
-                            UdpMsgDownWrapper::parse_from_bytes(recv_packet_raw)
-                                .expect("Failed to parse UdpMsgDownWrapper");
+                        let udp_msg_down_wrapper = UdpMsgDownWrapper::decode(recv_packet_raw)
+                            .expect("Failed to parse UdpMsgDownWrapper");
                         tx_udp_receiver.send(udp_msg_down_wrapper).unwrap();
                     }
                     _ENetEventType_ENET_EVENT_TYPE_NONE => {}
@@ -103,7 +102,8 @@ pub fn udp_client_start(
 
         for msg_to_send in &rx_udp_sender {
             if let Some(peer) = &*peers_for_send.lock().unwrap() {
-                let out_bytes = msg_to_send.write_to_bytes().unwrap();
+                let mut out_bytes = Vec::with_capacity(msg_to_send.encoded_len());
+                msg_to_send.encode(&mut out_bytes).unwrap();
                 let packet: *mut _ENetPacket = unsafe {
                     enet_packet_create(
                         out_bytes.as_ptr().cast(),

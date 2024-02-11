@@ -1,0 +1,11 @@
+[package]
+name = "rust-server-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenvy = "0.15.7"
+prost = "0.12"
+reqwest = { version = "0.11.24", features = ["blocking"] }
+rust-common = { path = "../rust-common" }
+tokio = { version = "1", features = ["full"] }

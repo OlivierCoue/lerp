@@ -1,5 +1,5 @@
 use bevy_ecs::entity::Entity;
-use rust_common::proto::udp_down::UdpMsgDownWrapper;
+use rust_common::proto::UdpMsgDownWrapper;
 use uuid::Uuid;
 
 use std::collections::HashMap;

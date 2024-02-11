@@ -1,4 +1,8 @@
 use godot::prelude::*;
+use rust_common::{
+    api_auth::{ApiAuthRequest, ApiAuthResponse},
+    proto::{MsgUpWrapper, UdpMsgDownWrapper},
+};
 use std::{
     rc::Rc,
     sync::mpsc::{self, Receiver, Sender},
@@ -7,22 +11,19 @@ use std::{
 
 use crate::network::prelude::*;
 
-use rust_common::proto::{udp_down::UdpMsgDownWrapper, udp_up::MsgUpWrapper};
-
 #[derive(GodotClass)]
 #[class(base=Node)]
 pub struct NetworkManager {
     base: Base<Node>,
     tx_udp_sender: Sender<MsgUpWrapper>,
     pub rx_udp_receiver: Rc<Receiver<UdpMsgDownWrapper>>,
-    tx_http_sender: Sender<String>,
-    pub rx_http_receiver: Rc<Receiver<String>>,
+    tx_http_sender: Sender<ApiAuthRequest>,
+    pub rx_http_receiver: Rc<Receiver<ApiAuthResponse>>,
 }
 
 #[godot_api]
 impl INode for NetworkManager {
     fn init(base: Base<Node>) -> Self {
-        println!("NetworkManager init");
         let (tx_udp_sender, rx_udp_sender) = mpsc::channel();
         let (tx_udp_receiver, rx_udp_receiver) = mpsc::channel();
 
@@ -44,11 +45,10 @@ impl INode for NetworkManager {
 
     fn process(&mut self, _: f64) {
         let rx_http_receiver = Rc::clone(&self.rx_http_receiver);
-        while let Ok(msg) = rx_http_receiver.try_recv() {
-            println!("emit");
-            let data = Gd::from_init_fn(|base| HttpResponse::new(base, msg));
+        while let Ok(response) = rx_http_receiver.try_recv() {
+            let data = Gd::from_init_fn(|base| GdApiAuthResponse::new(base, response));
             self.base_mut()
-                .emit_signal("http_success".into(), &[data.to_variant()]);
+                .emit_signal("http_response".into(), &[data.to_variant()]);
         }
     }
 }
@@ -56,39 +56,32 @@ impl INode for NetworkManager {
 #[godot_api]
 impl NetworkManager {
     #[signal]
-    fn http_success() {}
+    fn http_response() {}
 }
 
 impl NetworkManager {
-    // pub fn test(&mut self) {
-    //     let obj = Gd::from_init_fn(|base| Data::new(base, 1));
-
-    //     self.base_mut()
-    //         .emit_signal("signal".into(), &[obj.to_variant()]);
-    // }
-
     pub fn send_udp(&self, udp_msg_up_wrapper: MsgUpWrapper) {
         self.tx_udp_sender
             .send(udp_msg_up_wrapper)
             .expect("[NetworkManager][send_udp] Failed to send udp msg");
     }
 
-    pub fn send_http(&self, msg: String) {
+    pub fn send_http(&self, request: ApiAuthRequest) {
         self.tx_http_sender
-            .send(msg)
+            .send(request)
             .expect("[NetworkManager][send_http] Failed to send http msg");
     }
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
-pub struct HttpResponse {
+#[class(no_init, base=RefCounted)]
+pub struct GdApiAuthResponse {
     base: Base<RefCounted>,
-    pub value: String,
+    pub response: ApiAuthResponse,
 }
 
-impl HttpResponse {
-    pub fn new(base: Base<RefCounted>, value: String) -> Self {
-        Self { base, value }
+impl GdApiAuthResponse {
+    pub fn new(base: Base<RefCounted>, response: ApiAuthResponse) -> Self {
+        Self { base, response }
     }
 }

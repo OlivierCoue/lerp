@@ -1,4 +1,4 @@
-use rust_common::proto::udp_down::*;
+use rust_common::proto::*;
 use uuid::Uuid;
 
 use self::service_area::ApiServiceArea;
@@ -18,12 +18,10 @@ impl ApiServiceUser {
             .is_some()
         {
             udp_messages.push(UdpMsgDown {
-                _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                r#type: UdpMsgDownType::UserConnectFailed.into(),
                 user_connect_failed: Some(UdpMsgDownUserConnectFailed {
                     error_message: "A user is already connected on this client.".into(),
-                    ..Default::default()
-                })
-                .into(),
+                }),
                 ..Default::default()
             });
 
@@ -50,12 +48,10 @@ impl ApiServiceUser {
                     err
                 );
                 udp_messages.push(UdpMsgDown {
-                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    r#type: UdpMsgDownType::UserConnectFailed.into(),
                     user_connect_failed: Some(UdpMsgDownUserConnectFailed {
                         error_message: "Failed to query user.".into(),
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 });
                 return Some(udp_messages);
@@ -71,12 +67,10 @@ impl ApiServiceUser {
                 .is_some()
             {
                 udp_messages.push(UdpMsgDown {
-                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    r#type: UdpMsgDownType::UserConnectFailed.into(),
                     user_connect_failed: Some(UdpMsgDownUserConnectFailed {
                         error_message: "User is already connected from another client.".into(),
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 })
             } else {
@@ -88,7 +82,7 @@ impl ApiServiceUser {
                     .insert(udp_peer_id, user.uuid);
 
                 udp_messages.push(UdpMsgDown {
-                    _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
+                    r#type: UdpMsgDownType::UserConnectSuccess.into(),
                     ..Default::default()
                 })
             }
@@ -107,7 +101,7 @@ impl ApiServiceUser {
         .await;
 
         match insert_result {
-            Ok(_) => {
+            Ok(a) => {
                 {
                     let mut users_state_lock = app.get_users_state_lock();
                     users_state_lock
@@ -119,7 +113,7 @@ impl ApiServiceUser {
                 }
 
                 udp_messages.push(UdpMsgDown {
-                    _type: UdpMsgDownType::USER_CONNECT_SUCCESS.into(),
+                    r#type: UdpMsgDownType::UserConnectSuccess.into(),
                     ..Default::default()
                 })
             }
@@ -129,12 +123,10 @@ impl ApiServiceUser {
                     err
                 );
                 udp_messages.push(UdpMsgDown {
-                    _type: UdpMsgDownType::USER_CONNECT_FAILED.into(),
+                    r#type: UdpMsgDownType::UserConnectFailed.into(),
                     user_connect_failed: Some(UdpMsgDownUserConnectFailed {
                         error_message: "Failed to register user.".into(),
-                        ..Default::default()
-                    })
-                    .into(),
+                    }),
                     ..Default::default()
                 });
             }
@@ -157,7 +149,7 @@ impl ApiServiceUser {
         }
 
         udp_messages.push(UdpMsgDown {
-            _type: UdpMsgDownType::USER_DISCONNECT_SUCCESS.into(),
+            r#type: UdpMsgDownType::UserDisconnectSuccess.into(),
             ..Default::default()
         });
 

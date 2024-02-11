@@ -1,4 +1,7 @@
 syntax = "proto3";
+
+package lerp;
+
 import "common.proto";
 
 enum MsgUpType {
@@ -23,12 +26,12 @@ message MsgUpUserJoinWorldInstance {
 
 message MsgUp {
     MsgUpType _type = 1;
-    optional Point player_move = 2;
-    optional Point player_teleport = 3;
-    optional Point player_throw_projectile = 4;
-    optional Point player_throw_frozen_orb = 5;
-    optional string user_connect_username = 6;
-    optional MsgUpUserJoinWorldInstance user_join_world_instance = 7;
+    Point player_move = 2;
+    Point player_teleport = 3;
+    Point player_throw_projectile = 4;
+    Point player_throw_frozen_orb = 5;
+    string user_connect_username = 6;
+    MsgUpUserJoinWorldInstance user_join_world_instance = 7;
 }
 
 message MsgUpWrapper {

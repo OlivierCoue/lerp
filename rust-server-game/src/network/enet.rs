@@ -1,9 +1,6 @@
 use enet_cs_sys::*;
-use rust_common::proto::{
-    udp_down::UdpMsgDownWrapper,
-    udp_up::{MsgUp, MsgUpType, MsgUpWrapper},
-};
-use tokio::sync::mpsc;
+use prost::Message;
+use rust_common::proto::*;
 
 use std::{
     collections::HashMap,
@@ -12,8 +9,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-
-use protobuf::Message;
+use tokio::sync::mpsc;
 
 use crate::env::{ENV_UDP_ADDRESS, ENV_UDP_PORT};
 pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
@@ -124,10 +120,9 @@ fn enet_receive(
                             unsafe { *event.0.peer }.incomingPeerID,
                             MsgUpWrapper {
                                 messages: vec![MsgUp {
-                                    _type: MsgUpType::USER_DISCONNECT.into(),
+                                    r#type: MsgUpType::UserConnect.into(),
                                     ..Default::default()
                                 }],
-                                ..Default::default()
                             },
                         ))
                         .unwrap();
@@ -145,7 +140,7 @@ fn enet_receive(
                     // let channel_id = event.channelID;
                     // println!("received msg on channel: {}", channel_id);
 
-                    match MsgUpWrapper::parse_from_bytes(recv_packet_raw) {
+                    match MsgUpWrapper::decode(recv_packet_raw) {
                         Ok(udp_msg_up) => {
                             tx_enet_sender
                                 .blocking_send((
@@ -172,7 +167,8 @@ fn enet_send(
 ) {
     while let Some((peer_id, msg_to_send)) = rx_enet_sender.blocking_recv() {
         if let Some(peer) = peers_for_send.lock().unwrap().get(&peer_id) {
-            let out_bytes = msg_to_send.write_to_bytes().unwrap();
+            let mut out_bytes = Vec::with_capacity(msg_to_send.encoded_len());
+            msg_to_send.encode(&mut out_bytes).unwrap();
             let packet: *mut _ENetPacket = unsafe {
                 enet_packet_create(
                     out_bytes.as_ptr().cast(),
