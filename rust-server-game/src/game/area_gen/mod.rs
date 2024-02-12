@@ -44,7 +44,7 @@ pub struct Enemy {
 pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Create random generator from seed
     // fixed seed
-    // let seed: u64 = ;
+    // let seed: u64 = 12774450034686186685;
     // random seed
     let seed: u64 = rand::random();
     // The rng instance is created from the seed
@@ -118,9 +118,7 @@ fn generate_mobs(packs: &Vec<MobPack>, rng: &mut ChaCha8Rng) -> Vec<Enemy> {
         let mut y_offset = 0;
         let nb_monsters = rng.gen_range(0..max_mobs_per_pack);
         for _ in 0..=nb_monsters {
-            if (pack.tile_coords.0 * tile_size) + x_offset + mob_size
-                <= (pack.tile_coords.0 + 1) * tile_size
-            {
+            if x_offset + mob_size < tile_size {
                 x_offset += mob_size;
             } else {
                 x_offset = 0;
