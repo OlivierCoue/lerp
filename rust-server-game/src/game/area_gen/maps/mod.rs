@@ -1,3 +1,5 @@
+use rust_common::proto::TileType;
+
 #[derive(Clone)]
 pub struct FloorPattern {
     // odds: f32,
@@ -6,18 +8,6 @@ pub struct FloorPattern {
     pub rng_range_direction_repeat: (i32, i32),
     pub allowed_directions: Vec<(i32, i32)>,
     pub generation_area_size: (i32, i32),
-}
-#[allow(dead_code)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum TileType {
-    Floor,
-    Wall,
-    Start,
-    Boss,
-    Event,
-    Water,
-    Forest,
-    Angle,
 }
 #[derive(Clone)]
 pub struct MobPack {
@@ -31,6 +21,8 @@ pub struct Tile {
     pub walkable: bool,
     pub spawnable: bool,
     pub mob_pack: Option<MobPack>,
+    pub is_start: bool,
+    pub is_boss: bool,
 }
 
 #[derive(Clone)]
@@ -120,7 +112,7 @@ pub fn define_floor_patterns() -> Vec<Map> {
         },
         Map {
             name: String::from("Ledge"),
-            oob_type: TileType::Wall,
+            oob_type: TileType::Rock,
             biomes: vec![
                 long_path_bottom_right_dir.clone(),
                 long_path_bottom_right_dir.clone(),
@@ -129,7 +121,7 @@ pub fn define_floor_patterns() -> Vec<Map> {
         },
         Map {
             name: String::from("Desert"),
-            oob_type: TileType::Wall,
+            oob_type: TileType::Rock,
             biomes: vec![long_path_bottom_right_dir.clone(), large_all_dir.clone()],
             density: 0.01,
         },
@@ -145,7 +137,7 @@ pub fn define_floor_patterns() -> Vec<Map> {
         },
         Map {
             name: String::from("Quarry"),
-            oob_type: TileType::Wall,
+            oob_type: TileType::Rock,
             biomes: vec![
                 short_path_bottom_right_dir.clone(),
                 many_tiny_all_dir.clone(),

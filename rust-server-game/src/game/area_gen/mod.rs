@@ -1,5 +1,5 @@
 // Custom
-use maps::{FloorPattern, Map, Tile, TileType};
+use maps::{FloorPattern, Map, Tile};
 // RNG
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -7,7 +7,7 @@ use rand_chacha::ChaCha8Rng;
 use image::ImageBuffer;
 
 use self::maps::MobPack;
-
+use rust_common::proto::TileType;
 mod maps;
 
 type Grid = Vec<Vec<Tile>>;
@@ -23,6 +23,7 @@ pub struct AreaGenerationOutput {
     pub oob_polygons: Vec<Shape>, // bool is true when outer oob shape, false when inner
     pub player_spawn_position: (i32, i32),
     pub enemies: Vec<Enemy>, // pub ennemies: Vec<enemy>,
+    pub oob_tile_type: TileType,
 }
 
 pub struct Shape {
@@ -44,7 +45,7 @@ pub struct Enemy {
 pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Create random generator from seed
     // fixed seed
-    // let seed: u64 = 12774450034686186685;
+    // let seed: u64 = 15411603512024132636;
     // random seed
     let seed: u64 = rand::random();
     // The rng instance is created from the seed
@@ -59,7 +60,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Pick a map
     let map = maps.remove(map_index);
     let map_name = map.name.clone();
-    // Generate map grid
+    let oob_tile_type = map.oob_type; // Generate map grid
     let (mut grid, player_spawn_position, packs) = generate_map(&mut rng, map);
 
     //------------------------------------------------------//
@@ -105,6 +106,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         walkable_y,
         player_spawn_position,
         enemies,
+        oob_tile_type,
     }
 }
 
@@ -407,8 +409,10 @@ fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (Grid, (i32, i32), Vec<MobPac
     remove_small_cluster(&mut grid, oob_tiletype, 4, false, true);
 
     // add Start of map, first center and last center
-    draw_rectangle(&mut grid, TileType::Start, (5, 5), map_start, true, false);
-    draw_rectangle(&mut grid, TileType::Boss, (1, 1), center, true, true);
+    grid[map_start.0 as usize][map_start.1 as usize].is_start = true;
+    draw_rectangle(&mut grid, TileType::Floor, (5, 5), map_start, true, false);
+    grid[center.0 as usize][center.1 as usize].is_boss = true;
+    draw_rectangle(&mut grid, TileType::Floor, (1, 1), center, true, true);
 
     // resize_grid to it's minimum size
     resize_grid(&mut grid, 4);
@@ -416,7 +420,7 @@ fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (Grid, (i32, i32), Vec<MobPac
     let mut start_after_resize = (0, 0);
     'outer: for x in 0..grid.len() {
         for y in 0..grid[0].len() {
-            if grid[x][y].tile_type == TileType::Start {
+            if grid[x][y].is_start {
                 start_after_resize = (x as i32, y as i32);
                 break 'outer;
             }
@@ -584,7 +588,8 @@ fn remove_small_cluster(
     }
     // after full scan, update tileset
     for tile in tiles_to_fill {
-        add_tile(grid, tile.0, tile.1, TileType::Floor, true, false);
+        grid[tile.0][tile.1].tile_type = TileType::Floor;
+        grid[tile.0][tile.1].walkable = true;
     }
 }
 fn generate_walkable_layout(
@@ -706,30 +711,12 @@ fn draw_rectangle(
 ) {
     for x in 0..size.0 {
         for y in 0..size.1 {
-            add_tile(
-                grid,
-                ((center.0 - (size.0 / 2)) + x) as usize,
-                ((center.1 - (size.1 / 2)) + y) as usize,
-                tiletype,
-                walkable,
-                spawnable,
-            )
+            let tile = &mut grid[((center.0 - (size.0 / 2)) + x) as usize]
+                [((center.1 - (size.1 / 2)) + y) as usize];
+            tile.tile_type = tiletype;
+            tile.walkable = walkable;
+            tile.spawnable = spawnable;
         }
-    }
-}
-
-fn add_tile(
-    grid: &mut Grid,
-    x: usize,
-    y: usize,
-    tile_type: TileType,
-    walkable: bool,
-    spawnable: bool,
-) {
-    if x < grid.len() && y < grid.len() {
-        grid[x][y].tile_type = tile_type;
-        grid[x][y].walkable = walkable;
-        grid[x][y].spawnable = spawnable;
     }
 }
 
@@ -744,6 +731,8 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
                 walkable: false,
                 mob_pack: None,
                 spawnable: false,
+                is_boss: false,
+                is_start: false,
             })
         }
         grid.push(row)
@@ -778,12 +767,12 @@ fn render_grid(grid: &Grid, file_name: String, show_outline: bool) {
                     i.try_into().unwrap(),
                     j.try_into().unwrap(),
                     match y.tile_type {
-                        TileType::Boss => image::Rgb([0u8, 0u8, 0u8]),
+                        // TileType::Boss => image::Rgb([0u8, 0u8, 0u8]),
                         TileType::Floor => image::Rgb([230u8, 213u8, 168u8]),
-                        TileType::Wall => image::Rgb([122u8, 97u8, 31u8]),
-                        TileType::Start => image::Rgb([182u8, 51u8, 214u8]),
-                        TileType::Angle => image::Rgb([182u8, 51u8, 214u8]),
-                        TileType::Event => image::Rgb([181u8, 181u8, 181u8]),
+                        TileType::Rock => image::Rgb([122u8, 97u8, 31u8]),
+                        // TileType::Start => image::Rgb([182u8, 51u8, 214u8]),
+                        // TileType::Angle => image::Rgb([182u8, 51u8, 214u8]),
+                        // TileType::Event => image::Rgb([181u8, 181u8, 181u8]),
                         TileType::Water => image::Rgb([51u8, 114u8, 214u8]),
                         TileType::Forest => image::Rgb([42u8, 117u8, 14u8]),
                     },

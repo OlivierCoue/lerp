@@ -1,4 +1,8 @@
-use godot::{builtin::Vector2, log::godot_print};
+use godot::{
+    builtin::{Vector2, Vector2i},
+    log::godot_print,
+};
+use rust_common::proto::TileType;
 
 pub fn iso_to_cart(vect2: &Vector2) -> Vector2 {
     Vector2 {
@@ -11,6 +15,15 @@ pub fn cart_to_iso(vect2: &Vector2) -> Vector2 {
     Vector2 {
         x: vect2.x * 1.0 + vect2.y * -1.0,
         y: vect2.x * 0.5 + vect2.y * 0.5,
+    }
+}
+
+pub fn tile_type_to_atlas_coord(tile_type: &TileType) -> Vector2i {
+    match tile_type {
+        TileType::Floor => Vector2i::new(0, 0),
+        TileType::Forest => Vector2i::new(13, 4),
+        TileType::Rock => Vector2i::new(13, 1),
+        TileType::Water => Vector2i::new(8, 2),
     }
 }
 

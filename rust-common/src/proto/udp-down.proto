@@ -59,6 +59,7 @@ message UdpMsgDownAreaInit {
     repeated uint32 walkable_x = 3;
     repeated uint32 walkable_y = 4;
     repeated UdpPolygon oob_polygons = 5;
+    TileType oob_tile_type = 6; 
 }
 
 

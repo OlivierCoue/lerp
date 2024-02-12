@@ -54,7 +54,7 @@ impl Game {
         tx_from_instance_internal_messages: mpsc::Sender<OutboundAreaMessage>,
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
-        let area_gen = generate_area(3);
+        let area_gen = generate_area(1);
         let player_spawn_position = Vector2::new(
             area_gen.player_spawn_position.0 as f32,
             area_gen.player_spawn_position.1 as f32,
@@ -75,6 +75,7 @@ impl Game {
             walkable_x: area_gen.walkable_x,
             walkable_y: area_gen.walkable_y,
             oob_polygons: area_gen.oob_polygons,
+            oob_tile_type: area_gen.oob_tile_type,
         };
         world.insert_resource(PathfinderState::new(&area_config));
 
@@ -196,6 +197,7 @@ impl Game {
                                 .collect(),
                         })
                         .collect(),
+                    oob_tile_type: area_config.oob_tile_type.into(),
                 }),
                 ..Default::default()
             }],

@@ -21,6 +21,14 @@ pub enum GameEntityBaseType {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
+pub enum TileType {
+    Floor = 0,
+    Water = 1,
+    Forest = 2,
+    Rock = 3,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
 pub enum UdpSpell {
     SpellProjectile = 0,
     SpellFrozenOrb = 1,
@@ -94,6 +102,8 @@ pub struct UdpMsgDownAreaInit {
     pub walkable_y: ::std::vec::Vec<u32>,
     #[prost(message, repeated, tag="5")]
     pub oob_polygons: ::std::vec::Vec<UdpPolygon>,
+    #[prost(enumeration="TileType", tag="6")]
+    pub oob_tile_type: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UdpMsgDown {

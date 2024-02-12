@@ -9,7 +9,7 @@ use rust_common::proto::*;
 use crate::{
     network::prelude::*,
     root::{Root, Scenes, DEBUG, PATH_NETWORK, PATH_ROOT},
-    utils::iso_to_cart,
+    utils::{iso_to_cart, tile_type_to_atlas_coord},
 };
 
 use super::{entity::GameEntity, play_node_debug::PlayNodeDebug, prelude::GameServerEntity};
@@ -249,7 +249,11 @@ impl PlayNode {
         for x in 0..(area_init.width as usize / 60) {
             for y in 0..(area_init.height as usize / 60) {
                 let cell = tile_map.set_cell_ex(0, Vector2i::new(x as i32 - 1, y as i32));
-                cell.atlas_coords(Vector2i::new(10, 2)).source_id(0).done();
+                cell.atlas_coords(tile_type_to_atlas_coord(
+                    &TileType::try_from(area_init.oob_tile_type).unwrap(),
+                ))
+                .source_id(0)
+                .done();
             }
         }
 

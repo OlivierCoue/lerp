@@ -19,6 +19,13 @@ enum GameEntityBaseType {
     MELEE_ATTACK = 4;
 }
 
+enum TileType {
+    FLOOR = 0;
+    WATER = 1;
+    FOREST = 2;
+    ROCK = 3;
+}
+
 enum UdpSpell {
     SPELL_PROJECTILE = 0;
     SPELL_FROZEN_ORB = 1;
