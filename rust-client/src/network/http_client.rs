@@ -1,7 +1,4 @@
-use std::{
-    io::Read,
-    sync::mpsc::{Receiver, Sender},
-};
+use std::sync::mpsc::{Receiver, Sender};
 
 use prost::Message;
 use rust_common::{
@@ -18,15 +15,15 @@ pub fn http_client_start(
     let client = reqwest::blocking::Client::new();
 
     for msg in &rx_http_sender {
-        let (path, body) = match msg {
+        let (path, body) = match &msg {
             ApiAuthRequest::Login(input) => {
                 let mut buf = Vec::with_capacity(input.encoded_len());
-                input.encode(&mut buf);
+                input.encode(&mut buf).unwrap();
                 ("/login", buf)
             }
             ApiAuthRequest::Register(input) => {
                 let mut buf = Vec::with_capacity(input.encoded_len());
-                input.encode(&mut buf);
+                input.encode(&mut buf).unwrap();
                 ("/register", buf)
             }
         };
@@ -36,10 +33,9 @@ pub fn http_client_start(
             .body(body)
             .send()
             .unwrap();
-        let body = resp.bytes().unwrap();
 
         if resp.status().is_success() {
-            match msg {
+            match &msg {
                 ApiAuthRequest::Login(_) => {
                     let decoded_response =
                         HttpLoginResponse::decode(resp.bytes().unwrap()).unwrap();
