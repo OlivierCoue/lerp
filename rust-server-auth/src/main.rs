@@ -1,27 +1,36 @@
 use axum::{debug_handler, extract::State, http::StatusCode, routing::post, Router};
 use axum_extra::protobuf::Protobuf;
 use lambda_http::{run, Error};
-use rust_common::proto::{HttpLoginInput, HttpLoginResponse, HttpRegisterInput};
+use rust_common::proto::{HttpError, HttpLoginInput, HttpLoginResponse, HttpRegisterInput};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use uuid::Uuid;
 
 pub const ENV_POSTGRES_DATABASE_URL: &str = "DATABASE_URL";
 
-fn internal_error<E>(err: E) -> (StatusCode, String)
+fn internal_error<E>(err: E) -> (StatusCode, Protobuf<HttpError>)
 where
     E: std::error::Error,
 {
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+    let http_error = HttpError {
+        message: err.to_string(),
+    };
+
+    (StatusCode::INTERNAL_SERVER_ERROR, Protobuf(http_error))
 }
 
 #[debug_handler]
 async fn register(
     State(pg_pool): State<PgPool>,
     Protobuf(input): Protobuf<HttpRegisterInput>,
-) -> Result<String, (StatusCode, String)> {
+) -> Result<String, (StatusCode, Protobuf<HttpError>)> {
     if input.username.is_empty() || input.password.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Invalid input.".into()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Protobuf(HttpError {
+                message: "Invalid input.".into(),
+            }),
+        ));
     }
 
     let existing_user = sqlx::query!(
@@ -33,7 +42,12 @@ async fn register(
     .map_err(internal_error)?;
 
     if existing_user.is_some() {
-        return Err((StatusCode::BAD_REQUEST, "Username already in use.".into()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Protobuf(HttpError {
+                message: "Username already in use.".into(),
+            }),
+        ));
     }
 
     let user_uuid = Uuid::new_v4();
@@ -53,9 +67,14 @@ async fn register(
 async fn login(
     State(pg_pool): State<PgPool>,
     Protobuf(input): Protobuf<HttpLoginInput>,
-) -> Result<Protobuf<HttpLoginResponse>, (StatusCode, String)> {
+) -> Result<Protobuf<HttpLoginResponse>, (StatusCode, Protobuf<HttpError>)> {
     if input.username.is_empty() || input.password.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "".into()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Protobuf(HttpError {
+                message: "Invalid username or password.".into(),
+            }),
+        ));
     }
 
     struct PgResult {
@@ -78,8 +97,10 @@ async fn login(
 
     let Some(user) = user else {
         return Err((
-            StatusCode::UNAUTHORIZED,
-            "Invalid username or password".into(),
+            StatusCode::BAD_REQUEST,
+            Protobuf(HttpError {
+                message: "Invalid username or password.".into(),
+            }),
         ));
     };
 

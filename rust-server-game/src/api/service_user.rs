@@ -101,7 +101,7 @@ impl ApiServiceUser {
         .await;
 
         match insert_result {
-            Ok(a) => {
+            Ok(_) => {
                 {
                     let mut users_state_lock = app.get_users_state_lock();
                     users_state_lock
