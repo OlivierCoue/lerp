@@ -1,8 +1,21 @@
-use axum::{debug_handler, extract::State, http::StatusCode, routing::post, Router};
+use axum::{
+    async_trait, debug_handler,
+    extract::{FromRequestParts, State},
+    http::{request::Parts, StatusCode},
+    routing::post,
+    Router,
+};
 use axum_extra::protobuf::Protobuf;
 use lambda_http::{run, Error};
-use rust_common::proto::{HttpError, HttpLoginInput, HttpLoginResponse, HttpRegisterInput};
+use rust_common::{
+    api_auth::{ServerAuthRoute, HEADER_AUTH_TOKEN_KEY},
+    proto::{
+        HttpError, HttpLoginInput, HttpLoginResponse, HttpLogoutResponse, HttpRegisterInput,
+        HttpUserGetCurrentResponse,
+    },
+};
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::str::FromStr;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use uuid::Uuid;
 
@@ -17,6 +30,49 @@ where
     };
 
     (StatusCode::INTERNAL_SERVER_ERROR, Protobuf(http_error))
+}
+
+struct ContextUser {
+    uuid: Uuid,
+}
+
+struct ExtractUser(ContextUser);
+
+#[async_trait]
+impl FromRequestParts<PgPool> for ExtractUser {
+    type Rejection = (StatusCode, Protobuf<HttpError>);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        pg_pool: &PgPool,
+    ) -> Result<Self, Self::Rejection> {
+        let Some(auth_token) = parts.headers.get(HEADER_AUTH_TOKEN_KEY) else {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Protobuf(HttpError {
+                    message: "Missing auth-token.".into(),
+                }),
+            ));
+        };
+
+        let Some(context_user) = sqlx::query_as!(
+            ContextUser,
+            "SELECT uuid FROM users WHERE auth_token = $1",
+            Uuid::from_str(auth_token.to_str().unwrap()).unwrap()
+        )
+        .fetch_optional(pg_pool)
+        .await
+        .unwrap() else {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Protobuf(HttpError {
+                    message: "Invalid auth-token.".into(),
+                }),
+            ));
+        };
+
+        Ok(ExtractUser(context_user))
+    }
 }
 
 #[debug_handler]
@@ -104,7 +160,65 @@ async fn login(
         ));
     };
 
+    let auth_token = Uuid::new_v4();
+    sqlx::query!(
+        "UPDATE users SET auth_token = $1 WHERE uuid = $2; ",
+        auth_token,
+        user.uuid
+    )
+    .execute(&pg_pool)
+    .await
+    .map_err(internal_error)?;
+
     let response = HttpLoginResponse {
+        uuid: user.uuid.to_string(),
+        username: user.username,
+        auth_token: auth_token.to_string(),
+    };
+
+    Ok(Protobuf(response))
+}
+
+#[debug_handler]
+async fn logout(
+    State(pg_pool): State<PgPool>,
+    ExtractUser(ctx_user): ExtractUser,
+) -> Result<Protobuf<HttpLogoutResponse>, (StatusCode, Protobuf<HttpError>)> {
+    sqlx::query!(
+        "UPDATE users SET auth_token = NULL WHERE uuid = $1; ",
+        ctx_user.uuid
+    )
+    .execute(&pg_pool)
+    .await
+    .map_err(internal_error)?;
+
+    Ok(Protobuf(HttpLogoutResponse {}))
+}
+
+#[debug_handler]
+async fn user_get_current(
+    State(pg_pool): State<PgPool>,
+    ExtractUser(ctx_user): ExtractUser,
+) -> Result<Protobuf<HttpUserGetCurrentResponse>, (StatusCode, Protobuf<HttpError>)> {
+    struct PgResult {
+        uuid: Uuid,
+        username: String,
+    }
+
+    let user = match sqlx::query_as!(
+        PgResult,
+        "SELECT uuid, username from users WHERE uuid = $1;",
+        ctx_user.uuid
+    )
+    .fetch_one(&pg_pool)
+    .await
+    .map_err(internal_error)
+    {
+        Ok(user) => user,
+        Err(err) => return Err(err),
+    };
+
+    let response = HttpUserGetCurrentResponse {
         uuid: user.uuid.to_string(),
         username: user.username,
     };
@@ -136,11 +250,14 @@ async fn main() -> Result<(), Error> {
         .await
         .unwrap();
 
-    let login_api = Router::new().route("/", post(login));
-    let register_api = Router::new().route("/", post(register));
     let app = Router::new()
-        .nest("/login", login_api)
-        .nest("/register", register_api)
+        .route(&ServerAuthRoute::Register.as_string(), post(register))
+        .route(&ServerAuthRoute::Login.as_string(), post(login))
+        .route(&ServerAuthRoute::Logout.as_string(), post(logout))
+        .route(
+            &ServerAuthRoute::UserGetCurrent.as_string(),
+            post(user_get_current),
+        )
         .with_state(pg_pool);
 
     run(app).await

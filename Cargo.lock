@@ -2437,6 +2437,8 @@ dependencies = [
  "godot",
  "prost 0.12.3",
  "prost-build",
+ "reqwest",
+ "tokio",
 ]
 
 [[package]]
@@ -2488,6 +2490,7 @@ dependencies = [
  "reqwest",
  "rust-common",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

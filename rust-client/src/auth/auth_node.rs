@@ -10,6 +10,7 @@ use godot::{
 };
 
 use crate::{
+    global_state::GlobalState,
     network::prelude::*,
     root::{Root, Scenes, PATH_AUTH, PATH_NETWORK, PATH_ROOT},
 };
@@ -17,7 +18,7 @@ use crate::{
 use super::auth_state::{AuthNodeEvent, AuthState, AuthStateEvent, AuthStateManager};
 
 #[derive(GodotClass)]
-#[class(base=Node2D)]
+#[class(no_init, base=Node2D)]
 pub struct AuthNode {
     base: Base<Node2D>,
     state: Arc<Mutex<AuthState>>,
@@ -32,41 +33,6 @@ pub struct AuthNode {
 
 #[godot_api]
 impl INode2D for AuthNode {
-    fn init(base: Base<Node2D>) -> Self {
-        let state = Arc::new(Mutex::new(AuthState {
-            is_loading: false,
-            connect_error: None,
-        }));
-
-        let (tx_state_events, rx_state_events) = mpsc::channel();
-        let (tx_node_events, rx_node_events) = mpsc::channel();
-
-        let mut state_manager = AuthStateManager::new(state.clone(), tx_state_events);
-        thread::spawn(move || {
-            tokio::runtime::Builder::new_multi_thread()
-                .max_blocking_threads(4)
-                .thread_name("auth-pool")
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(async {
-                    state_manager.start(rx_node_events).await;
-                });
-        });
-
-        Self {
-            base,
-            state,
-            rx_state_events: Rc::new(rx_state_events),
-            tx_node_events,
-            root: OnReady::manual(),
-            network: OnReady::manual(),
-            label_auth_error: OnReady::manual(),
-            line_edit_username: OnReady::manual(),
-            connect_button: OnReady::manual(),
-        }
-    }
-
     fn ready(&mut self) {
         self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
         self.network
@@ -103,6 +69,7 @@ impl INode2D for AuthNode {
         }
     }
 }
+
 #[godot_api]
 impl AuthNode {
     #[func]
@@ -116,6 +83,41 @@ impl AuthNode {
 }
 
 impl AuthNode {
+    pub fn init(base: Base<Node2D>, global_state: GlobalState) -> Self {
+        let state = Arc::new(Mutex::new(AuthState {
+            is_loading: false,
+            connect_error: None,
+        }));
+
+        let (tx_state_events, rx_state_events) = mpsc::channel();
+        let (tx_node_events, rx_node_events) = mpsc::channel();
+
+        let mut state_manager = AuthStateManager::new(global_state, state.clone(), tx_state_events);
+        thread::spawn(move || {
+            tokio::runtime::Builder::new_multi_thread()
+                .max_blocking_threads(2)
+                .thread_name("auth-pool")
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    state_manager.start(rx_node_events).await;
+                });
+        });
+
+        Self {
+            base,
+            state,
+            rx_state_events: Rc::new(rx_state_events),
+            tx_node_events,
+            root: OnReady::manual(),
+            network: OnReady::manual(),
+            label_auth_error: OnReady::manual(),
+            line_edit_username: OnReady::manual(),
+            connect_button: OnReady::manual(),
+        }
+    }
+
     fn on_connect_error_changed(&mut self) {
         let connect_error = &self.state.lock().unwrap().connect_error;
         if let Some(connect_error) = connect_error {

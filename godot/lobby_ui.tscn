@@ -29,6 +29,10 @@ layout_mode = 2
 text = "Lobby"
 horizontal_alignment = 1
 
+[node name="label_username" type="Label" parent="Control/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+
 [node name="button_create_game" type="Button" parent="Control/VBoxContainer"]
 layout_mode = 2
 text = "Create Game"

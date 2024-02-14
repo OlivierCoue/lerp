@@ -8,6 +8,17 @@ message HttpError {
     string message = 1;
 }
 
+////// Register
+
+message HttpRegisterInput {
+    string username = 1;
+    string password = 2;
+}
+
+message HttpRegisterResponse { }
+
+////// Login
+
 message HttpLoginInput {
     string username = 1;
     string password = 2;
@@ -16,9 +27,16 @@ message HttpLoginInput {
 message HttpLoginResponse {
     string uuid = 1;
     string username = 2;
+    string auth_token = 3;
 }
 
-message HttpRegisterInput {
-    string username = 1;
-    string password = 2;
-}
+////// Logout
+
+message HttpLogoutResponse { }
+
+////// User get current
+
+message HttpUserGetCurrentResponse {
+    string uuid = 1;
+    string username = 2;
+ }

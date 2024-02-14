@@ -8,6 +8,8 @@ edition = "2021"
 bytes = "0.4"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [ "experimental-threads" ] }
 prost = "0.12"
+reqwest = { version = "0.11.24" }
+tokio = { version = "1" }
 
 [build-dependencies]
 dotenvy = "0.15.7"

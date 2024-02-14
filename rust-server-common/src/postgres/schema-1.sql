@@ -1,16 +1,19 @@
 
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS world_instances;
+
 
 CREATE TABLE users (
     uuid UUID NOT NULL,
     username VARCHAR(200) NOT NULL,
     current_world_instance_uuid UUID NULL,
+    auth_token UUID NULL,
 
     CONSTRAINT pk_users PRIMARY KEY (uuid)
 );
 
 CREATE UNIQUE INDEX uidx_users_username ON users(UPPER(username));
+CREATE UNIQUE INDEX uidx_users_auth_token ON users(auth_token);
 
 CREATE TABLE world_instances (
     uuid UUID NOT NULL,

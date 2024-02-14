@@ -1,6 +1,7 @@
-use prost::Message;
-use rust_common::proto::{HttpError, HttpLoginInput};
+use rust_common::{api_auth::AuthApi, proto::HttpLoginInput};
 use std::sync::{mpsc, Arc, Mutex};
+
+use crate::global_state::{GlobalState, StateUser};
 
 pub enum AuthNodeEvent {
     ConnectButtonPressed(String),
@@ -19,19 +20,20 @@ pub struct AuthState {
     pub connect_error: Option<String>,
 }
 
-const SERVER_AUTH_URL: &str = "http://127.0.0.1:3000/lambda-url/rust-server-auth";
-
 pub struct AuthStateManager {
+    global_state: GlobalState,
     state: Arc<Mutex<AuthState>>,
     tx_state_events: mpsc::Sender<AuthStateEvent>,
     http_client: reqwest::Client,
 }
 impl AuthStateManager {
     pub fn new(
+        global_state: GlobalState,
         state: Arc<Mutex<AuthState>>,
         tx_state_events: mpsc::Sender<AuthStateEvent>,
     ) -> Self {
         Self {
+            global_state,
             state,
             tx_state_events,
             http_client: reqwest::Client::new(),
@@ -54,7 +56,6 @@ impl AuthStateManager {
     async fn on_connect_button_pressed(&mut self, username: String) {
         {
             let mut state_lock = self.state.lock().unwrap();
-            // Stop if an action is already ongoing
             if state_lock.is_loading {
                 return;
             }
@@ -64,37 +65,59 @@ impl AuthStateManager {
                 .unwrap()
         }
 
-        let body = HttpLoginInput {
+        let input = HttpLoginInput {
             username,
             password: "abc".into(), // TODO
         };
-        let mut buf = Vec::with_capacity(body.encoded_len());
-        body.encode(&mut buf).unwrap();
 
-        let resp = self
-            .http_client
-            .post(SERVER_AUTH_URL.to_owned() + "/login")
-            .body(buf)
-            .send()
-            .await
+        let login_response = match AuthApi::login(&self.http_client, input).await {
+            Ok(response) => response,
+            Err(err) => {
+                let mut state_lock = self.state.lock().unwrap();
+                state_lock.connect_error = Some(err.message);
+                state_lock.is_loading = false;
+                self.tx_state_events
+                    .send(AuthStateEvent::ConnectErrorChanged)
+                    .unwrap();
+                self.tx_state_events
+                    .send(AuthStateEvent::IsLoadingChanged)
+                    .unwrap();
+                return;
+            }
+        };
+
+        match AuthApi::user_get_current(&self.http_client, login_response.auth_token.clone()).await
+        {
+            Ok(response) => response,
+            Err(err) => {
+                let mut state_lock = self.state.lock().unwrap();
+                state_lock.connect_error = Some(err.message);
+                state_lock.is_loading = false;
+                self.tx_state_events
+                    .send(AuthStateEvent::ConnectErrorChanged)
+                    .unwrap();
+                self.tx_state_events
+                    .send(AuthStateEvent::IsLoadingChanged)
+                    .unwrap();
+                return;
+            }
+        };
+
+        self.global_state
+            .set_user(Some(StateUser {
+                uuid: login_response.uuid,
+                username: login_response.username,
+                auth_token: login_response.auth_token,
+            }))
+            .await;
+
+        println!(
+            "Login success for user: {:#?}",
+            self.global_state.get_user()
+        );
+
+        self.tx_state_events
+            .send(AuthStateEvent::ConnectSuccess)
             .unwrap();
-
-        if resp.status().is_success() {
-            self.tx_state_events
-                .send(AuthStateEvent::ConnectSuccess)
-                .unwrap();
-        } else {
-            let error = HttpError::decode(resp.bytes().await.unwrap()).unwrap();
-
-            let mut state_lock = self.state.lock().unwrap();
-            state_lock.connect_error = Some(error.message);
-            state_lock.is_loading = false;
-            self.tx_state_events
-                .send(AuthStateEvent::ConnectErrorChanged)
-                .unwrap();
-            self.tx_state_events
-                .send(AuthStateEvent::IsLoadingChanged)
-                .unwrap();
-        }
     }
 }

@@ -1,56 +1,71 @@
 use env::init_env;
-use prost::Message;
-use reqwest::StatusCode;
-use rust_common::proto::{HttpLoginInput, HttpLoginResponse, HttpRegisterInput};
-
-use crate::env::env_server_auth_url;
+use rust_common::{
+    api_auth::AuthApi,
+    proto::{HttpLoginInput, HttpRegisterInput},
+};
+use uuid::Uuid;
 
 mod env;
 
 #[tokio::main]
-async fn main() -> Result<(), ()> {
+async fn main() -> Result<(), String> {
     init_env();
 
     println!("[Test] Starting");
 
     let client = reqwest::Client::new();
 
+    let username = Uuid::new_v4().to_string();
+
     // Register
-    let body = HttpRegisterInput {
-        username: "Olivier12".into(),
+    let input = HttpRegisterInput {
+        username: username.clone(),
         password: "test".into(),
     };
-    let mut body_bytes = Vec::with_capacity(body.encoded_len());
-    body.encode(&mut body_bytes).unwrap();
 
-    let res = client
-        .post(env_server_auth_url() + "/register")
-        .body(body_bytes)
-        .send()
-        .await
-        .unwrap();
-
-    if res.status() != StatusCode::OK {
-        println!("error");
-    }
+    match AuthApi::register(&client, input).await {
+        Ok(res) => res,
+        Err(err) => {
+            println!("{}", err.message);
+            panic!("[Auth][register] failed")
+        }
+    };
 
     // Login
-    let body = HttpLoginInput {
-        username: "Olivier".into(),
+    let input = HttpLoginInput {
+        username: username.clone(),
         password: "test".into(),
     };
-    let mut body_bytes = Vec::with_capacity(body.encoded_len());
-    body.encode(&mut body_bytes).unwrap();
 
-    let res = client
-        .post(env_server_auth_url() + "/login")
-        .body(body_bytes)
-        .send()
+    let res = match AuthApi::login(&client, input).await {
+        Ok(res) => res,
+        Err(err) => {
+            println!("{}", err.message);
+            panic!("[Auth][login] failed")
+        }
+    };
+
+    let auth_token = res.auth_token;
+
+    // User get current
+    let user = AuthApi::user_get_current(&client, auth_token.clone())
         .await
         .unwrap();
 
-    let parsed_response = HttpLoginResponse::decode(res.bytes().await.unwrap()).unwrap();
-    println!("{:#?}", parsed_response);
+    assert_eq!(user.username, username);
+
+    // Logout
+    AuthApi::logout(&client, auth_token.clone()).await.unwrap();
+
+    // User get current (expected to fail)
+    if AuthApi::user_get_current(&client, auth_token.clone())
+        .await
+        .is_ok()
+    {
+        return Err("Expected user_get_current to fail after logout".to_string());
+    }
+
+    println!("[Test] Passed");
 
     Ok(())
 }

@@ -188,6 +188,20 @@ pub struct HttpError {
     #[prost(string, tag="1")]
     pub message: std::string::String,
 }
+////// Register
+
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HttpRegisterInput {
+    #[prost(string, tag="1")]
+    pub username: std::string::String,
+    #[prost(string, tag="2")]
+    pub password: std::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HttpRegisterResponse {
+}
+////// Login
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HttpLoginInput {
     #[prost(string, tag="1")]
@@ -201,11 +215,20 @@ pub struct HttpLoginResponse {
     pub uuid: std::string::String,
     #[prost(string, tag="2")]
     pub username: std::string::String,
+    #[prost(string, tag="3")]
+    pub auth_token: std::string::String,
 }
+////// Logout
+
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HttpRegisterInput {
+pub struct HttpLogoutResponse {
+}
+////// User get current
+
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HttpUserGetCurrentResponse {
     #[prost(string, tag="1")]
-    pub username: std::string::String,
+    pub uuid: std::string::String,
     #[prost(string, tag="2")]
-    pub password: std::string::String,
+    pub username: std::string::String,
 }
