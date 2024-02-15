@@ -58,6 +58,13 @@ Start rust-server-game:
 cargo run -p rust-server-game
 ```
 
+build client for windows
+
+```
+cargo install cross
+cross build -p rust-client --target x86_64-pc-windows-gnu
+```
+
 Start client (in godot editor):
 
 ```
@@ -85,7 +92,14 @@ rust-server-auth
 rust-server-lobby
 rust-server-game
 ```
+## Build in devcontainer
 
+```console
+cargo build -p rust-common
+cargo build -p rust-server-common
+cargo build -p rust-server-game
+cargo run -p rust-server-game
+```
 
 
 
