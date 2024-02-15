@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                uuid,\n                game_server_aes_key,\n                game_server_aes_nonce,\n                game_server_handshake_challenge \n            FROM users \n            WHERE uuid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "game_server_aes_key",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "game_server_aes_nonce",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "game_server_handshake_challenge",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "d9c54e157a76f10dc392db1b5ba99590b4ce21b2f508e08ad7b5e9dc4736b21e"
+}

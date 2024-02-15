@@ -64,6 +64,16 @@ Start client (in godot editor):
 godot godot/project.godot
 ```
 
+## SQLX
+
+Generate query metadata file (.sqlx) (require https://crates.io/crates/sqlx-cli to be installed)
+
+See doc to add it as a pre-commit hook: https://github.com/launchbadge/sqlx/blob/main/FAQ.md#how-do-i-compile-with-the-macros-without-needing-a-database-eg-in-ci
+
+```
+cargo sqlx prepare --workspace
+```
+
 ## Architecture (wip)
 
 ```

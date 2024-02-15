@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET auth_token = NULL WHERE uuid = $1; ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c35f41eab91e04dc881f1aa8c9795c97bacd2c87dd3e33509c0290040b1d81d"
+}

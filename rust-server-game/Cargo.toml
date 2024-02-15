@@ -18,5 +18,6 @@ rust-common = { path = "../rust-common" }
 rust-server-common = { path = "../rust-server-common" }
 spin_sleep = "1.1.1"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
+sqlx-cli = { version = "0.7.3" }
 tokio = { version = "1", features = ["full"] }
 uuid = "1.7.0"

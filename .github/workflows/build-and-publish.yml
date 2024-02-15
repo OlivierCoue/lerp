@@ -1,0 +1,42 @@
+name: build-and-publish
+run-name: build-and-publish
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Update
+        shell: bash
+        run: sudo apt update
+
+      - name: Copy .env
+        shell: bash
+        run: cp .env.pipeline .env
+
+      - name: Install Rust
+        shell: bash
+        run: sudo apt install rustc
+
+      - name: Build
+        shell: bash
+        run: cargo build -p rust-server-auth --release
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-3
+          role-to-assume: arn:aws:iam::975049947530:role/github-actions-dev
+          role-session-name: github-actions-build-and-publish
+
+      - name: Publish to AWS S3 
+        shell: bash
+        run: aws s3 cp ./target/release/rust-server-auth s3://lambda-artefacts-${{ github.ref_name }}/auth/

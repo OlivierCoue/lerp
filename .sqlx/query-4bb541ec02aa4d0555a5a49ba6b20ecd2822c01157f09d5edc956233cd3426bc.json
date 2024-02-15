@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM world_instances WHERE uuid = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4bb541ec02aa4d0555a5a49ba6b20ecd2822c01157f09d5edc956233cd3426bc"
+}
