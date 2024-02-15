@@ -1,9 +1,3 @@
-use std::fmt::format;
-
-use aes_gcm_siv::{
-    aead::{Aead, KeyInit, OsRng},
-    Aes256GcmSiv, Nonce,
-};
 use env::init_env;
 use rust_common::{
     api_auth::AuthApi,
@@ -16,23 +10,6 @@ mod env;
 #[tokio::main]
 async fn main() -> Result<(), String> {
     init_env();
-
-    let key_1 = Aes256GcmSiv::generate_key(&mut OsRng);
-
-    println!("{:?}", key_1);
-
-    let string_key = hex::encode(key_1);
-    println!("{}", string_key);
-    let from_string_key = hex::decode(string_key).unwrap();
-    println!("{:?}", from_string_key);
-
-    let cipher = Aes256GcmSiv::new_from_slice(&from_string_key.to_vec()[..]).unwrap();
-    let nonce = Nonce::from_slice(b"unique nonce"); // 96-bits; unique per message
-    let ciphertext = cipher
-        .encrypt(nonce, b"plaintext message".as_ref())
-        .unwrap();
-    let plaintext = cipher.decrypt(nonce, ciphertext.as_ref()).unwrap();
-    assert_eq!(&plaintext, b"plaintext message");
 
     println!("[Test] Starting");
 
