@@ -1,6 +1,5 @@
 use std::{
-    rc::Rc,
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex},
     thread,
 };
 
@@ -8,7 +7,7 @@ use godot::{
     engine::{Button, Label, LineEdit},
     prelude::*,
 };
-use rust_common::proto::{MsgUp, MsgUpType, MsgUpWrapper};
+use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
 
 use crate::{
     global_state::GlobalState,
@@ -24,11 +23,12 @@ pub struct LobbyNode {
     base: Base<Node2D>,
     global_state: GlobalState,
     state: Arc<Mutex<LobbyState>>,
-    rx_state_events: Rc<mpsc::Receiver<LobbyStateEvent>>,
-    tx_node_events: mpsc::Sender<LobbyNodeEvent>,
+    rx_state_events: crossbeam_channel::Receiver<LobbyStateEvent>,
+    tx_node_events: crossbeam_channel::Sender<LobbyNodeEvent>,
     root: OnReady<Gd<Root>>,
     network: OnReady<Gd<NetworkManager>>,
     label_username: OnReady<Gd<Label>>,
+    button_create_game: OnReady<Gd<Button>>,
     button_logout: OnReady<Gd<Button>>,
     line_edit_join_game_id: Option<Gd<LineEdit>>,
 }
@@ -51,13 +51,13 @@ impl INode2D for LobbyNode {
             self.label_username.set_text(current_user.username.into());
         }
 
-        let mut button_create_game = self.base().get_node_as::<Button>(
-            String::from(PATH_LOBBY) + "/LobbyUi/Control/VBoxContainer/button_create_game",
-        );
-        button_create_game.connect(
-            "pressed".into(),
-            self.base().callable("on_button_create_game_pressed"),
-        );
+        self.button_create_game
+            .init(self.base().get_node_as::<Button>(
+                String::from(PATH_LOBBY) + "/LobbyUi/Control/VBoxContainer/button_create_game",
+            ));
+        let on_button_create_game_pressed = self.base().callable("on_button_create_game_pressed");
+        self.button_create_game
+            .connect("pressed".into(), on_button_create_game_pressed);
 
         let mut button_join_game = self.base().get_node_as::<Button>(
             String::from(PATH_LOBBY) + "/LobbyUi/Control/VBoxContainer/button_join_game",
@@ -80,55 +80,49 @@ impl INode2D for LobbyNode {
     }
 
     fn process(&mut self, _: f64) {
-        let rx_state_events = Rc::clone(&self.rx_state_events);
-        while let Ok(event) = rx_state_events.try_recv() {
+        while let Ok(event) = self.rx_state_events.try_recv() {
             match event {
                 LobbyStateEvent::LogoutSuccess => {
                     self.root.bind_mut().change_scene(Scenes::Auth);
                 }
                 LobbyStateEvent::IsLoadingChanged => self.on_is_loading_changed(),
+                LobbyStateEvent::CreateWorldInstanceSuccess(id) => {
+                    self.root.bind_mut().change_scene(Scenes::Play(id));
+                }
             }
         }
-
-        // let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
-        // while let Ok(udp_msg_down_wrapper) = rx_enet_receiver.try_recv() {
-        //     for udp_msg_down in udp_msg_down_wrapper.messages {
-        //         #[allow(clippy::single_match)]
-        //         match UdpMsgDownType::try_from(udp_msg_down.r#type) {
-        //             Ok(UdpMsgDownType::UserDisconnectSuccess) => {
-        //                 self.root.bind_mut().change_scene(Scenes::Lobby);
-        //             }
-        //             Ok(UdpMsgDownType::UserCreateWordlInstanceSuccess) => {
-        //                 let payload = udp_msg_down.user_create_world_instance_success.unwrap();
-        //                 godot_print!("USER_CREATE_WORDL_INSTANCE_SUCCESS: (id: {})", payload.id);
-        //                 self.root.bind_mut().change_scene(Scenes::Play(payload.id));
-        //             }
-        //             _ => {}
-        //         }
-        //     }
-        // }
     }
 }
 
 impl LobbyNode {
-    pub fn init(base: Base<Node2D>, global_state: GlobalState) -> Self {
+    pub fn init(
+        base: Base<Node2D>,
+        global_state: GlobalState,
+        rx_udp_receiver: crossbeam_channel::Receiver<UdpMsgDownWrapper>,
+        tx_udp_sender: crossbeam_channel::Sender<MsgUpWrapper>,
+        tx_udp_handshake_sender: crossbeam_channel::Sender<MsgUpHandshake>,
+    ) -> Self {
         let state = Arc::new(Mutex::new(LobbyState { is_loading: false }));
 
-        let (tx_state_events, rx_state_events) = mpsc::channel();
-        let (tx_node_events, rx_node_events) = mpsc::channel();
+        let (tx_state_events, rx_state_events) = crossbeam_channel::unbounded();
+        let (tx_node_events, rx_node_events) = crossbeam_channel::unbounded();
 
-        let mut state_manager =
-            LobbyStateManager::new(global_state.clone(), state.clone(), tx_state_events);
+        let mut state_manager = LobbyStateManager::new(
+            global_state.clone(),
+            state.clone(),
+            tx_state_events,
+            tx_udp_sender,
+            tx_udp_handshake_sender,
+        );
 
         thread::spawn(move || {
-            tokio::runtime::Builder::new_multi_thread()
-                .max_blocking_threads(2)
+            tokio::runtime::Builder::new_current_thread()
                 .thread_name("lobby-pool")
                 .enable_all()
                 .build()
                 .unwrap()
                 .block_on(async {
-                    state_manager.start(rx_node_events).await;
+                    state_manager.start(rx_node_events, rx_udp_receiver).await;
                 });
         });
 
@@ -136,11 +130,12 @@ impl LobbyNode {
             base,
             global_state,
             state,
-            rx_state_events: Rc::new(rx_state_events),
+            rx_state_events,
             tx_node_events,
             root: OnReady::manual(),
             network: OnReady::manual(),
             label_username: OnReady::manual(),
+            button_create_game: OnReady::manual(),
             button_logout: OnReady::manual(),
             line_edit_join_game_id: None,
         }
@@ -148,6 +143,7 @@ impl LobbyNode {
 
     fn on_is_loading_changed(&mut self) {
         let is_loading = self.state.lock().unwrap().is_loading;
+        self.button_create_game.set_disabled(is_loading);
         self.button_logout.set_disabled(is_loading);
     }
 }
@@ -156,13 +152,11 @@ impl LobbyNode {
 impl LobbyNode {
     #[func]
     fn on_button_create_game_pressed(&mut self) {
-        self.network.bind().send_udp(MsgUpWrapper {
-            messages: vec![MsgUp {
-                r#type: MsgUpType::UserCreateWorldInstance.into(),
-                ..Default::default()
-            }],
-        })
+        self.tx_node_events
+            .send(LobbyNodeEvent::ButtonCreateGamePressed)
+            .unwrap();
     }
+
     #[func]
     fn on_button_join_game_pressed(&mut self) {
         let input_wolrd_instance_id = self.line_edit_join_game_id.as_ref().unwrap().get_text();
@@ -174,10 +168,11 @@ impl LobbyNode {
             .bind_mut()
             .change_scene(Scenes::Play(input_wolrd_instance_id.into()));
     }
+
     #[func]
     fn on_button_logout_pressed(&mut self) {
         self.tx_node_events
-            .send(LobbyNodeEvent::LogoutButtonPressed)
+            .send(LobbyNodeEvent::ButtonLogoutPressed)
             .unwrap();
     }
 }

@@ -1,5 +1,5 @@
 use rust_common::{api_auth::AuthApi, proto::HttpLoginInput};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex};
 
 use crate::global_state::{GlobalState, StateUser};
 
@@ -23,14 +23,14 @@ pub struct AuthState {
 pub struct AuthStateManager {
     global_state: GlobalState,
     state: Arc<Mutex<AuthState>>,
-    tx_state_events: mpsc::Sender<AuthStateEvent>,
+    tx_state_events: crossbeam_channel::Sender<AuthStateEvent>,
     http_client: reqwest::Client,
 }
 impl AuthStateManager {
     pub fn new(
         global_state: GlobalState,
         state: Arc<Mutex<AuthState>>,
-        tx_state_events: mpsc::Sender<AuthStateEvent>,
+        tx_state_events: crossbeam_channel::Sender<AuthStateEvent>,
     ) -> Self {
         Self {
             global_state,
@@ -40,7 +40,7 @@ impl AuthStateManager {
         }
     }
 
-    pub async fn start(&mut self, rx_node_events: mpsc::Receiver<AuthNodeEvent>) {
+    pub async fn start(&mut self, rx_node_events: crossbeam_channel::Receiver<AuthNodeEvent>) {
         'outer: for node_event in &rx_node_events {
             match node_event {
                 AuthNodeEvent::ConnectButtonPressed(username) => {
@@ -108,6 +108,9 @@ impl AuthStateManager {
                 uuid: login_response.uuid,
                 username: login_response.username,
                 auth_token: login_response.auth_token,
+                game_server_aes_key: login_response.game_server_aes_key,
+                game_server_aes_nonce: login_response.game_server_aes_nonce,
+                game_server_handshake_challenge: login_response.game_server_handshake_challenge,
             }))
             .await;
 

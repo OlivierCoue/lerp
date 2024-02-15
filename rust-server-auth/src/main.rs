@@ -1,3 +1,4 @@
+use aes_gcm_siv::{aead::OsRng, Aes256GcmSiv, KeyInit};
 use axum::{
     async_trait, debug_handler,
     extract::{FromRequestParts, State},
@@ -161,9 +162,21 @@ async fn login(
     };
 
     let auth_token = Uuid::new_v4();
+    let game_server_aes_key = hex::encode(Aes256GcmSiv::generate_key(&mut OsRng));
+    let game_server_aes_nonce = "aaaaaaaaaaaa".to_string();
+    let game_server_handshake_challenge = Uuid::new_v4();
+
     sqlx::query!(
-        "UPDATE users SET auth_token = $1 WHERE uuid = $2; ",
+        "UPDATE users SET 
+        auth_token = $1,
+        game_server_aes_key = $2,
+        game_server_aes_nonce = $3,
+        game_server_handshake_challenge = $4
+        WHERE uuid = $5; ",
         auth_token,
+        game_server_aes_key,
+        game_server_aes_nonce,
+        game_server_handshake_challenge,
         user.uuid
     )
     .execute(&pg_pool)
@@ -174,6 +187,9 @@ async fn login(
         uuid: user.uuid.to_string(),
         username: user.username,
         auth_token: auth_token.to_string(),
+        game_server_aes_key,
+        game_server_aes_nonce,
+        game_server_handshake_challenge: game_server_handshake_challenge.to_string(),
     };
 
     Ok(Protobuf(response))

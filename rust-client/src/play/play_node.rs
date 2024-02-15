@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use godot::{
     engine::{ISprite2D, InputEvent, TileMap},
@@ -58,8 +58,8 @@ impl INode2D for PlayNode {
     }
 
     fn process(&mut self, delta: f64) {
-        let rx_enet_receiver = Rc::clone(&self.network.bind().rx_udp_receiver);
-        while let Ok(udp_msg_down_wrapper) = &rx_enet_receiver.try_recv() {
+        let rx_udp_receiver = self.network.bind().rx_udp_receiver.clone();
+        while let Ok(udp_msg_down_wrapper) = &rx_udp_receiver.try_recv() {
             for udp_msg_down in &udp_msg_down_wrapper.messages {
                 match UdpMsgDownType::try_from(udp_msg_down.r#type) {
                     Ok(UdpMsgDownType::AreaInit) => {

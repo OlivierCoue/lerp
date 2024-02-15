@@ -33,6 +33,7 @@ async fn main() -> Result<(), ()> {
 
     let (tx_enet_sender, rx_enet_sender) = mpsc::channel(1000);
     let (tx_enet_receiver, rx_enet_receiver) = mpsc::channel(100);
+    let (tx_enet_handshake_receiver, rx_enet_handshake_receiver) = mpsc::channel(100);
     let (tx_from_instance_internal_messages, rx_from_instance_internal_messages) =
         mpsc::channel(100);
 
@@ -44,13 +45,19 @@ async fn main() -> Result<(), ()> {
 
     let mut join_handlers = Vec::new();
     join_handlers.push(thread::spawn(move || {
-        enet_start(tx_enet_receiver, rx_enet_sender)
+        enet_start(tx_enet_receiver, rx_enet_sender, tx_enet_handshake_receiver)
     }));
 
     let mut set = JoinSet::new();
 
     set.spawn(async move {
-        Api::run(app, rx_enet_receiver, rx_from_instance_internal_messages).await;
+        Api::run(
+            app,
+            rx_enet_receiver,
+            rx_enet_handshake_receiver,
+            rx_from_instance_internal_messages,
+        )
+        .await;
     });
 
     set.join_next().await;

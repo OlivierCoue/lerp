@@ -8,12 +8,16 @@ CREATE TABLE users (
     username VARCHAR(200) NOT NULL,
     current_world_instance_uuid UUID NULL,
     auth_token UUID NULL,
+    game_server_aes_key VARCHAR(64) NULL,
+    game_server_aes_nonce VARCHAR(12) NULL,
+    game_server_handshake_challenge UUID NULL,
 
     CONSTRAINT pk_users PRIMARY KEY (uuid)
 );
 
 CREATE UNIQUE INDEX uidx_users_username ON users(UPPER(username));
 CREATE UNIQUE INDEX uidx_users_auth_token ON users(auth_token);
+CREATE UNIQUE INDEX uidx_game_server_handshake_challenge ON users(game_server_handshake_challenge);
 
 CREATE TABLE world_instances (
     uuid UUID NOT NULL,
@@ -27,3 +31,4 @@ CREATE INDEX idx_created_by_users ON world_instances(created_by);
 
 ALTER TABLE users ADD CONSTRAINT fk_current_world_instance_uuid_world_instances FOREIGN KEY (current_world_instance_uuid) REFERENCES world_instances(uuid) ON DELETE SET NULL ON UPDATE CASCADE;
 CREATE INDEX idx_users_current_world_instance_uuid ON users(current_world_instance_uuid);
+abc360e7d8930592eb7ccf1e960ab8e8e54819ab6dad161eb2b1f424d68758c9

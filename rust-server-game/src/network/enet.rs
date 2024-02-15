@@ -26,10 +26,12 @@ unsafe impl Sync for ENetEventWrapper {}
 unsafe impl Send for ENetEventWrapper {}
 
 const MAX_PEERS_COUNT: usize = 10;
+const MAX_CHANNEL_COUNT: usize = 2;
 
 pub fn enet_start(
     tx_enet_sender: mpsc::Sender<(u16, MsgUpWrapper)>,
     rx_enet_sender: mpsc::Receiver<(u16, UdpMsgDownWrapper)>,
+    tx_enet_handshake_sender: mpsc::Sender<(u16, MsgUpHandshake)>,
 ) {
     let peers = Arc::new(Mutex::new(HashMap::new()));
     let peers_for_manage: Arc<Mutex<HashMap<u16, ENetPeerPtrWrapper>>> = Arc::clone(&peers);
@@ -37,7 +39,7 @@ pub fn enet_start(
 
     let mut handlers = Vec::new();
     handlers.push(thread::spawn(move || {
-        enet_receive(tx_enet_sender, peers_for_manage)
+        enet_receive(tx_enet_sender, tx_enet_handshake_sender, peers_for_manage)
     }));
     handlers.push(thread::spawn(move || {
         enet_send(rx_enet_sender, peers_for_send)
@@ -50,6 +52,7 @@ pub fn enet_start(
 
 fn enet_receive(
     tx_enet_sender: mpsc::Sender<(u16, MsgUpWrapper)>,
+    tx_enet_handshake_sender: mpsc::Sender<(u16, MsgUpHandshake)>,
     peers_for_manage: Arc<Mutex<HashMap<u16, ENetPeerPtrWrapper>>>,
 ) {
     if unsafe { enet_initialize() } != 0 {
@@ -71,8 +74,9 @@ fn enet_receive(
         panic!("[ENet] Invalid hostname \"{}\".", address_str);
     }
 
-    let host =
-        ENetHostPtrWrapper(unsafe { enet_host_create(&address, MAX_PEERS_COUNT, 2, 0, 0, 0) });
+    let host = ENetHostPtrWrapper(unsafe {
+        enet_host_create(&address, MAX_PEERS_COUNT, MAX_CHANNEL_COUNT, 0, 0, 0)
+    });
 
     if host.0.is_null() {
         panic!("[ENet] Failed to create host.");
@@ -120,7 +124,7 @@ fn enet_receive(
                             unsafe { *event.0.peer }.incomingPeerID,
                             MsgUpWrapper {
                                 messages: vec![MsgUp {
-                                    r#type: MsgUpType::UserConnect.into(),
+                                    r#type: MsgUpType::UserDisconnect.into(),
                                     ..Default::default()
                                 }],
                             },
@@ -137,22 +141,47 @@ fn enet_receive(
                                 .expect("packet data too long for an `usize`"),
                         )
                     };
-                    // let channel_id = event.channelID;
-                    // println!("received msg on channel: {}", channel_id);
+                    let channel_id = event.0.channelID;
 
-                    match MsgUpWrapper::decode(recv_packet_raw) {
-                        Ok(udp_msg_up) => {
-                            tx_enet_sender
-                                .blocking_send((
-                                    unsafe { *event.0.peer }.incomingPeerID,
-                                    udp_msg_up,
-                                ))
-                                .unwrap();
+                    match channel_id {
+                        0 => {
+                            match MsgUpWrapper::decode(recv_packet_raw) {
+                                Ok(udp_msg_up) => {
+                                    tx_enet_sender
+                                        .blocking_send((
+                                            unsafe { *event.0.peer }.incomingPeerID,
+                                            udp_msg_up,
+                                        ))
+                                        .unwrap();
+                                }
+                                Err(err) => {
+                                    println!(
+                                        "Channel 0: Failed to parse recv_packet_raw err: {:#?}",
+                                        err
+                                    );
+                                }
+                            };
                         }
-                        Err(err) => {
-                            println!("Failed to parse recv_packet_raw err: {:#?}", err);
+                        1 => {
+                            match MsgUpHandshake::decode(recv_packet_raw) {
+                                Ok(udp_msg_up) => {
+                                    tx_enet_handshake_sender
+                                        .blocking_send((
+                                            unsafe { *event.0.peer }.incomingPeerID,
+                                            udp_msg_up,
+                                        ))
+                                        .unwrap();
+                                }
+                                Err(err) => {
+                                    println!(
+                                        "Channel 1: Failed to parse recv_packet_raw err: {:#?}",
+                                        err
+                                    );
+                                }
+                            };
                         }
-                    };
+                        _ => println!("Unsuported channel"),
+                    }
                 }
                 _ENetEventType_ENET_EVENT_TYPE_NONE => {}
                 _ => unreachable!(),

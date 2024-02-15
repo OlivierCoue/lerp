@@ -166,6 +166,13 @@ pub struct MsgUpWrapper {
     #[prost(message, repeated, tag="1")]
     pub messages: ::std::vec::Vec<MsgUp>,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpHandshake {
+    #[prost(string, tag="1")]
+    pub user_uuid: std::string::String,
+    #[prost(string, tag="2")]
+    pub signed_message: std::string::String,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum MsgUpType {
@@ -217,6 +224,12 @@ pub struct HttpLoginResponse {
     pub username: std::string::String,
     #[prost(string, tag="3")]
     pub auth_token: std::string::String,
+    #[prost(string, tag="4")]
+    pub game_server_aes_key: std::string::String,
+    #[prost(string, tag="5")]
+    pub game_server_aes_nonce: std::string::String,
+    #[prost(string, tag="6")]
+    pub game_server_handshake_challenge: std::string::String,
 }
 ////// Logout
 

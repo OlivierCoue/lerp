@@ -1,16 +1,12 @@
 use enet_cs_sys::*;
 use godot::log::godot_print;
-use rust_common::proto::{MsgUpWrapper, UdpMsgDownWrapper};
+use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
 use std::{
     ffi::CString,
     mem::MaybeUninit,
     ptr::null,
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
     thread,
-    time::Duration,
 };
 
 use prost::Message;
@@ -25,12 +21,14 @@ const ADDRESS: &str = "127.0.0.1";
 const PORT: u16 = 34254;
 
 pub fn udp_client_start(
-    rx_udp_sender: Receiver<MsgUpWrapper>,
-    tx_udp_receiver: Sender<UdpMsgDownWrapper>,
+    rx_udp_sender: crossbeam_channel::Receiver<MsgUpWrapper>,
+    rx_udp_handshake_sender: crossbeam_channel::Receiver<MsgUpHandshake>,
+    tx_udp_receiver: crossbeam_channel::Sender<UdpMsgDownWrapper>,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));
     let peers_for_manage = Arc::clone(&peers);
     let peers_for_send = Arc::clone(&peers);
+    let peers_for_handshake_send = Arc::clone(&peers);
 
     let enet_receiver = thread::spawn(move || {
         if unsafe { enet_initialize() } != 0 {
@@ -86,6 +84,7 @@ pub fn udp_client_start(
                         };
                         // println!("{}", unsafe { (*event.packet).dataLength });
 
+                        println!("Received msg");
                         let udp_msg_down_wrapper = UdpMsgDownWrapper::decode(recv_packet_raw)
                             .expect("Failed to parse UdpMsgDownWrapper");
                         tx_udp_receiver.send(udp_msg_down_wrapper).unwrap();
@@ -98,7 +97,7 @@ pub fn udp_client_start(
     });
 
     let enet_sender = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(2000));
+        // thread::sleep(Duration::from_millis(2000));
 
         for msg_to_send in &rx_udp_sender {
             if let Some(peer) = &*peers_for_send.lock().unwrap() {
@@ -120,6 +119,28 @@ pub fn udp_client_start(
         }
     });
 
+    let enet_handshake_sender = thread::spawn(move || {
+        for msg_to_send in &rx_udp_handshake_sender {
+            if let Some(peer) = &*peers_for_handshake_send.lock().unwrap() {
+                let mut out_bytes = Vec::with_capacity(msg_to_send.encoded_len());
+                msg_to_send.encode(&mut out_bytes).unwrap();
+                let packet: *mut _ENetPacket = unsafe {
+                    enet_packet_create(
+                        out_bytes.as_ptr().cast(),
+                        out_bytes.len(),
+                        _ENetPacketFlag_ENET_PACKET_FLAG_RELIABLE,
+                    )
+                };
+                if !peer.0.is_null() {
+                    unsafe {
+                        enet_peer_send(peer.0, 1, packet);
+                    }
+                }
+            }
+        }
+    });
+
+    enet_handshake_sender.join().unwrap();
     enet_sender.join().unwrap();
     enet_receiver.join().unwrap();
 }

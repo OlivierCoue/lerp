@@ -37,3 +37,8 @@ message MsgUp {
 message MsgUpWrapper {
     repeated MsgUp messages = 1;
 }
+
+message MsgUpHandshake {
+    string user_uuid = 1;
+    string signed_message = 2;
+}

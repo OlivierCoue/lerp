@@ -1,6 +1,6 @@
 use std::{
     rc::Rc,
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex},
     thread,
 };
 
@@ -22,8 +22,8 @@ use super::auth_state::{AuthNodeEvent, AuthState, AuthStateEvent, AuthStateManag
 pub struct AuthNode {
     base: Base<Node2D>,
     state: Arc<Mutex<AuthState>>,
-    rx_state_events: Rc<mpsc::Receiver<AuthStateEvent>>,
-    tx_node_events: mpsc::Sender<AuthNodeEvent>,
+    rx_state_events: Rc<crossbeam_channel::Receiver<AuthStateEvent>>,
+    tx_node_events: crossbeam_channel::Sender<AuthNodeEvent>,
     root: OnReady<Gd<Root>>,
     network: OnReady<Gd<NetworkManager>>,
     label_auth_error: OnReady<Gd<Label>>,
@@ -89,13 +89,12 @@ impl AuthNode {
             connect_error: None,
         }));
 
-        let (tx_state_events, rx_state_events) = mpsc::channel();
-        let (tx_node_events, rx_node_events) = mpsc::channel();
+        let (tx_state_events, rx_state_events) = crossbeam_channel::unbounded();
+        let (tx_node_events, rx_node_events) = crossbeam_channel::unbounded();
 
         let mut state_manager = AuthStateManager::new(global_state, state.clone(), tx_state_events);
         thread::spawn(move || {
-            tokio::runtime::Builder::new_multi_thread()
-                .max_blocking_threads(2)
+            tokio::runtime::Builder::new_current_thread()
                 .thread_name("auth-pool")
                 .enable_all()
                 .build()

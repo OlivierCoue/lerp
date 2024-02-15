@@ -7,6 +7,31 @@ use super::*;
 
 pub struct ApiResolver {}
 impl ApiResolver {
+    pub async fn handle_handshake_msg(app: App, udp_peer_id: u16, udp_msg_up: MsgUpHandshake) {
+        let opt_udp_messages_down = ApiServiceUser::connect(
+            app.clone(),
+            udp_peer_id,
+            udp_msg_up.user_uuid,
+            udp_msg_up.signed_message,
+        )
+        .await;
+
+        if let Some(udp_messages_down) = opt_udp_messages_down {
+            if !udp_messages_down.is_empty() {
+                app.tx_udp_sender
+                    .send((
+                        udp_peer_id,
+                        UdpMsgDownWrapper {
+                            messages: udp_messages_down,
+                            ..Default::default()
+                        },
+                    ))
+                    .await
+                    .unwrap();
+            }
+        }
+    }
+
     pub async fn handle_msg_up_wrapper(
         app: App,
         udp_peer_id: u16,
@@ -16,16 +41,6 @@ impl ApiResolver {
 
         for udp_msg_up in udp_msg_up_wrapper.messages {
             match MsgUpType::try_from(udp_msg_up.r#type) {
-                Ok(MsgUpType::UserConnect) => {
-                    if !udp_msg_up.user_connect_username.is_empty() {
-                        opt_udp_messages_down = ApiServiceUser::connect(
-                            app.clone(),
-                            udp_peer_id,
-                            udp_msg_up.user_connect_username,
-                        )
-                        .await;
-                    }
-                }
                 Ok(udp_msg_up_type) => {
                     let mut opt_user = None;
                     {

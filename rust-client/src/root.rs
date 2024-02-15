@@ -1,4 +1,4 @@
-use std::{sync::mpsc, thread};
+use std::thread;
 
 use godot::{obj::WithBaseField, prelude::*};
 
@@ -40,6 +40,7 @@ pub struct Root {
     base: Base<Node2D>,
     current_scene: Scenes,
     global_state: GlobalState,
+    network: OnReady<Gd<NetworkManager>>,
 }
 
 #[godot_api]
@@ -47,7 +48,8 @@ impl INode2D for Root {
     fn init(base: Base<Node2D>) -> Self {
         godot_print!("Root init");
 
-        let (tx_local_to_global_state_events, rx_local_to_global_state_events) = mpsc::channel();
+        let (tx_local_to_global_state_events, rx_local_to_global_state_events) =
+            crossbeam_channel::unbounded();
 
         let global_state = GlobalState::new(tx_local_to_global_state_events);
         let mut global_state_manager = GlobalStateManager::new(global_state.clone());
@@ -70,6 +72,7 @@ impl INode2D for Root {
             base,
             current_scene: Scenes::Auth,
             global_state,
+            network: OnReady::manual(),
         }
     }
 
@@ -77,6 +80,7 @@ impl INode2D for Root {
         let mut network: Gd<NetworkManager> =
             Gd::<NetworkManager>::from_init_fn(NetworkManager::init);
         network.set_name(NODE_NETWORK.into());
+        self.network.init(network.clone());
         self.base_mut().add_child(network.upcast());
 
         let mut auth_node: Gd<AuthNode> =
@@ -113,7 +117,13 @@ impl Root {
             }
             Scenes::Lobby => {
                 let mut lobby_node: Gd<LobbyNode> = Gd::<LobbyNode>::from_init_fn(|base| {
-                    LobbyNode::init(base, self.global_state.clone())
+                    LobbyNode::init(
+                        base,
+                        self.global_state.clone(),
+                        self.network.bind().rx_udp_receiver.clone(),
+                        self.network.bind().tx_udp_sender.clone(),
+                        self.network.bind().tx_udp_handshake_sender.clone(),
+                    )
                 });
                 lobby_node.set_name(NODE_LOBBY.into());
                 self.base_mut().add_child(lobby_node.upcast());
