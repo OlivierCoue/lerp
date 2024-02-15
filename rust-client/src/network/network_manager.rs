@@ -1,6 +1,6 @@
 use godot::prelude::*;
 use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
-use std::{rc::Rc, thread};
+use std::thread;
 
 use crate::network::prelude::*;
 

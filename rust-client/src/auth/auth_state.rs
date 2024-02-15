@@ -1,23 +1,30 @@
-use rust_common::{api_auth::AuthApi, proto::HttpLoginInput};
+use rust_common::{
+    api_auth::AuthApi,
+    proto::{HttpLoginInput, HttpRegisterInput},
+};
 use std::sync::{Arc, Mutex};
 
 use crate::global_state::{GlobalState, StateUser};
 
 pub enum AuthNodeEvent {
-    ConnectButtonPressed(String),
+    LoginButtonPressed(String),
+    RegisterButtonPressed(String),
     Closed,
 }
 
 pub enum AuthStateEvent {
     IsLoadingChanged,
-    ConnectErrorChanged,
-    ConnectSuccess,
+    LoginErrorChanged,
+    LoginSuccess,
+    RegisterSuccess,
+    RegisterErrorChanged,
 }
 
 #[derive(Clone)]
 pub struct AuthState {
     pub is_loading: bool,
-    pub connect_error: Option<String>,
+    pub login_error: Option<String>,
+    pub register_error: Option<String>,
 }
 
 pub struct AuthStateManager {
@@ -43,8 +50,11 @@ impl AuthStateManager {
     pub async fn start(&mut self, rx_node_events: crossbeam_channel::Receiver<AuthNodeEvent>) {
         'outer: for node_event in &rx_node_events {
             match node_event {
-                AuthNodeEvent::ConnectButtonPressed(username) => {
-                    self.on_connect_button_pressed(username).await;
+                AuthNodeEvent::LoginButtonPressed(username) => {
+                    self.on_button_login_pressed(username).await;
+                }
+                AuthNodeEvent::RegisterButtonPressed(username) => {
+                    self.on_button_register_pressed(username).await;
                 }
                 AuthNodeEvent::Closed => {
                     break 'outer;
@@ -53,7 +63,7 @@ impl AuthStateManager {
         }
     }
 
-    async fn on_connect_button_pressed(&mut self, username: String) {
+    async fn on_button_login_pressed(&mut self, username: String) {
         {
             let mut state_lock = self.state.lock().unwrap();
             if state_lock.is_loading {
@@ -74,10 +84,10 @@ impl AuthStateManager {
             Ok(response) => response,
             Err(err) => {
                 let mut state_lock = self.state.lock().unwrap();
-                state_lock.connect_error = Some(err.message);
+                state_lock.login_error = Some(err.message);
                 state_lock.is_loading = false;
                 self.tx_state_events
-                    .send(AuthStateEvent::ConnectErrorChanged)
+                    .send(AuthStateEvent::LoginErrorChanged)
                     .unwrap();
                 self.tx_state_events
                     .send(AuthStateEvent::IsLoadingChanged)
@@ -91,10 +101,10 @@ impl AuthStateManager {
             Ok(response) => response,
             Err(err) => {
                 let mut state_lock = self.state.lock().unwrap();
-                state_lock.connect_error = Some(err.message);
+                state_lock.login_error = Some(err.message);
                 state_lock.is_loading = false;
                 self.tx_state_events
-                    .send(AuthStateEvent::ConnectErrorChanged)
+                    .send(AuthStateEvent::LoginErrorChanged)
                     .unwrap();
                 self.tx_state_events
                     .send(AuthStateEvent::IsLoadingChanged)
@@ -120,7 +130,51 @@ impl AuthStateManager {
         );
 
         self.tx_state_events
-            .send(AuthStateEvent::ConnectSuccess)
+            .send(AuthStateEvent::LoginSuccess)
+            .unwrap();
+    }
+
+    async fn on_button_register_pressed(&mut self, username: String) {
+        {
+            let mut state_lock = self.state.lock().unwrap();
+            if state_lock.is_loading {
+                return;
+            }
+            state_lock.is_loading = true;
+            self.tx_state_events
+                .send(AuthStateEvent::IsLoadingChanged)
+                .unwrap()
+        }
+
+        let input = HttpRegisterInput {
+            username,
+            password: "abc".into(), // TODO
+        };
+
+        match AuthApi::register(&self.http_client, input).await {
+            Ok(_) => {
+                let mut state_lock = self.state.lock().unwrap();
+                state_lock.register_error = None;
+                self.tx_state_events
+                    .send(AuthStateEvent::RegisterErrorChanged)
+                    .unwrap();
+                self.tx_state_events
+                    .send(AuthStateEvent::RegisterSuccess)
+                    .unwrap();
+            }
+            Err(err) => {
+                let mut state_lock = self.state.lock().unwrap();
+                state_lock.register_error = Some(err.message);
+                self.tx_state_events
+                    .send(AuthStateEvent::RegisterErrorChanged)
+                    .unwrap();
+            }
+        };
+
+        let mut state_lock = self.state.lock().unwrap();
+        state_lock.is_loading = false;
+        self.tx_state_events
+            .send(AuthStateEvent::IsLoadingChanged)
             .unwrap();
     }
 }

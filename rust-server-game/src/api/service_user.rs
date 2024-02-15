@@ -135,7 +135,6 @@ impl ApiServiceUser {
         if String::from_utf8(plain_message.clone()).unwrap()
             != game_server_handshake_challenge.to_string()
         {
-            println!("Failed");
             udp_messages.push(UdpMsgDown {
                 r#type: UdpMsgDownType::UserConnectFailed.into(),
                 user_connect_failed: Some(UdpMsgDownUserConnectFailed {
@@ -145,8 +144,6 @@ impl ApiServiceUser {
             });
             return Some(udp_messages);
         }
-
-        println!("Success");
 
         let mut users_state_lock = app.get_users_state_lock();
         if users_state_lock
