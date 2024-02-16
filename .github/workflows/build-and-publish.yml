@@ -27,13 +27,23 @@ jobs:
         shell: bash
         run: sudo apt install rustc
 
-      - name: Build rust-server-auth
-        shell: bash
-        run: cargo build -p rust-server-auth --release
+      - name: Install Cargo Lambda
+        uses: jaxxstorm/action-install-gh-release@v1.11.0
+        with:
+          repo: cargo-lambda/cargo-lambda
+          platform: linux
+          arch: x86_64
 
-      - name: Build rust-server-game
+      - name: Build lambda
         shell: bash
-        run: cargo build -p rust-server-game --release
+        run: |
+          cargo lambda build --compiler cargo --release --output-format zip
+          ls target/lambda
+          ls target/lambda/rust-server-auth
+
+      # - name: Build rust-server-game
+      #   shell: bash
+      #   run: cargo build -p rust-server-game --release
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -44,17 +54,17 @@ jobs:
 
       - name: Publish lambda auth to AWS S3 
         shell: bash
-        run: aws s3 cp ./target/release/rust-server-auth s3://lambda-artefacts-${{ github.ref_name }}/auth/
+        run: aws s3 cp ./target/lambda/rust-server-auth/bootstrap.zip s3://lambda-artefacts-${{ github.ref_name }}/auth/
 
-      - name: Login to AWS ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      # - name: Login to AWS ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push game docker image to AWS ECR
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: game-${{ github.ref_name }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f ./rust-server-game/Dockerfile .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+      # - name: Build, tag, and push game docker image to AWS ECR
+      #   env:
+      #     REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     REPOSITORY: game-${{ github.ref_name }}
+      #     IMAGE_TAG: ${{ github.sha }}
+      #   run: |
+      #     docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f ./rust-server-game/Dockerfile .
+      #     docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
