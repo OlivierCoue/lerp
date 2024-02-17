@@ -3,5 +3,7 @@ pub const ENV_UDP_ADDRESS: &str = "UDP_ADDRESS";
 pub const ENV_UDP_PORT: &str = "UDP_PORT";
 
 pub fn init_env() {
-    dotenvy::dotenv().unwrap();
+    if dotenvy::dotenv().is_err() {
+        println!("init_env: failed to load .env file, if you see this message in production you can ignore it")
+    }
 }
