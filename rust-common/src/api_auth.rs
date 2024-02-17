@@ -6,7 +6,12 @@ use prost::Message;
 use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
 
+// Local
 const SERVER_AUTH_URL: &str = "http://127.0.0.1:3000/lambda-url/rust-server-auth";
+// Dev
+// const SERVER_AUTH_URL: &str =
+//     "https://gnmtmvv2qe6mk6fx3vjzmxs3e40aknel.lambda-url.eu-west-3.on.aws";
+
 pub const HEADER_AUTH_TOKEN_KEY: &str = "auth-token";
 pub const FAKE_PING: Duration = Duration::from_millis(0);
 

@@ -2,6 +2,7 @@ use enet_cs_sys::*;
 use prost::Message;
 use rust_common::proto::*;
 
+use local_ip_address::local_ip;
 use std::{
     collections::HashMap,
     ffi::CString,
@@ -61,14 +62,15 @@ fn enet_receive(
 
     println!("[ENet] initialized.");
 
-    let address_str = String::from(std::env::var(ENV_UDP_ADDRESS).unwrap().as_str());
+    let address_str = local_ip().unwrap().to_string();
+    println!("[ENet] Address: {}", address_str);
     let port = std::env::var(ENV_UDP_PORT).unwrap().parse::<u16>().unwrap();
 
     let address: MaybeUninit<ENetAddress> = MaybeUninit::uninit();
     let mut address = unsafe { address.assume_init() };
     address.port = port;
 
-    let address_hostname = CString::new(std::env::var(ENV_UDP_ADDRESS).unwrap().as_str()).unwrap();
+    let address_hostname = CString::new(address_str.clone().as_str()).unwrap();
 
     if unsafe { enet_address_set_hostname(&mut address, address_hostname.as_ptr()) } != 0 {
         panic!("[ENet] Invalid hostname \"{}\".", address_str);

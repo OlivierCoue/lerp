@@ -31,4 +31,3 @@ CREATE INDEX idx_created_by_users ON world_instances(created_by);
 
 ALTER TABLE users ADD CONSTRAINT fk_current_world_instance_uuid_world_instances FOREIGN KEY (current_world_instance_uuid) REFERENCES world_instances(uuid) ON DELETE SET NULL ON UPDATE CASCADE;
 CREATE INDEX idx_users_current_world_instance_uuid ON users(current_world_instance_uuid);
-abc360e7d8930592eb7ccf1e960ab8e8e54819ab6dad161eb2b1f424d68758c9
