@@ -1,9 +1,7 @@
-FROM ubuntu:20.04
+FROM amazonlinux:2023
 
-RUN apt-get update
-
-WORKDIR /usr/app
+RUN yum update
 
 COPY ./target/release/rust-server-game /usr/app/
 
-CMD [ "rust-server-game" ]
+CMD [ "/usr/app/rust-server-game" ]
