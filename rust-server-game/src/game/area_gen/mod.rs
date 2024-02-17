@@ -67,7 +67,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     //               Find oob polygons                      //
     //------------------------------------------------------//
     let oob_polygons = find_oob_polygons(&mut grid);
-    render_grid(&grid, map_name.clone(), false);
+    // render_grid(&grid, map_name.clone(), false);
 
     // render_grid(&grid, map_name.clone() + "_outline", true);
 
@@ -740,6 +740,7 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
     grid
 }
 
+#[allow(dead_code)]
 fn render_grid(grid: &Grid, file_name: String, show_outline: bool) {
     // Construct a new RGB ImageBuffer with the specified width and height.
     let width = grid.len();
