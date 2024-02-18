@@ -1,16 +1,16 @@
-FROM mcr.microsoft.com/vscode/devcontainers/rust:1-bullseye
-
+FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu
+ARG DEBIAN_FRONTEND=noninteractive 
+ENV PATH="/root/.cargo/bin:${PATH}"
 RUN \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
-    lld clang cmake \
-    iftop \ 
-    docker \
-    python3 \
-    python3-pip\
-    && \
-    rustup toolchain install nightly && \
-    rustup default && \
-    rustup component add rls rust-analysis rust-src rustfmt clippy rust-std-x86_64-pc-windows-gnu \
-    && \
-    pip3 install cargo-lambda
+    apt-get -y install --no-install-recommends \
+    lld clang cmake llvm \
+    python3 python3-pip \
+    gcc-mingw-w64 g++-mingw-w64 \
+    curl pkg-config libssl-dev 
+# RUN echo '$HOME/.cargo/env' >> $HOME/.zshrc
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+RUN rustup default stable
+RUN rustup component add rls rust-analysis rust-src rustfmt clippy rust-std-x86_64-pc-windows-gnu 
+RUN pip3 install cargo-lambda
+

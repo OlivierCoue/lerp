@@ -27,7 +27,7 @@
                 "eamodio.gitlens"
             ]
         }
-    }
+    },
     // Use 'mounts' to make the cargo cache persistent in a Docker Volume.
     // "mounts": [
     // 	{
@@ -44,10 +44,10 @@
     // 	3010
     // ]
     // Use 'postCreateCommand' to run commands after the container is created.
-    // "postCreateCommand": "rustc --version",
+    "postCreateCommand": ".devcontainer/post-create.sh",
     // "postCreateCommand": "source \"$HOME/.cargo/env\""
     // Configure tool-specific properties.
     // "customizations": {},
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-    // "remoteUser": "root"
+    "remoteUser": "root"
 }

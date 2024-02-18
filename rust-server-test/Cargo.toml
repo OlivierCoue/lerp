@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 aes-gcm-siv = "0.11.1"
+enet-sys = "1.0.4"
 dotenvy = "0.15.7"
 hex = "0.4.3"
 prost = "0.12"
