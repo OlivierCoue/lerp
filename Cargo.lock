@@ -522,28 +522,6 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.64.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4243e6031260db77ede97ad86c27e501d646a27ab57b59a574f725d98ab1fb4"
-dependencies = [
- "bitflags 1.3.2",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "log",
- "peeking_take_while",
- "proc-macro2 1.0.78",
- "quote 1.0.35",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 1.0.109",
- "which 4.4.2",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.65.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
@@ -1034,22 +1012,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 
 [[package]]
-name = "enet-cs-sys"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "762606817f81da90e3956d6e47064b6d07b86dd5f7fa47b4f50d786bae395e45"
-dependencies = [
- "bindgen 0.64.0",
- "cmake",
-]
-
-[[package]]
 name = "enet-sys"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4580f5cb34ba20a73d05e26876f05fd3830a8959fb594b1ecb4d9ddac2eec77"
 dependencies = [
- "bindgen 0.65.1",
+ "bindgen",
  "cmake",
 ]
 
@@ -2953,7 +2921,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm-siv",
  "crossbeam-channel",
- "enet-cs-sys",
+ "enet-sys",
  "godot",
  "hex",
  "prost 0.12.3",
@@ -3005,7 +2973,7 @@ dependencies = [
  "aes-gcm-siv",
  "bevy_ecs",
  "dotenvy",
- "enet-cs-sys",
+ "enet-sys",
  "godot",
  "hex",
  "image",

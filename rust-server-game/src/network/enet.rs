@@ -1,4 +1,4 @@
-use enet_cs_sys::*;
+use enet_sys::*;
 use prost::Message;
 use rust_common::proto::*;
 
@@ -12,13 +12,13 @@ use std::{
 };
 use tokio::sync::mpsc;
 
-use crate::env::{ENV_UDP_ADDRESS, ENV_UDP_PORT};
+use crate::env::ENV_UDP_PORT;
 pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 
 unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
-pub struct ENetHostPtrWrapper(*mut enet_cs_sys::_ENetHost);
+pub struct ENetHostPtrWrapper(*mut ENetHost);
 unsafe impl Sync for ENetHostPtrWrapper {}
 unsafe impl Send for ENetHostPtrWrapper {}
 
@@ -72,12 +72,18 @@ fn enet_receive(
 
     let address_hostname = CString::new(address_str.clone().as_str()).unwrap();
 
-    if unsafe { enet_address_set_hostname(&mut address, address_hostname.as_ptr()) } != 0 {
+    if unsafe { enet_address_set_host(&mut address, address_hostname.as_ptr()) } != 0 {
         panic!("[ENet] Invalid hostname \"{}\".", address_str);
     }
 
     let host = ENetHostPtrWrapper(unsafe {
-        enet_host_create(&address, MAX_PEERS_COUNT, MAX_CHANNEL_COUNT, 0, 0, 0)
+        enet_host_create(
+            &address,          // address to bind the server host to
+            MAX_PEERS_COUNT,   // allow up to 32 clients and/or outgoing connections
+            MAX_CHANNEL_COUNT, // allow up to 2 channels to be used, 0 and 1
+            0,                 // assume any amount of incoming bandwidth
+            0,                 // assume any amount of outgoing bandwidth
+        )
     });
 
     if host.0.is_null() {
@@ -110,16 +116,6 @@ fn enet_receive(
                         .lock()
                         .unwrap()
                         .remove(&unsafe { *event.0.peer }.incomingPeerID);
-                }
-                _ENetEventType_ENET_EVENT_TYPE_DISCONNECT_TIMEOUT => {
-                    println!(
-                        "[ENet] A peer disconnected. (id: {})",
-                        unsafe { *event.0.peer }.incomingPeerID,
-                    );
-                    peers_for_manage
-                        .lock()
-                        .unwrap()
-                        .remove(&unsafe { *event.0.peer }.incomingPeerID);
 
                     tx_enet_sender
                         .blocking_send((
@@ -137,10 +133,7 @@ fn enet_receive(
                     let recv_packet_raw: &[u8] = unsafe {
                         std::slice::from_raw_parts(
                             (*event.0.packet).data,
-                            (*event.0.packet)
-                                .dataLength
-                                .try_into()
-                                .expect("packet data too long for an `usize`"),
+                            (*event.0.packet).dataLength,
                         )
                     };
                     let channel_id = event.0.channelID;
@@ -185,7 +178,9 @@ fn enet_receive(
                         _ => println!("Unsuported channel"),
                     }
                 }
-                _ENetEventType_ENET_EVENT_TYPE_NONE => {}
+                _ENetEventType_ENET_EVENT_TYPE_NONE => {
+                    println!("[ENet] _ENetEventType_ENET_EVENT_TYPE_NONE");
+                }
                 _ => unreachable!(),
             }
         }

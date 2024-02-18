@@ -96,5 +96,5 @@ rust-server-game
 
 Try once `cargo build -p rust-client --target x86_64-pc-windows-gnu`
 
-Then change in the `win32.c`, add include `ws2tcpip.h `
+Then change in the `win32.c`, add include `ws2tcpip.h`
 

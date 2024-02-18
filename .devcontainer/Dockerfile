@@ -8,7 +8,6 @@ RUN \
     python3 python3-pip \
     gcc-mingw-w64 g++-mingw-w64 \
     curl pkg-config libssl-dev 
-# RUN echo '$HOME/.cargo/env' >> $HOME/.zshrc
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
 RUN rustup default stable
 RUN rustup component add rls rust-analysis rust-src rustfmt clippy rust-std-x86_64-pc-windows-gnu 

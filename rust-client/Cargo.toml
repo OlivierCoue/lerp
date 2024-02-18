@@ -9,7 +9,7 @@ crate-type = ["cdylib"] # Compile this crate to a dynamic C library.
 [dependencies]
 aes-gcm-siv = "0.11.1"
 crossbeam-channel = "0.5.11"
-enet-cs-sys = "0.1.1"
+enet-sys = "1.0.4"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [
     "experimental-threads",
 ] }

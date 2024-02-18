@@ -7,7 +7,7 @@ edition = "2021"
 aes-gcm-siv = "0.11.1"
 bevy_ecs = "0.12.1"
 dotenvy = "0.15.7"
-enet-cs-sys = "0.1.1"
+enet-sys = "1.0.4"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = [ "experimental-threads" ] }
 hex = "0.4.3"
 image = "0.24.8"

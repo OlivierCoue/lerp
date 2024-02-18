@@ -1,4 +1,4 @@
-use enet_cs_sys::*;
+use enet_sys::*;
 use godot::log::godot_print;
 use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
 use std::{
@@ -15,7 +15,7 @@ pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
-const ADDRESS: &str = "192.168.1.17";
+const ADDRESS: &str = "172.20.144.1";
 // const ADDRESS: &str = "35.181.43.91";
 const PORT: u16 = 34254;
 
@@ -42,11 +42,11 @@ pub fn udp_client_start(
 
         let address_hostname = CString::new(ADDRESS).unwrap();
 
-        if unsafe { enet_address_set_hostname(&mut address, address_hostname.as_ptr()) } != 0 {
+        if unsafe { enet_address_set_host(&mut address, address_hostname.as_ptr()) } != 0 {
             panic!("[ENet] Invalid hostname \"{}\".", ADDRESS);
         }
 
-        let host = unsafe { enet_host_create(null(), 1, 2, 0, 0, 0) };
+        let host = unsafe { enet_host_create(null(), 1, 2, 0, 0) };
 
         *peers_for_manage.lock().unwrap() = Some(ENetPeerPtrWrapper(unsafe {
             enet_host_connect(host, &address, 2, 0)
@@ -68,17 +68,11 @@ pub fn udp_client_start(
                     _ENetEventType_ENET_EVENT_TYPE_DISCONNECT => {
                         godot_print!("[ENet] Server denied connection.",);
                     }
-                    _ENetEventType_ENET_EVENT_TYPE_DISCONNECT_TIMEOUT => {
-                        godot_print!("[ENet] Server connection timed out.",);
-                    }
                     _ENetEventType_ENET_EVENT_TYPE_RECEIVE => {
                         let recv_packet_raw: &[u8] = unsafe {
                             std::slice::from_raw_parts(
                                 (*event.packet).data,
-                                (*event.packet)
-                                    .dataLength
-                                    .try_into()
-                                    .expect("packet data too long for an `usize`"),
+                                (*event.packet).dataLength,
                             )
                         };
                         // println!("{}", unsafe { (*event.packet).dataLength });
@@ -88,7 +82,9 @@ pub fn udp_client_start(
                             .expect("Failed to parse UdpMsgDownWrapper");
                         tx_udp_receiver.send(udp_msg_down_wrapper).unwrap();
                     }
-                    _ENetEventType_ENET_EVENT_TYPE_NONE => {}
+                    _ENetEventType_ENET_EVENT_TYPE_NONE => {
+                        godot_print!("[ENet] _ENetEventType_ENET_EVENT_TYPE_NONE.",);
+                    }
                     _ => unreachable!(),
                 }
             }
