@@ -28,6 +28,9 @@
             ]
         }
     },
+    "mounts": [
+        "source=/mnt/c,target=/mnt/c,type=bind,consistency=cached"
+    ],
     // Use 'mounts' to make the cargo cache persistent in a Docker Volume.
     // "mounts": [
     // 	{

@@ -11,6 +11,8 @@ services:
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
+    environment:
+      TARGET_ENV: local
 
   postgres:
     image: 'postgres:16'

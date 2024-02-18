@@ -58,16 +58,11 @@ Start rust-server-game:
 cargo run -p rust-server-game
 ```
 
-build client for windows
+Build rust-client for windows (first, set the LERP_GODOT_LOCATION variable in your .env)
 
 ```
-cargo build -p rust-client --target x86_64-pc-windows-gnu
-```
-
-Start client (in godot editor):
-
-```
-godot godot/project.godot
+./rust-client/build-debug.sh
+./rust-client/build-release.sh
 ```
 
 ## SQLX

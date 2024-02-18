@@ -1,7 +1,6 @@
 .ssh
 .env
 /target
-/godot/export
 /local
 /output
 .devcontainer/local
