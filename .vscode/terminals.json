@@ -1,0 +1,37 @@
+{
+    "terminals": [
+      {
+        "name": "root",
+        "open": true
+      },
+      {
+        "name": "godot",
+        "open": true
+      },
+      {
+        "name": "rust-client",
+        "open": true
+      },
+      {
+        "name": "rust-common",
+        "open": true
+      },
+      {
+        "name": "rust-server-auth",
+        "open": true
+      },
+      {
+        "name": "rust-server-common",
+        "open": true
+      },
+      {
+        "name": "rust-server-game",
+        "open": true
+      },
+      {
+        "name": "rust-server-test",
+        "open": true
+      }
+    ]
+  }
+  

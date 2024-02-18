@@ -22,7 +22,9 @@
                 "rust-lang.rust-analyzer",
                 "tamasfe.even-better-toml",
                 "serayuzgur.crates",
-                "ms-azuretools.vscode-docker"
+                "ms-azuretools.vscode-docker",
+                "fabiospampinato.vscode-terminals",
+                "eamodio.gitlens"
             ]
         }
     }

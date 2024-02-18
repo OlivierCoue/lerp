@@ -4,5 +4,6 @@
         "./Cargo.toml",
         "./Cargo.toml"
     ],
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "terminal.integrated.defaultProfile.linux": "zsh"
 }
