@@ -21,7 +21,8 @@
                 "serayuzgur.crates",
                 "ms-azuretools.vscode-docker",
                 "fabiospampinato.vscode-terminals",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "zxh404.vscode-proto3"
             ]
         }
     },
