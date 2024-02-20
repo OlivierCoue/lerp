@@ -239,7 +239,7 @@ impl PlayNode {
     pub fn init_tile_map(&mut self, area_init: &UdpMsgDownAreaInit) {
         let tile_map_scene = load::<PackedScene>("res://tile_map.tscn");
         let mut tile_map = tile_map_scene.instantiate_as::<TileMap>();
-        tile_map.set_scale(Vector2::new(5.0, 5.0));
+        tile_map.set_scale(Vector2::new(1.0, 1.0));
         tile_map.set_position(Vector2::new(0.0, 0.0));
 
         godot_print!("shape count: {}", area_init.oob_polygons.len());
@@ -265,7 +265,7 @@ impl PlayNode {
                     area_init.walkable_y[i] as i32,
                 ),
             );
-            cell.atlas_coords(Vector2i::new(0, 0)).source_id(0).done();
+            cell.atlas_coords(Vector2i::new(2, 0)).source_id(0).done();
         }
         self.base_mut().add_child(tile_map.upcast());
     }

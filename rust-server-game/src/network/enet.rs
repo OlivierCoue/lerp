@@ -63,6 +63,7 @@ fn enet_receive(
     println!("[ENet] initialized.");
 
     let address_str = local_ip().unwrap().to_string();
+    // let address_str = "0.0.0.0".to_string();
     println!("[ENet] Address: {}", address_str);
     let port = std::env::var(ENV_UDP_PORT).unwrap().parse::<u16>().unwrap();
 
