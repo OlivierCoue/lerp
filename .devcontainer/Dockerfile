@@ -2,7 +2,9 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu
 ARG DEBIAN_FRONTEND=noninteractive 
 ENV PATH="/root/.cargo/bin:${PATH}"
 ARG TARGET_ENV
+ARG SERVER_GAME_IP
 ENV TARGET_ENV = ${TARGET_ENV}
+ENV SERVER_GAME_IP = ${SERVER_GAME_IP}
 RUN \
     apt-get update && \
     apt-get -y install --no-install-recommends \

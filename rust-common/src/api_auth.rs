@@ -6,11 +6,13 @@ use prost::Message;
 use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
 
-// Local
-const SERVER_AUTH_URL: &str = "http://127.0.0.1:3000/lambda-url/rust-server-auth";
-// Dev
-// const SERVER_AUTH_URL: &str =
-//     "https://gnmtmvv2qe6mk6fx3vjzmxs3e40aknel.lambda-url.eu-west-3.on.aws";
+fn get_server_auth_url() -> String {
+    match env!("TARGET_ENV") {
+        "local" => "http://127.0.0.1:3000/lambda-url/rust-server-auth".to_string(),
+        "dev" => "https://gnmtmvv2qe6mk6fx3vjzmxs3e40aknel.lambda-url.eu-west-3.on.aws".to_string(),
+        _ => panic!("Invalid TARGET_ENV value"),
+    }
+}
 
 pub const HEADER_AUTH_TOKEN_KEY: &str = "auth-token";
 pub const FAKE_PING: Duration = Duration::from_millis(0);
@@ -54,7 +56,7 @@ impl AuthApi {
 
         send_request::<HttpRegisterResponse>(
             client
-                .post(String::from(SERVER_AUTH_URL) + &ServerAuthRoute::Register.as_string())
+                .post(get_server_auth_url() + &ServerAuthRoute::Register.as_string())
                 .body(body_bytes),
         )
         .await
@@ -70,7 +72,7 @@ impl AuthApi {
 
         send_request::<HttpLoginResponse>(
             client
-                .post(String::from(SERVER_AUTH_URL) + &ServerAuthRoute::Login.as_string())
+                .post(get_server_auth_url() + &ServerAuthRoute::Login.as_string())
                 .body(body_bytes),
         )
         .await
@@ -83,7 +85,7 @@ impl AuthApi {
         sleep(FAKE_PING).await;
         send_request::<HttpLogoutResponse>(
             client
-                .post(String::from(SERVER_AUTH_URL) + &ServerAuthRoute::Logout.as_string())
+                .post(get_server_auth_url() + &ServerAuthRoute::Logout.as_string())
                 .header(HEADER_AUTH_TOKEN_KEY, auth_token),
         )
         .await
@@ -96,7 +98,7 @@ impl AuthApi {
         sleep(FAKE_PING).await;
         send_request::<HttpUserGetCurrentResponse>(
             client
-                .post(String::from(SERVER_AUTH_URL) + &ServerAuthRoute::UserGetCurrent.as_string())
+                .post(get_server_auth_url() + &ServerAuthRoute::UserGetCurrent.as_string())
                 .header(HEADER_AUTH_TOKEN_KEY, auth_token),
         )
         .await

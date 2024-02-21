@@ -15,8 +15,8 @@ pub struct ENetPeerPtrWrapper(*mut _ENetPeer);
 unsafe impl Sync for ENetPeerPtrWrapper {}
 unsafe impl Send for ENetPeerPtrWrapper {}
 
-const ADDRESS: &str = "172.29.96.1";
-// const ADDRESS: &str = "35.181.43.91";
+const ADDRESS: &str = env!("SERVER_GAME_IP");
+
 const PORT: u16 = 34254;
 
 pub fn udp_client_start(
@@ -77,7 +77,6 @@ pub fn udp_client_start(
                         };
                         // println!("{}", unsafe { (*event.packet).dataLength });
 
-                        println!("Received msg");
                         let udp_msg_down_wrapper = UdpMsgDownWrapper::decode(recv_packet_raw)
                             .expect("Failed to parse UdpMsgDownWrapper");
                         tx_udp_receiver.send(udp_msg_down_wrapper).unwrap();
@@ -92,8 +91,6 @@ pub fn udp_client_start(
     });
 
     let enet_sender = thread::spawn(move || {
-        // thread::sleep(Duration::from_millis(2000));
-
         for msg_to_send in &rx_udp_sender {
             if let Some(peer) = &*peers_for_send.lock().unwrap() {
                 let mut out_bytes = Vec::with_capacity(msg_to_send.encoded_len());
