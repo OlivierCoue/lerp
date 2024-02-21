@@ -238,9 +238,9 @@ impl PlayNode {
 
     pub fn init_tile_map(&mut self, area_init: &UdpMsgDownAreaInit) {
         let tile_map_scene = load::<PackedScene>("res://tile_map.tscn");
-        let mut tile_map = tile_map_scene.instantiate_as::<TileMap>();
+        let mut tile_map: Gd<TileMap> = tile_map_scene.instantiate_as::<TileMap>();
         tile_map.set_scale(Vector2::new(1.0, 1.0));
-        tile_map.set_position(Vector2::new(0.0, 0.0));
+        tile_map.set_position(Vector2::new(-60.0, 0.0));
 
         godot_print!("shape count: {}", area_init.oob_polygons.len());
 
@@ -248,7 +248,7 @@ impl PlayNode {
 
         for x in 0..(area_init.width as usize / 60) {
             for y in 0..(area_init.height as usize / 60) {
-                let cell = tile_map.set_cell_ex(0, Vector2i::new(x as i32 - 1, y as i32));
+                let cell = tile_map.set_cell_ex(0, Vector2i::new(x as i32, y as i32));
                 cell.atlas_coords(tile_type_to_atlas_coord(
                     &TileType::try_from(area_init.oob_tile_type).unwrap(),
                 ))
@@ -262,7 +262,7 @@ impl PlayNode {
                 0,
                 Vector2i::new(
                     area_init.walkable_x[i] as i32 - 1,
-                    area_init.walkable_y[i] as i32,
+                    area_init.walkable_y[i] as i32 - 1,
                 ),
             );
             cell.atlas_coords(Vector2i::new(2, 0)).source_id(0).done();

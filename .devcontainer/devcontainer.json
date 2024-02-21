@@ -27,7 +27,8 @@
         }
     },
     "mounts": [
-        "source=/mnt/c,target=/mnt/c,type=bind,consistency=cached"
+        "source=/mnt/c,target=/mnt/c,type=bind,consistency=cached",
+        "type=bind,source=/home/${localEnv:USER}/.ssh,target=/root/.ssh,readonly"
     ],
     "postCreateCommand": ".devcontainer/post-create.sh",
     "remoteUser": "root"
