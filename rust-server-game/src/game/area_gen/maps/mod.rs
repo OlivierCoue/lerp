@@ -15,7 +15,7 @@ pub struct MobPack {
 }
 
 #[derive(Clone)]
-pub struct Tile {
+pub struct GenTile {
     pub tile_type: TileType,
     pub scanned: bool,
     pub walkable: bool,

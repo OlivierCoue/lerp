@@ -71,10 +71,9 @@ impl Game {
         let area_config = AreaConfig {
             area_width: area_gen.width as f32 * 60.0,
             area_height: area_gen.height as f32 * 60.0,
-            walkable_x: area_gen.walkable_x,
-            walkable_y: area_gen.walkable_y,
             oob_polygons: area_gen.oob_polygons,
             oob_tile_type: area_gen.oob_tile_type,
+            tile_grid: area_gen.tile_grid,
         };
         world.insert_resource(PathfinderState::new(&area_config));
 
@@ -181,8 +180,6 @@ impl Game {
                 area_init: Some(UdpMsgDownAreaInit {
                     width: area_config.area_width,
                     height: area_config.area_height,
-                    walkable_x: area_config.walkable_x.to_vec(),
-                    walkable_y: area_config.walkable_y.to_vec(),
                     oob_polygons: area_config
                         .oob_polygons
                         .iter()
@@ -195,6 +192,7 @@ impl Game {
                         })
                         .collect(),
                     oob_tile_type: area_config.oob_tile_type.into(),
+                    area_grid: Some(area_config.tile_grid.clone()),
                 }),
                 ..Default::default()
             }],

@@ -1,5 +1,5 @@
 // Custom
-use maps::{FloorPattern, Map, Tile};
+use maps::{FloorPattern, GenTile, Map};
 // RNG
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -7,10 +7,15 @@ use rand_chacha::ChaCha8Rng;
 use image::ImageBuffer;
 
 use self::maps::MobPack;
+//from proto
+use rust_common::proto::Tile;
+use rust_common::proto::TileGrid;
+use rust_common::proto::TileRow;
 use rust_common::proto::TileType;
+
 mod maps;
 
-type Grid = Vec<Vec<Tile>>;
+type GenTileGrid = Vec<Vec<GenTile>>;
 
 const TILE_SIZE: i32 = 60;
 const MOB_SIZE: i32 = 20;
@@ -18,12 +23,11 @@ const MOB_SIZE: i32 = 20;
 pub struct AreaGenerationOutput {
     pub width: u32,
     pub height: u32,
-    pub walkable_x: Vec<u32>,
-    pub walkable_y: Vec<u32>,
     pub oob_polygons: Vec<Shape>, // bool is true when outer oob shape, false when inner
     pub player_spawn_position: (i32, i32),
     pub enemies: Vec<Enemy>, // pub ennemies: Vec<enemy>,
     pub oob_tile_type: TileType,
+    pub tile_grid: TileGrid,
 }
 
 pub struct Shape {
@@ -77,36 +81,39 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
 
     let enemies = generate_mobs(&packs, &mut rng);
 
-    // Initiate module outputf
-    let mut walkable_x = Vec::new();
-    let mut walkable_y = Vec::new();
-    for x in 0..grid.len() {
-        for y in 0..grid[0].len() {
-            if grid[x][y].walkable {
-                walkable_x.push(x as u32);
-                walkable_y.push(y as u32);
-            }
-        }
-    }
     println!(
-        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles\n    walkable : {}\n    Packs : {} \n    Monsters : {}",
+        "----------------------------\nSeed : {} \n    Biome : {}\n    Size  : {} x {} tiles\n    Packs : {} \n    Monsters : {}",
         seed,
         map_name,
         grid.len(),
         grid[0].len(),
-        walkable_x.len(),
         packs.len(),
         enemies.len(),
     );
+
+    // Convert tile grid for transport
+
+    let mut tranport_grid: TileGrid = TileGrid { grid: Vec::new() };
+
+    for x in 0..grid.len() {
+        let mut tile_row: TileRow = TileRow { tiles: Vec::new() };
+        for y in 0..grid[0].len() {
+            tile_row.tiles.push(Tile {
+                tiletype: grid[x][y].tile_type.into(),
+                walkable: grid[x][y].walkable,
+            })
+        }
+        tranport_grid.grid.push(tile_row);
+    }
+
     AreaGenerationOutput {
-        oob_polygons,
         width: grid.len() as u32,
         height: grid[0].len() as u32,
-        walkable_x,
-        walkable_y,
+        oob_polygons,
         player_spawn_position,
         enemies,
         oob_tile_type,
+        tile_grid: tranport_grid,
     }
 }
 
@@ -157,7 +164,7 @@ fn generate_mobs(packs: &Vec<MobPack>, rng: &mut ChaCha8Rng) -> Vec<Enemy> {
     mobs
 }
 
-fn add_mob_packs(grid: &mut Grid, rng: &mut ChaCha8Rng, density: f64) -> Vec<MobPack> {
+fn add_mob_packs(grid: &mut GenTileGrid, rng: &mut ChaCha8Rng, density: f64) -> Vec<MobPack> {
     let mut nb_walkable = 0;
     let mut packs = Vec::new();
     for row in grid.iter_mut() {
@@ -208,7 +215,7 @@ fn add_mob_packs(grid: &mut Grid, rng: &mut ChaCha8Rng, density: f64) -> Vec<Mob
     packs
 }
 
-fn find_oob_polygons(grid: &mut Grid) -> Vec<Shape> {
+fn find_oob_polygons(grid: &mut GenTileGrid) -> Vec<Shape> {
     // Find a first point on the map contour
     let mut oob_polygons = Vec::new();
     let mut current_pos = (0, (grid[0].len() / 2) as i32);
@@ -250,7 +257,7 @@ fn find_oob_polygons(grid: &mut Grid) -> Vec<Shape> {
 
 fn find_oob_polygone(
     start_point: (i32, i32),
-    grid: &mut Grid,
+    grid: &mut GenTileGrid,
     start_dir: (i32, i32),
 ) -> Vec<(f32, f32)> {
     let mut tile_polygone = Vec::new();
@@ -387,13 +394,13 @@ fn find_oob_polygone(
     px_polygone
 }
 
-fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (Grid, (i32, i32), Vec<MobPack>) {
+fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (GenTileGrid, (i32, i32), Vec<MobPack>) {
     let oob_tiletype = map.oob_type;
 
     let grid_size = 1500;
 
     // Initialize map grid from initial biome and oob tile type
-    let mut grid: Grid = init_grid(grid_size, grid_size, oob_tiletype);
+    let mut grid: GenTileGrid = init_grid(grid_size, grid_size, oob_tiletype);
 
     // genrate walkable paths based on a random selection of possible biomes
     let mut center = (grid_size / 2, grid_size / 2);
@@ -445,7 +452,7 @@ fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (Grid, (i32, i32), Vec<MobPac
     )
 }
 
-fn resize_grid(grid: &mut Grid, border_size: usize) {
+fn resize_grid(grid: &mut GenTileGrid, border_size: usize) {
     // for each direction
     // left to right
     let height = grid[0].len();
@@ -502,7 +509,7 @@ fn resize_grid(grid: &mut Grid, border_size: usize) {
 }
 
 fn remove_small_cluster(
-    grid: &mut Grid,
+    grid: &mut GenTileGrid,
     oob_tiletype: TileType,
     cluster_size: usize,
     check_x: bool,
@@ -593,7 +600,7 @@ fn remove_small_cluster(
     }
 }
 fn generate_walkable_layout(
-    grid: &mut Grid,
+    grid: &mut GenTileGrid,
     biome: &FloorPattern,
     rng: &mut ChaCha8Rng,
     start_center: (i32, i32),
@@ -661,7 +668,7 @@ fn generate_walkable_layout(
 }
 
 fn find_point_on_edge(
-    grid: &Grid,
+    grid: &GenTileGrid,
     previous_center: (i32, i32),
     direction: (i32, i32),
 ) -> (i32, i32) {
@@ -702,7 +709,7 @@ fn find_point_on_edge(
 // }
 
 fn draw_rectangle(
-    grid: &mut Grid,
+    grid: &mut GenTileGrid,
     tiletype: TileType,
     size: (i32, i32),
     center: (i32, i32),
@@ -720,12 +727,12 @@ fn draw_rectangle(
     }
 }
 
-fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
-    let mut grid: Grid = Vec::new();
+fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> GenTileGrid {
+    let mut grid: GenTileGrid = Vec::new();
     for _ in 0..width {
         let mut row = Vec::new();
         for _ in 0..height {
-            row.push(Tile {
+            row.push(GenTile {
                 tile_type: oob_tiletype,
                 scanned: false,
                 walkable: false,
@@ -741,7 +748,7 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> Grid {
 }
 
 #[allow(dead_code)]
-fn render_grid(grid: &Grid, file_name: String, show_outline: bool) {
+fn render_grid(grid: &GenTileGrid, file_name: String, show_outline: bool) {
     // Construct a new RGB ImageBuffer with the specified width and height.
     let width = grid.len();
     let height = grid[0].len();

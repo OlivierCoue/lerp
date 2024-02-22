@@ -10,6 +10,23 @@ pub struct UdpPolygon {
     #[prost(message, repeated, tag="1")]
     pub points: ::std::vec::Vec<Point>,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Tile {
+    #[prost(enumeration="TileType", tag="1")]
+    pub tiletype: i32,
+    #[prost(bool, tag="2")]
+    pub walkable: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TileRow {
+    #[prost(message, repeated, tag="1")]
+    pub tiles: ::std::vec::Vec<Tile>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TileGrid {
+    #[prost(message, repeated, tag="1")]
+    pub grid: ::std::vec::Vec<TileRow>,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum GameEntityBaseType {
@@ -96,14 +113,12 @@ pub struct UdpMsgDownAreaInit {
     pub width: f32,
     #[prost(float, tag="2")]
     pub height: f32,
-    #[prost(uint32, repeated, tag="3")]
-    pub walkable_x: ::std::vec::Vec<u32>,
-    #[prost(uint32, repeated, tag="4")]
-    pub walkable_y: ::std::vec::Vec<u32>,
-    #[prost(message, repeated, tag="5")]
+    #[prost(message, repeated, tag="3")]
     pub oob_polygons: ::std::vec::Vec<UdpPolygon>,
-    #[prost(enumeration="TileType", tag="6")]
+    #[prost(enumeration="TileType", tag="4")]
     pub oob_tile_type: i32,
+    #[prost(message, optional, tag="5")]
+    pub area_grid: ::std::option::Option<TileGrid>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UdpMsgDown {

@@ -31,3 +31,16 @@ enum UdpSpell {
     SPELL_FROZEN_ORB = 1;
     SPELL_MELEE_ATTACK = 2;
 }
+
+message Tile {
+    TileType tiletype = 1;
+    bool walkable = 2;
+}
+
+message TileRow {
+    repeated Tile tiles = 1;
+}
+
+message TileGrid{
+    repeated TileRow grid = 1;
+}

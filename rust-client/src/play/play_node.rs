@@ -246,34 +246,20 @@ impl PlayNode {
 
         godot_print!("init_tile_map: {}:{}", area_init.width, area_init.height);
 
-        for x in 0..(area_init.width as usize / 60) {
-            for y in 0..(area_init.height as usize / 60) {
-                let cell = tile_map.set_cell_ex(1, Vector2i::new(x as i32, y as i32));
-                cell.atlas_coords(tile_type_to_atlas_coord(
-                    &TileType::try_from(area_init.oob_tile_type).unwrap(),
-                ))
-                .source_id(0)
-                .done();
+        match &area_init.area_grid {
+            None => godot_print!("no tilemap found"),
+            Some(tile_grid) => {
+                for (x, tiles) in tile_grid.clone().grid.iter_mut().enumerate() {
+                    for (y, tile) in tiles.tiles.iter_mut().enumerate() {
+                        let cell = tile_map.set_cell_ex(0, Vector2i::new(x as i32, y as i32));
+                        cell.atlas_coords(tile_type_to_atlas_coord(
+                            &TileType::try_from(tile.tiletype).unwrap(),
+                        ))
+                        .source_id(0)
+                        .done();
+                    }
+                }
             }
-        }
-
-        for i in 0..area_init.walkable_x.len() {
-            let cell = tile_map.set_cell_ex(
-                0,
-                Vector2i::new(
-                    area_init.walkable_x[i] as i32 - 1,
-                    area_init.walkable_y[i] as i32 - 1,
-                ),
-            );
-            cell.atlas_coords(Vector2i::new(2, 0)).source_id(0).done();
-            // Workaround, remove cell on layer 1, added by the revious step which add oob cell on the whole map
-            tile_map.erase_cell(
-                1,
-                Vector2i::new(
-                    area_init.walkable_x[i] as i32 - 1,
-                    area_init.walkable_y[i] as i32 - 1,
-                ),
-            );
         }
         self.base_mut().add_child(tile_map.upcast());
     }
