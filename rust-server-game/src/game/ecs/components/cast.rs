@@ -1,8 +1,8 @@
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
 
 use rust_common::{
-    helper::vector2_to_point,
+    helper::vec2_to_point,
+    math::Vec2,
     proto::{UdpCast, UdpSpell},
 };
 
@@ -10,9 +10,9 @@ use crate::game::ecs::{components::prelude::Team, resources::prelude::Time};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Spell {
-    FrozenOrb(Entity, Vector2, Vector2, Team),
-    Projectile(Entity, Vector2, Vector2, Team),
-    MeleeAttack(Entity, Vector2, Team),
+    FrozenOrb(Entity, Vec2, Vec2, Team),
+    Projectile(Entity, Vec2, Vec2, Team),
+    MeleeAttack(Entity, Vec2, Team),
 }
 
 #[derive(Component)]
@@ -39,7 +39,7 @@ impl Cast {
 
         UdpCast {
             spell: UdpSpell::SpellMeleeAttack.into(),
-            target: Some(vector2_to_point(&target)),
+            target: Some(vec2_to_point(&target)),
             duration: self.duration_millis,
         }
     }

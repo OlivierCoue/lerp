@@ -4,8 +4,7 @@ use std::{
 };
 
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
-use rust_common::collisions::collide_point_to_poly;
+use rust_common::{collisions::collide_point_to_poly, math::Vec2};
 
 use crate::game::pathfinder::{
     pathfinder_get_path, Grid, Node, PATHFINDER_GRID_SIZE, PATHFINDER_TILE_SIZE,
@@ -51,7 +50,7 @@ impl PathfinderState {
         self.last_update_at_millis = time.current_millis;
     }
 
-    pub fn block_nodes_in_rect(&mut self, entity: Entity, position: &Vector2, rect: &Vector2) {
+    pub fn block_nodes_in_rect(&mut self, entity: Entity, position: &Vec2, rect: &Vec2) {
         // To take in account the size of the entity moving in the grid, we enlarge every rect by the size of the moving entity
         let extra = 20;
         let rx = (f32::floor(((position.x) - (rect.x) / 2.0 - extra as f32) / PATHFINDER_TILE_SIZE)
@@ -76,11 +75,11 @@ impl PathfinderState {
         }
     }
 
-    pub fn block_nodes_in_poly(&mut self, entity: Entity, poly: &Vec<Vector2>, reversed: bool) {
+    pub fn block_nodes_in_poly(&mut self, entity: Entity, poly: &Vec<Vec2>, reversed: bool) {
         for x in 0..self.grid.len() {
             for y in 0..self.grid[0].len() {
                 let collide = collide_point_to_poly(
-                    &Vector2::new(
+                    &Vec2::new(
                         x as f32 * PATHFINDER_TILE_SIZE,
                         y as f32 * PATHFINDER_TILE_SIZE,
                     ),
@@ -102,9 +101,9 @@ impl PathfinderState {
     pub fn get_path_async(
         &mut self,
         entity: Entity,
-        from: Vector2,
-        to: Vector2,
-    ) -> JoinHandle<Option<Vec<Vector2>>> {
+        from: Vec2,
+        to: Vec2,
+    ) -> JoinHandle<Option<Vec<Vec2>>> {
         // The global grid is the grid of the global map, in order to find a path we only work with a grid of PATHFINDER_GRID_SIZE * PATHFINDER_GRID_SIZE size (60x60)
         // So we find the node between the from and to (center_node), and then we create the sub grid with the center_node in the center of the sub grid
         let center_node = (

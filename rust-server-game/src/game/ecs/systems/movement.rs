@@ -1,6 +1,9 @@
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
-use rust_common::collisions::{collide_point_to_poly, collide_rect_to_rect};
+
+use rust_common::{
+    collisions::{collide_point_to_poly, collide_rect_to_rect},
+    math::Vec2,
+};
 
 use crate::game::{
     ecs::{components::prelude::*, events::prelude::*, resources::prelude::*},
@@ -15,14 +18,14 @@ fn world_bounded_y(area_config: &AreaConfig, y: f32) -> f32 {
     f32::min(f32::max(0.0, y), area_config.area_height)
 }
 
-pub fn world_bounded_vector2(area_config: &AreaConfig, v: Vector2) -> Vector2 {
-    Vector2 {
+pub fn world_bounded_vector2(area_config: &AreaConfig, v: Vec2) -> Vec2 {
+    Vec2 {
         x: wolrd_bounded_x(area_config, v.x),
         y: world_bounded_y(area_config, v.y),
     }
 }
 
-fn is_oob(area_config: &AreaConfig, position: &Vector2) -> bool {
+fn is_oob(area_config: &AreaConfig, position: &Vec2) -> bool {
     position.x > area_config.area_width
         || position.x < 0.0
         || position.y > area_config.area_height
@@ -78,12 +81,9 @@ pub fn movement(
         if let Some(mut velocity) = opt_velocity {
             if let Some(target) = velocity.get_target() {
                 if is_oob(&area_config, &position.current) && !game_entity.pending_despwan {
-                    let mut game_entity_mut = unsafe {
-                        query_entities_to_move
-                            .get_component_unchecked_mut::<GameEntity>(entity)
-                            .unwrap()
-                    };
-                    game_entity_mut.pending_despwan = true;
+                    let mut game_entity_mut =
+                        unsafe { query_entities_to_move.get_unchecked(entity).unwrap() };
+                    game_entity_mut.1.pending_despwan = true;
                 } else if position.current == *target {
                     continue;
                 }
@@ -130,24 +130,18 @@ pub fn movement(
                 }
 
                 if !collide_with_blocking_entity {
-                    let mut position_mut = unsafe {
-                        query_entities_to_move
-                            .get_component_unchecked_mut::<Position>(entity)
-                            .unwrap()
-                    };
-                    position_mut.current = new_position_current;
+                    let mut position_mut =
+                        unsafe { query_entities_to_move.get_unchecked(entity).unwrap() };
+                    position_mut.2.current = new_position_current;
                     if let Some(target) = velocity.get_target() {
                         if position.current == *target {
                             writer.send(VelocityReachedTarget {
                                 entity,
                                 target: *target,
                             });
-                            let mut velocity_mut = unsafe {
-                                query_entities_to_move
-                                    .get_component_unchecked_mut::<Velocity>(entity)
-                                    .unwrap()
-                            };
-                            velocity_mut.remove_current_target();
+                            let mut velocity_mut =
+                                unsafe { query_entities_to_move.get_unchecked(entity).unwrap() };
+                            velocity_mut.3.unwrap().remove_current_target();
                         }
                     }
                     if opt_cast.is_some() {

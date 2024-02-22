@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy_ecs::entity::Entity;
-use godot::builtin::Vector2;
+use rust_common::math::Vec2;
 
 pub struct Node {
     pub x: f32,
@@ -77,10 +77,10 @@ pub type Grid = [[Box<Node>; PATHFINDER_GRID_SIZE]; PATHFINDER_GRID_SIZE];
 pub fn pathfinder_get_path(
     mut grid: Grid,
     entity: Entity,
-    from: Vector2,
-    to: Vector2,
+    from: Vec2,
+    to: Vec2,
     grid_to_left_node: (usize, usize),
-) -> Option<Vec<Vector2>> {
+) -> Option<Vec<Vec2>> {
     let unsafe_start = (
         from.x as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
         from.y as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
@@ -279,7 +279,7 @@ pub fn pathfinder_get_path(
 
     let mut path_vec_vector_2d = path_vec
         .iter()
-        .map(|(_, (x, y))| Vector2::new(grid[*x][*y].x, grid[*x][*y].y))
+        .map(|(_, (x, y))| Vec2::new(grid[*x][*y].x, grid[*x][*y].y))
         .collect::<Vec<_>>();
     // Update the last point to the exact goal coordonate
     let len = path_vec_vector_2d.len();
@@ -296,11 +296,11 @@ fn is_walkable(
     from_tile: (usize, usize),
     to_tile: (usize, usize),
 ) -> bool {
-    let from: Vector2 = Vector2::new(
+    let from: Vec2 = Vec2::new(
         (from_tile.0 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
         (from_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
     );
-    let to = Vector2::new(
+    let to = Vec2::new(
         (to_tile.0 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
         (to_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
     );

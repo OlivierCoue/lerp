@@ -1,9 +1,8 @@
 use godot::engine::{ISprite2D, Panel, Sprite2D, StyleBoxFlat};
 use godot::prelude::*;
-use rust_common::helper::point_to_vector2;
 use rust_common::proto::UdpMsgDownGameEntityUpdate;
 
-use crate::utils::cart_to_iso;
+use crate::utils::{cart_to_iso, point_to_vector2};
 
 #[derive(GodotClass)]
 #[class(base=Sprite2D)]

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
-use rust_common::proto::GameEntityBaseType;
+use rust_common::{math::Vec2, proto::GameEntityBaseType};
 
 use crate::game::ecs::components::prelude::*;
 
@@ -20,13 +19,13 @@ pub struct ProjectileBundle {
     team: Team,
 }
 impl ProjectileBundle {
-    pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
+    pub fn new(position_current: Vec2, velocity_target: Vec2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::Projectile),
             projectile: Projectile::default(),
             position: Position::new(position_current),
             velocity: Velocity::new(Some(velocity_target), 1000.0, true),
-            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
+            collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
                 despawn_after_first_apply: false,
                 damage_value: 5,
@@ -51,13 +50,13 @@ pub struct FrozenOrbMainProjectileBundle {
     pub team: Team,
 }
 impl FrozenOrbMainProjectileBundle {
-    pub fn new(position_current: Vector2, velocity_target: Vector2, team: Team) -> Self {
+    pub fn new(position_current: Vec2, velocity_target: Vec2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::Projectile),
             frozen_orb_main_projectile: FrozenOrbMainProjectile::default(),
             position: Position::new(position_current),
             velocity: Velocity::new(Some(velocity_target), 1000.0, false),
-            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
+            collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
             damage_on_hit: DamageOnHit {
                 despawn_after_first_apply: false,
                 damage_value: 5,
@@ -77,11 +76,11 @@ pub struct MeleeAttackBundle {
     pub team: Team,
 }
 impl MeleeAttackBundle {
-    pub fn new(position_current: Vector2, team: Team) -> Self {
+    pub fn new(position_current: Vec2, team: Team) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::MeleeAttack),
             position: Position::new(position_current),
-            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 30.0, y: 30.0 }),
+            collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 30.0, y: 30.0 }),
             damage_on_hit: DamageOnHit {
                 despawn_after_first_apply: true,
                 damage_value: 5,

@@ -1,6 +1,5 @@
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
-use rust_common::{collisions::ColliderShape, proto::GameEntityBaseType};
+use rust_common::{collisions::ColliderShape, math::Vec2, proto::GameEntityBaseType};
 
 use crate::game::ecs::components::prelude::*;
 
@@ -19,15 +18,15 @@ pub struct PlayerBundle {
     team: Team,
 }
 impl PlayerBundle {
-    pub fn new(position: Vector2) -> Self {
+    pub fn new(position: Vec2) -> Self {
         Self {
             game_entity: GameEntity::new(GameEntityBaseType::Character),
             player: Player::default(),
             position: Position::new(position),
             velocity: Velocity::new(None, 400.0, false),
-            collider_dmg_in: ColliderDmgIn::new(Vector2 { x: 50.0, y: 50.0 }),
+            collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
             collider_mvt: ColliderMvt::new(
-                ColliderShape::new_rect(Vector2 { x: 20.0, y: 20.0 }),
+                ColliderShape::new_rect(Vec2 { x: 20.0, y: 20.0 }),
                 false,
             ),
             health: Health::new(900),

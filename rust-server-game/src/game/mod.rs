@@ -6,9 +6,8 @@ pub mod internal_message;
 pub mod player;
 
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
-use rust_common::helper::{get_timestamp_nanos, vector2_to_point};
-use rust_common::math::get_point_from_points_and_distance;
+use rust_common::helper::{get_timestamp_nanos, vec2_to_point};
+use rust_common::math::{get_point_from_points_and_distance, Vec2};
 use rust_common::proto::*;
 use tokio::sync::mpsc;
 use uuid::Uuid;
@@ -42,7 +41,7 @@ pub struct Game {
     received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ecs_world: World,
     ecs_world_schedule: Schedule,
-    player_spawn_position: Vector2,
+    player_spawn_position: Vec2,
     is_closed: bool,
 }
 
@@ -55,7 +54,7 @@ impl Game {
         received_udp_messages: Arc<Mutex<VecDeque<(u16, MsgUp)>>>,
     ) -> Game {
         let area_gen = generate_area(1);
-        let player_spawn_position = Vector2::new(
+        let player_spawn_position = Vec2::new(
             area_gen.player_spawn_position.0 as f32,
             area_gen.player_spawn_position.1 as f32,
         );
@@ -131,7 +130,7 @@ impl Game {
                 shape
                     .points
                     .iter()
-                    .map(|point| Vector2::new(point.0, point.1))
+                    .map(|point| Vec2::new(point.0, point.1))
                     .collect(),
                 !shape.inner_if_true,
             );
@@ -140,10 +139,8 @@ impl Game {
 
         // Add Enemies
         for enemy in &area_gen.enemies {
-            let enemy_bundle = EnemyBundle::new(
-                Vector2::new(enemy.point.0 as f32, enemy.point.1 as f32),
-                false,
-            );
+            let enemy_bundle =
+                EnemyBundle::new(Vec2::new(enemy.point.0 as f32, enemy.point.1 as f32), false);
             world.spawn(enemy_bundle);
         }
 
@@ -193,7 +190,7 @@ impl Game {
                             points: shape
                                 .points
                                 .iter()
-                                .map(|point| vector2_to_point(&Vector2::new(point.0, point.1)))
+                                .map(|point| vec2_to_point(&Vec2::new(point.0, point.1)))
                                 .collect(),
                         })
                         .collect(),
@@ -357,7 +354,7 @@ impl Game {
                     } else {
                         let location_current = entity_ref
                             .get::<Position>()
-                            .map(|position| vector2_to_point(&position.current));
+                            .map(|position| vec2_to_point(&position.current));
 
                         let (location_target_queue, velocity_speed) =
                             match entity_ref.get::<Velocity>() {
@@ -366,7 +363,7 @@ impl Game {
                                         velocity
                                             .get_target_queue()
                                             .into_iter()
-                                            .map(|x| vector2_to_point(&x))
+                                            .map(|x| vec2_to_point(&x))
                                             .collect::<Vec<_>>(),
                                     ),
                                     Some(velocity.get_speed()),
@@ -375,20 +372,20 @@ impl Game {
                             };
                         let collider_dmg_in_rect = entity_ref
                             .get::<ColliderDmgIn>()
-                            .map(|x| vector2_to_point(&x.rect));
+                            .map(|x| vec2_to_point(&x.rect));
                         let collider_mvt =
                             entity_ref
                                 .get::<ColliderMvt>()
                                 .map(|collider| UdpColliderMvt {
                                     reversed: collider.reversed,
-                                    rect: collider.shape.rect.map(|rect| vector2_to_point(&rect)),
+                                    rect: collider.shape.rect.map(|rect| vec2_to_point(&rect)),
                                     poly: collider
                                         .shape
                                         .poly
                                         .clone()
                                         .unwrap_or_default()
                                         .iter()
-                                        .map(vector2_to_point)
+                                        .map(vec2_to_point)
                                         .collect(),
                                 });
                         let health_current = entity_ref
@@ -461,7 +458,7 @@ impl Game {
                             entity: player.player_entity,
                             target: world_bounded_vector2(
                                 area_config,
-                                Vector2::new(ok_coord.x, ok_coord.y),
+                                Vec2::new(ok_coord.x, ok_coord.y),
                             ),
                         });
                 }
@@ -473,7 +470,7 @@ impl Game {
                         entity: player.player_entity,
                         current: world_bounded_vector2(
                             area_config,
-                            Vector2::new(ok_coord.x, ok_coord.y),
+                            Vec2::new(ok_coord.x, ok_coord.y),
                         ),
                         force_update_velocity_target: true,
                     });
@@ -493,7 +490,7 @@ impl Game {
                             player_position.current,
                             get_point_from_points_and_distance(
                                 player_position.current,
-                                Vector2::new(ok_coord.x, ok_coord.y),
+                                Vec2::new(ok_coord.x, ok_coord.y),
                                 600.0,
                             ),
                             *player_team,
@@ -515,7 +512,7 @@ impl Game {
                             player_position.current,
                             get_point_from_points_and_distance(
                                 player_position.current,
-                                Vector2::new(ok_coord.x, ok_coord.y),
+                                Vec2::new(ok_coord.x, ok_coord.y),
                                 600.0,
                             ),
                             *player_team,
@@ -536,7 +533,7 @@ impl Game {
                             player.player_entity,
                             get_point_from_points_and_distance(
                                 player_position.current,
-                                Vector2::new(ok_coord.x, ok_coord.y),
+                                Vec2::new(ok_coord.x, ok_coord.y),
                                 40.0,
                             ),
                             *player_team,

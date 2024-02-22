@@ -8,13 +8,13 @@ use godot::engine::{
     ISprite2D, Label, Polygon2D, ResourceLoader, Sprite2D, Texture2D,
 };
 use godot::prelude::*;
-use rust_common::helper::point_to_vector2;
 use rust_common::proto::{GameEntityBaseType, UdpMsgDownGameEntityUpdate};
 
 use crate::root::{DEBUG, PATH_PLAY};
 use crate::utils::{
     angle_to_direction, cart_to_iso, get_attack_animation_for_direction,
-    get_idle_animation_for_direction, get_walk_animation_for_direction, iso_to_cart, Direction,
+    get_idle_animation_for_direction, get_walk_animation_for_direction, iso_to_cart,
+    point_to_vector2, Direction,
 };
 
 use super::play_node::PlayNode;

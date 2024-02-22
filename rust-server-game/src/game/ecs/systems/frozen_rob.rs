@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
+use rust_common::math::Vec2;
 
 use crate::game::ecs::{bundles::prelude::*, components::prelude::*, events::prelude::*};
 
@@ -19,7 +19,7 @@ pub fn on_frozen_orb_velocity_reached_target(
             commands.spawn_batch(vec![
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x + 200.0,
                         y: position.current.y,
                     },
@@ -27,7 +27,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x - 200.0,
                         y: position.current.y,
                     },
@@ -35,7 +35,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x,
                         y: position.current.y + 200.0,
                     },
@@ -43,7 +43,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x,
                         y: position.current.y - 200.0,
                     },
@@ -51,7 +51,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x + (200.0 * 0.75),
                         y: position.current.y - (200.0 * 0.75),
                     },
@@ -59,7 +59,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x + (200.0 * 0.75),
                         y: position.current.y + (200.0 * 0.75),
                     },
@@ -67,7 +67,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x - (200.0 * 0.75),
                         y: position.current.y + (200.0 * 0.75),
                     },
@@ -75,7 +75,7 @@ pub fn on_frozen_orb_velocity_reached_target(
                 ),
                 ProjectileBundle::new(
                     event.target,
-                    Vector2 {
+                    Vec2 {
                         x: position.current.x - (200.0 * 0.75),
                         y: position.current.y - (200.0 * 0.75),
                     },

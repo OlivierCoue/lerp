@@ -19,4 +19,4 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["e
 uuid = { version = "1.7.0", features = ["v4"] }
 
 [package.metadata.lambda.env]
-DATABASE_URL = "postgresql://admin:password@postgres:5432/lerp-local?schema=public"
+DATABASE_URL = "postgresql://admin:password@postgres:5432/lerp-local"

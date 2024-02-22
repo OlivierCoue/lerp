@@ -1,7 +1,6 @@
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
 use rand::Rng;
-use rust_common::math::get_point_from_points_and_distance;
+use rust_common::math::{get_point_from_points_and_distance, Vec2};
 
 use crate::game::ecs::{
     bundles::prelude::*, components::prelude::*, events::prelude::*, resources::prelude::*,
@@ -24,10 +23,10 @@ pub fn enemies_spawner(
         enemies_state.last_spawn_at_millis = current_game_time;
         let random = rand::thread_rng().gen_range(0.0..area_config.area_width - 1.0);
         let position_current = match rand::thread_rng().gen_range(0..4) {
-            0 => Vector2::new(0.0, random),
-            1 => Vector2::new(area_config.area_width, random),
-            2 => Vector2::new(random, 0.0),
-            3 => Vector2::new(random, area_config.area_height),
+            0 => Vec2::new(0.0, random),
+            1 => Vec2::new(area_config.area_width, random),
+            2 => Vec2::new(random, 0.0),
+            3 => Vec2::new(random, area_config.area_height),
             _ => panic!("Unexpected value"),
         };
         let is_wizard: u32 = rand::thread_rng().gen_range(0..2);
@@ -86,14 +85,14 @@ pub fn enemies_ai(
                             ),
                             *team,
                         ),
-                    })
+                    });
                 } else {
                     writer_update_velocity_target_with_pathfinder.send(
                         UpdateVelocityTargetWithPathFinder {
                             entity: enemy_entity,
                             target: closest_player_location,
                         },
-                    )
+                    );
                 }
             } else if closest_player_distance <= 400.0 {
                 writer_cast_spell.send(CastSpell {
@@ -108,7 +107,7 @@ pub fn enemies_ai(
                         ),
                         *team,
                     ),
-                })
+                });
             } else {
                 writer_update_velocity_target_with_pathfinder.send(
                     UpdateVelocityTargetWithPathFinder {
@@ -119,7 +118,7 @@ pub fn enemies_ai(
                             350.0,
                         ),
                     },
-                )
+                );
             }
         }
     }

@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use bevy_ecs::prelude::*;
-use godot::builtin::Vector2;
+use rust_common::math::Vec2;
 
 use crate::game::ecs::{resources::prelude::AreaConfig, systems::prelude::*};
 
@@ -9,12 +9,12 @@ use crate::game::ecs::{resources::prelude::AreaConfig, systems::prelude::*};
 pub struct Velocity {
     pub revision: u32,
     pub revision_checkpoint: u32,
-    target_queue: VecDeque<Vector2>,
+    target_queue: VecDeque<Vec2>,
     speed: f32,
     despawn_at_target: bool,
 }
 impl Velocity {
-    pub fn new(target: Option<Vector2>, speed: f32, despawn_at_target: bool) -> Self {
+    pub fn new(target: Option<Vec2>, speed: f32, despawn_at_target: bool) -> Self {
         let target_queue = match target {
             Some(t) => VecDeque::from_iter(Some(t)),
             None => VecDeque::new(),
@@ -29,11 +29,11 @@ impl Velocity {
         }
     }
 
-    pub fn get_target(&self) -> Option<&Vector2> {
+    pub fn get_target(&self) -> Option<&Vec2> {
         self.target_queue.get(0)
     }
 
-    pub fn get_target_queue(&self) -> Vec<Vector2> {
+    pub fn get_target_queue(&self) -> Vec<Vec2> {
         Vec::from_iter(self.target_queue.clone())
     }
 
@@ -45,7 +45,7 @@ impl Velocity {
         self.despawn_at_target
     }
 
-    pub fn set_target(&mut self, area_config: &AreaConfig, new_target: Option<Vector2>) {
+    pub fn set_target(&mut self, area_config: &AreaConfig, new_target: Option<Vec2>) {
         if let Some(target) = new_target {
             self.target_queue =
                 VecDeque::from_iter(Some(world_bounded_vector2(area_config, target)))
@@ -55,12 +55,12 @@ impl Velocity {
         self.revision += 1;
     }
 
-    pub fn set_targets(&mut self, new_targets: Vec<Vector2>) {
+    pub fn set_targets(&mut self, new_targets: Vec<Vec2>) {
         self.target_queue = VecDeque::from_iter(new_targets);
         self.revision += 1;
     }
 
-    pub fn add_target(&mut self, area_config: &AreaConfig, new_target: Vector2) {
+    pub fn add_target(&mut self, area_config: &AreaConfig, new_target: Vec2) {
         self.target_queue
             .push_front(world_bounded_vector2(area_config, new_target));
     }

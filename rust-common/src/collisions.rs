@@ -1,18 +1,18 @@
-use godot::builtin::Vector2;
+use crate::math::Vec2;
 
 pub struct ColliderShape {
-    pub rect: Option<Vector2>,
-    pub poly: Option<Vec<Vector2>>,
+    pub rect: Option<Vec2>,
+    pub poly: Option<Vec<Vec2>>,
 }
 impl ColliderShape {
-    pub fn new_rect(rect: Vector2) -> Self {
+    pub fn new_rect(rect: Vec2) -> Self {
         Self {
             rect: Some(rect),
             poly: None,
         }
     }
 
-    pub fn new_poly(poly: Vec<Vector2>) -> Self {
+    pub fn new_poly(poly: Vec<Vec2>) -> Self {
         Self {
             rect: None,
             poly: Some(poly),
@@ -21,12 +21,7 @@ impl ColliderShape {
 }
 
 // Taken from: https://www.jeffreythompson.org/collision-detection/rect-rect.php
-pub fn collide_rect_to_rect(
-    r1_size: &Vector2,
-    r1_pos: &Vector2,
-    r2_size: &Vector2,
-    r2_pos: &Vector2,
-) -> bool {
+pub fn collide_rect_to_rect(r1_size: &Vec2, r1_pos: &Vec2, r2_size: &Vec2, r2_pos: &Vec2) -> bool {
     let r1x = r1_pos.x - r1_size.x / 2.0;
     let r1y = r1_pos.y - r1_size.y / 2.0;
     let r1w = r1_size.x;
@@ -40,7 +35,7 @@ pub fn collide_rect_to_rect(
 }
 
 // Taken from: https://www.jeffreythompson.org/collision-detection/poly-point.php
-pub fn collide_point_to_poly(point: &Vector2, poly: &Vec<Vector2>, reversed: bool) -> bool {
+pub fn collide_point_to_poly(point: &Vec2, poly: &[Vec2], reversed: bool) -> bool {
     let mut collision = false;
 
     let px = point.x;
