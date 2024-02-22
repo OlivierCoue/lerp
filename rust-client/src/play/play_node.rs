@@ -246,27 +246,27 @@ impl PlayNode {
 
         godot_print!("init_tile_map: {}:{}", area_init.width, area_init.height);
 
-        match &area_init.area_grid {
-            None => godot_print!("no tilemap found"),
-            Some(tile_grid) => {
-                for (x, tiles) in tile_grid.clone().grid.iter_mut().enumerate() {
-                    for (y, tile) in tiles.tiles.iter_mut().enumerate() {
-                        let cell = tile_map.set_cell_ex(
-                            match tile.walkable {
-                                true => 0,
-                                false => 1,
-                            },
-                            Vector2i::new(x as i32, y as i32),
-                        );
-                        cell.atlas_coords(tile_type_to_atlas_coord(
-                            &TileType::try_from(tile.tiletype).unwrap(),
-                        ))
-                        .source_id(0)
-                        .done();
-                    }
-                }
+        let Some(tile_grid) = &area_init.area_grid else {
+            panic!("No tilemap received :(")
+        };
+
+        for (x, tiles) in tile_grid.grid.iter().enumerate() {
+            for (y, tile) in tiles.tiles.iter().enumerate() {
+                let cell = tile_map.set_cell_ex(
+                    match tile.walkable {
+                        true => 0,
+                        false => 1,
+                    },
+                    Vector2i::new(x as i32, y as i32),
+                );
+                cell.atlas_coords(tile_type_to_atlas_coord(
+                    &TileType::try_from(tile.tiletype).unwrap(),
+                ))
+                .source_id(0)
+                .done();
             }
         }
+
         self.base_mut().add_child(tile_map.upcast());
     }
 
