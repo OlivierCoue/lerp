@@ -5,38 +5,20 @@
 
 ### Requirement (windows)
 
-Rust: https://www.rust-lang.org/tools/install.
-
 Docker Desktop: https://docs.docker.com/desktop/install/windows-install/.
 
-Godot (4.2.1): https://godotengine.org/download/windows/. You need to add the installation location to your path in order to use the `godot` command in your terminal.
+WSL: https://learn.microsoft.com/en-us/windows/wsl/install
 
-Scoop (windows package manager: https://scoop.sh/):
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-```
-
-Cargo lambda (https://github.com/awslabs/aws-lambda-rust-runtime):
-
-```
-scoop bucket add cargo-lambda https://github.com/cargo-lambda/scoop-cargo-lambda
-scoop install cargo-lambda/cargo-lambda
-```
+VsCode: https://code.visualstudio.com/
 
 ### Build and start
+
+Open project in VsCode DevContainer.
 
 Copy .env.example to .env (update the copied version if needed):
 
 ```
 cp .env.example .env
-```
-
-Start docker:
-
-```
-docker-compose up -d
 ```
 
 Build:
@@ -75,21 +57,9 @@ See doc to add it as a pre-commit hook: https://github.com/launchbadge/sqlx/blob
 cargo sqlx prepare --workspace
 ```
 
-## Architecture (wip)
+## Workaround: windows cross compile
 
-```
-godot
-rust-client
-rust-common
-rust-server-common
-rust-server-auth
-rust-server-lobby
-rust-server-game
-```
-
-## Workaround : windows cross compile
-
-Try once `cargo build -p rust-client --target x86_64-pc-windows-gnu`
+Try once `./rust-client/build-debug.sh`
 
 Then change in the `win32.c`, add include `ws2tcpip.h`
 
