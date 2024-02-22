@@ -13,7 +13,7 @@ use tokio::task::JoinSet;
 use crate::{api::types::App, env::init_env, network::enet::enet_start, postgres::pg_pool_init};
 
 use std::thread;
-const DEBUG_GC: bool = false;
+const DEBUG_GC: bool = true;
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {

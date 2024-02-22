@@ -73,7 +73,9 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     let oob_polygons = find_oob_polygons(&mut grid);
     // render_grid(&grid, map_name.clone(), false);
 
-    // render_grid(&grid, map_name.clone() + "_outline", true);
+    if env!("TARGET_ENV") == "local" {
+        render_grid(&grid, map_name.clone() + "_outline", true);
+    }
 
     //------------------------------------------------------//
     //               Generate mobs                          //
@@ -390,7 +392,10 @@ fn find_oob_polygone(
         current_pos.0 += dir.0;
         current_pos.1 += dir.1;
     }
-
+    for x in px_polygone.iter_mut() {
+        x.0 += TILE_SIZE as f32;
+        x.1 += TILE_SIZE as f32;
+    }
     px_polygone
 }
 
