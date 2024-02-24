@@ -252,13 +252,8 @@ impl PlayNode {
 
         for (x, tiles) in tile_grid.grid.iter().enumerate() {
             for (y, tile) in tiles.tiles.iter().enumerate() {
-                let cell = tile_map.set_cell_ex(
-                    match tile.walkable {
-                        true => 0,
-                        false => 1,
-                    },
-                    Vector2i::new(x as i32, y as i32),
-                );
+                let cell =
+                    tile_map.set_cell_ex(tile.layer as i32, Vector2i::new(x as i32, y as i32));
                 cell.atlas_coords(tile_type_to_atlas_coord(
                     &TileType::try_from(tile.tiletype).unwrap(),
                 ))

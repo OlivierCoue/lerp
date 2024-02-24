@@ -78,6 +78,10 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     }
 
     //------------------------------------------------------//
+    //               Add static assets                      //
+    //------------------------------------------------------//
+
+    //------------------------------------------------------//
     //               Generate mobs                          //
     //------------------------------------------------------//
 
@@ -103,6 +107,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
             tile_row.tiles.push(Tile {
                 tiletype: grid[x][y].tile_type.into(),
                 walkable: grid[x][y].walkable,
+                layer: grid[x][y].layer as u32,
             })
         }
         tranport_grid.grid.push(tile_row);
@@ -422,9 +427,17 @@ fn generate_map(rng: &mut ChaCha8Rng, map: Map) -> (GenTileGrid, (i32, i32), Vec
 
     // add Start of map, first center and last center
     grid[map_start.0 as usize][map_start.1 as usize].is_start = true;
-    draw_rectangle(&mut grid, TileType::Floor, (5, 5), map_start, true, false);
+    draw_rectangle(
+        &mut grid,
+        TileType::Floor,
+        (5, 5),
+        map_start,
+        true,
+        false,
+        0,
+    );
     grid[center.0 as usize][center.1 as usize].is_boss = true;
-    draw_rectangle(&mut grid, TileType::Floor, (1, 1), center, true, true);
+    draw_rectangle(&mut grid, TileType::Floor, (1, 1), center, true, true, 0);
 
     // resize_grid to it's minimum size
     resize_grid(&mut grid, 4);
@@ -601,6 +614,7 @@ fn remove_small_cluster(
     // after full scan, update tileset
     for tile in tiles_to_fill {
         grid[tile.0][tile.1].tile_type = TileType::Floor;
+        grid[tile.0][tile.1].layer = 0;
         grid[tile.0][tile.1].walkable = true;
     }
 }
@@ -630,6 +644,7 @@ fn generate_walkable_layout(
         start_center,
         true,
         true,
+        0,
     );
 
     let mut center: (i32, i32) = start_center;
@@ -665,6 +680,7 @@ fn generate_walkable_layout(
                 center,
                 true,
                 true,
+                0,
             );
             // Add mob pack at the center of the square
         }
@@ -720,6 +736,7 @@ fn draw_rectangle(
     center: (i32, i32),
     walkable: bool,
     spawnable: bool,
+    layer: i32,
 ) {
     for x in 0..size.0 {
         for y in 0..size.1 {
@@ -728,6 +745,7 @@ fn draw_rectangle(
             tile.tile_type = tiletype;
             tile.walkable = walkable;
             tile.spawnable = spawnable;
+            tile.layer = layer;
         }
     }
 }
@@ -745,6 +763,7 @@ fn init_grid(height: i32, width: i32, oob_tiletype: TileType) -> GenTileGrid {
                 spawnable: false,
                 is_boss: false,
                 is_start: false,
+                layer: 1,
             })
         }
         grid.push(row)

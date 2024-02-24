@@ -11,11 +11,20 @@ pub struct UdpPolygon {
     pub points: ::std::vec::Vec<Point>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StaticAsset {
+    #[prost(enumeration="StaticAssetType", tag="1")]
+    pub r#type: i32,
+    #[prost(enumeration="Orientation", tag="2")]
+    pub orientation: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tile {
     #[prost(enumeration="TileType", tag="1")]
     pub tiletype: i32,
     #[prost(bool, tag="2")]
     pub walkable: bool,
+    #[prost(uint32, tag="3")]
+    pub layer: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TileRow {
@@ -43,6 +52,21 @@ pub enum TileType {
     Water = 1,
     Forest = 2,
     Rock = 3,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum StaticAssetType {
+    Barell = 0,
+    Fence = 1,
+    Tree = 2,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum Orientation {
+    North = 0,
+    East = 1,
+    South = 2,
+    West = 3,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

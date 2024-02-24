@@ -23,6 +23,7 @@ pub struct GenTile {
     pub mob_pack: Option<MobPack>,
     pub is_start: bool,
     pub is_boss: bool,
+    pub layer: i32,
 }
 
 #[derive(Clone)]

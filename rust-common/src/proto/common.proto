@@ -23,7 +23,25 @@ enum TileType {
     FLOOR = 0;
     WATER = 1;
     FOREST = 2;
-    ROCK = 3;
+    ROCK = 3; 
+}
+
+enum StaticAssetType{
+    BARELL = 0;
+    FENCE = 1;
+    TREE = 2;
+}
+
+enum Orientation{
+    NORTH = 0;
+    EAST = 1;
+    SOUTH = 2;
+    WEST = 3;
+}
+
+message StaticAsset {
+    StaticAssetType type = 1;
+    Orientation orientation = 2;
 }
 
 enum UdpSpell {
@@ -35,6 +53,7 @@ enum UdpSpell {
 message Tile {
     TileType tiletype = 1;
     bool walkable = 2;
+    uint32 layer = 3;
 }
 
 message TileRow {
