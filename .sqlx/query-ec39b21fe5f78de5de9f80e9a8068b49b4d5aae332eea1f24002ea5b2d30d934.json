@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO world_instances (uuid, created_by) VALUES ($1, $2);",
+  "query": "INSERT INTO game_worlds (uuid, created_by) VALUES ($1, $2);",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "61fbd3cfa95b3b8c37a38e9c953be9bfe97661c8fad51388d262ba1929a83483"
+  "hash": "ec39b21fe5f78de5de9f80e9a8068b49b4d5aae332eea1f24002ea5b2d30d934"
 }

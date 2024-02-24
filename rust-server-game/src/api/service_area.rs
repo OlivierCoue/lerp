@@ -17,7 +17,7 @@ impl ApiServiceArea {
         let world_instance_uuid = Uuid::new_v4();
 
         if let Err(err) = sqlx::query!(
-            "INSERT INTO world_instances (uuid, created_by) VALUES ($1, $2);",
+            "INSERT INTO game_worlds (uuid, created_by) VALUES ($1, $2);",
             world_instance_uuid,
             user.uuid,
         )
@@ -88,7 +88,7 @@ impl ApiServiceArea {
         let mut pg_tx = app.pg_pool().begin().await.unwrap();
 
         let update_result = sqlx::query!(
-            "UPDATE users SET current_world_instance_uuid = $1 WHERE uuid = $2 AND current_world_instance_uuid IS NULL;",
+            "UPDATE users SET current_game_world_uuid = $1 WHERE uuid = $2 AND current_game_world_uuid IS NULL;",
             world_instance_uuid,
             user.uuid,
         )
@@ -160,7 +160,7 @@ impl ApiServiceArea {
             }
         }
 
-        sqlx::query!(r#"DELETE FROM world_instances WHERE uuid = $1;"#, area_uuid)
+        sqlx::query!(r#"DELETE FROM game_worlds WHERE uuid = $1;"#, area_uuid)
             .execute(app.pg_pool())
             .await
             .unwrap();
@@ -195,7 +195,7 @@ impl ApiServiceArea {
         }
 
         sqlx::query!(
-            "UPDATE users SET current_world_instance_uuid = NULL WHERE uuid = $1;",
+            "UPDATE users SET current_game_world_uuid = NULL WHERE uuid = $1;",
             user.uuid,
         )
         .execute(app.pg_pool())
