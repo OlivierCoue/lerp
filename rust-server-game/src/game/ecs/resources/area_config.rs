@@ -1,6 +1,6 @@
 use crate::game::area_gen::Shape;
 use bevy_ecs::prelude::*;
-use rust_common::proto::{TileGrid, TileType};
+use rust_common::proto::{StaticAsset, TileGrid, TileType};
 
 #[derive(Resource)]
 pub struct AreaConfig {
@@ -9,4 +9,5 @@ pub struct AreaConfig {
     pub oob_polygons: Vec<Shape>,
     pub oob_tile_type: TileType,
     pub tile_grid: TileGrid,
+    pub static_assets: Vec<StaticAsset>,
 }

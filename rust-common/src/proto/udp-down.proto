@@ -61,6 +61,7 @@ message UdpMsgDownAreaInit {
     repeated UdpPolygon oob_polygons = 3;
     TileType oob_tile_type = 4; 
     TileGrid area_grid = 5;
+    repeated StaticAsset static_assets = 6;
 }
 
 

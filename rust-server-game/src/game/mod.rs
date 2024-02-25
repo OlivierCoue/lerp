@@ -74,6 +74,7 @@ impl Game {
             oob_polygons: area_gen.oob_polygons,
             oob_tile_type: area_gen.oob_tile_type,
             tile_grid: area_gen.tile_grid,
+            static_assets: area_gen.static_assets,
         };
         world.insert_resource(PathfinderState::new(&area_config));
 
@@ -193,6 +194,7 @@ impl Game {
                         .collect(),
                     oob_tile_type: area_config.oob_tile_type.into(),
                     area_grid: Some(area_config.tile_grid.clone()),
+                    static_assets: area_config.static_assets.clone(),
                 }),
                 ..Default::default()
             }],

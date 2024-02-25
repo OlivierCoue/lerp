@@ -1,19 +1,25 @@
 // Custom
 use maps::{FloorPattern, GenTile, Map};
+use static_assets::{GenStaticAsset, GenStaticAssetType};
 // RNG
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 // Image creation
 use image::ImageBuffer;
+use rust_common::proto::IntPoint;
+use rust_common::proto::StaticAsset;
 
 use self::maps::MobPack;
 //from proto
+use rust_common::proto::Orientation;
+use rust_common::proto::StaticAssetType;
 use rust_common::proto::Tile;
 use rust_common::proto::TileGrid;
 use rust_common::proto::TileRow;
 use rust_common::proto::TileType;
 
 mod maps;
+mod static_assets;
 
 type GenTileGrid = Vec<Vec<GenTile>>;
 
@@ -28,6 +34,7 @@ pub struct AreaGenerationOutput {
     pub enemies: Vec<Enemy>, // pub ennemies: Vec<enemy>,
     pub oob_tile_type: TileType,
     pub tile_grid: TileGrid,
+    pub static_assets: Vec<StaticAsset>,
 }
 
 pub struct Shape {
@@ -70,7 +77,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     //------------------------------------------------------//
     //               Find oob polygons                      //
     //------------------------------------------------------//
-    let oob_polygons = find_oob_polygons(&mut grid);
+    let mut oob_polygons = find_oob_polygons(&mut grid);
     // render_grid(&grid, map_name.clone(), false);
 
     if env!("TARGET_ENV") == "local" {
@@ -80,6 +87,51 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     //------------------------------------------------------//
     //               Add static assets                      //
     //------------------------------------------------------//
+    let barel: GenStaticAssetType = GenStaticAssetType {
+        asset_type: StaticAssetType::Barell,
+        shape: vec![
+            (0.0, 0.0),
+            (30.0, 0.0),
+            (30.0, 30.0),
+            (0.0, 30.0),
+            (0.0, 0.0),
+        ],
+        orientation: Orientation::East,
+    };
+    let some_barel = GenStaticAsset {
+        asset_type: barel,
+        coordinate: (
+            ((player_spawn_position.0 + (TILE_SIZE / 2)) / TILE_SIZE),
+            ((player_spawn_position.1 + (TILE_SIZE / 2)) / TILE_SIZE),
+        ),
+        layer: 1,
+    };
+
+    // oob_polygons.push(create_static_asset_shape(some_barel.clone()));
+    let mut static_assets = Vec::new();
+    // static_assets.push(some_barel);
+
+    let tree: GenStaticAssetType = GenStaticAssetType {
+        asset_type: StaticAssetType::Tree,
+        shape: vec![
+            (0.0, 0.0),
+            (60.0, 0.0),
+            (60.0, 60.0),
+            (0.0, 60.0),
+            (0.0, 0.0),
+        ],
+        orientation: Orientation::East,
+    };
+    let some_tree = GenStaticAsset {
+        asset_type: tree,
+        coordinate: (
+            ((player_spawn_position.0 + (TILE_SIZE / 2)) / TILE_SIZE),
+            ((player_spawn_position.1 + (TILE_SIZE / 2)) / TILE_SIZE),
+        ),
+        layer: 1,
+    };
+    oob_polygons.push(create_static_asset_shape(some_tree.clone()));
+    static_assets.push(some_tree);
 
     //------------------------------------------------------//
     //               Generate mobs                          //
@@ -97,7 +149,9 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         enemies.len(),
     );
 
-    // Convert tile grid for transport
+    //------------------------------------------------------//
+    //               Prepare for transport                  //
+    //------------------------------------------------------//
 
     let mut tranport_grid: TileGrid = TileGrid { grid: Vec::new() };
 
@@ -113,6 +167,23 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         tranport_grid.grid.push(tile_row);
     }
 
+    let mut tranport_static_assets: Vec<StaticAsset> = Vec::new();
+    for asset in static_assets {
+        let transport_asset = StaticAsset {
+            r#type: asset.asset_type.asset_type.into(),
+            coordinate: Some(IntPoint {
+                x: asset.coordinate.0,
+                y: asset.coordinate.1,
+            }),
+            layer: asset.layer,
+            orientation: asset.asset_type.orientation.into(),
+        };
+        let Some(coord) = &transport_asset.coordinate else {
+            panic!("crash");
+        };
+        tranport_static_assets.push(transport_asset);
+    }
+
     AreaGenerationOutput {
         width: grid.len() as u32,
         height: grid[0].len() as u32,
@@ -121,7 +192,25 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         enemies,
         oob_tile_type,
         tile_grid: tranport_grid,
+        static_assets: tranport_static_assets,
     }
+}
+
+fn create_static_asset_shape(asset: GenStaticAsset) -> Shape {
+    let mut shape = Shape {
+        points: Vec::new(),
+        inner_if_true: true,
+    };
+    for point in asset.asset_type.shape.iter() {
+        shape.points.push((
+            point.0 + (asset.coordinate.0 * TILE_SIZE) as f32,
+            point.1 + (asset.coordinate.1 * TILE_SIZE) as f32,
+        ))
+    }
+    for point in shape.points.iter() {
+        println!("{} {}", point.0, point.1)
+    }
+    shape
 }
 
 fn generate_mobs(packs: &Vec<MobPack>, rng: &mut ChaCha8Rng) -> Vec<Enemy> {

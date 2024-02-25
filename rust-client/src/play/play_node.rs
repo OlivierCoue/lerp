@@ -9,7 +9,7 @@ use rust_common::proto::*;
 use crate::{
     network::prelude::*,
     root::{Root, Scenes, DEBUG, PATH_NETWORK, PATH_ROOT},
-    utils::{iso_to_cart, tile_type_to_atlas_coord},
+    utils::{iso_to_cart, static_asset_type_to_atlas_coord, tile_type_to_atlas_coord},
 };
 
 use super::{entity::GameEntity, play_node_debug::PlayNodeDebug, prelude::GameServerEntity};
@@ -250,6 +250,7 @@ impl PlayNode {
             panic!("No tilemap received :(")
         };
 
+        // Create map from tile grid
         for (x, tiles) in tile_grid.grid.iter().enumerate() {
             for (y, tile) in tiles.tiles.iter().enumerate() {
                 let cell =
@@ -260,6 +261,19 @@ impl PlayNode {
                 .source_id(0)
                 .done();
             }
+        }
+        // Add static assets to the tile map
+        for asset in area_init.static_assets.iter() {
+            let Some(asset_coord) = &asset.coordinate else {
+                panic!("No asset coordinate:(")
+            };
+            let cell =
+                tile_map.set_cell_ex(asset.layer, Vector2i::new(asset_coord.x, asset_coord.y));
+            cell.atlas_coords(static_asset_type_to_atlas_coord(
+                &StaticAssetType::try_from(asset.r#type).unwrap(),
+            ))
+            .source_id(0)
+            .done();
         }
 
         self.base_mut().add_child(tile_map.upcast());

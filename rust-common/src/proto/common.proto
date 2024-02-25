@@ -39,9 +39,16 @@ enum Orientation{
     WEST = 3;
 }
 
+message IntPoint {
+    int32 x = 1;
+    int32 y = 2;
+}
+
 message StaticAsset {
     StaticAssetType type = 1;
     Orientation orientation = 2;
+    IntPoint coordinate = 3;
+    int32 layer = 4;
 }
 
 enum UdpSpell {

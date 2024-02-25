@@ -147,5 +147,6 @@ pub fn define_floor_patterns() -> Vec<Map> {
             density: 0.01,
         },
     ];
+
     maps
 }

@@ -11,11 +11,22 @@ pub struct UdpPolygon {
     pub points: ::std::vec::Vec<Point>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IntPoint {
+    #[prost(int32, tag="1")]
+    pub x: i32,
+    #[prost(int32, tag="2")]
+    pub y: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StaticAsset {
     #[prost(enumeration="StaticAssetType", tag="1")]
     pub r#type: i32,
     #[prost(enumeration="Orientation", tag="2")]
     pub orientation: i32,
+    #[prost(message, optional, tag="3")]
+    pub coordinate: ::std::option::Option<IntPoint>,
+    #[prost(int32, tag="4")]
+    pub layer: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tile {
@@ -143,6 +154,8 @@ pub struct UdpMsgDownAreaInit {
     pub oob_tile_type: i32,
     #[prost(message, optional, tag="5")]
     pub area_grid: ::std::option::Option<TileGrid>,
+    #[prost(message, repeated, tag="6")]
+    pub static_assets: ::std::vec::Vec<StaticAsset>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UdpMsgDown {
