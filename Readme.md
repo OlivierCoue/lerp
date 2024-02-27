@@ -38,6 +38,7 @@ Start rust-server-game:
 
 ```
 cargo run -p rust-server-game
+./rust-server-game/build-debug.sh
 ```
 
 Build rust-client for windows (first, set the LERP_GODOT_LOCATION variable in your .env)
@@ -63,3 +64,21 @@ Try once `./rust-client/build-debug.sh`
 
 Then change in the `win32.c`, add include `ws2tcpip.h`
 
+## K8S Setup
+
+```
+kubectl create namespace lerp
+kubectl create namespace ingress-nginx
+kubectl create configmap nginx-custom --from-file=nginx-tmpl=nginx.tmpl --namespace ingress-nginx
+
+helm upgrade -f ./ingress-nginx-values.yaml --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx
+```
+
+## K8S Remove all
+
+```
+helm uninstall ingress-nginx --namespace ingress-nginx
+kubectl delete configmaps nginx-custom --namespace ingress-nginx
+```

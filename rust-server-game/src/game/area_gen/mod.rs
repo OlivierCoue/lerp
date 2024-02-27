@@ -74,7 +74,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // render_grid(&grid, map_name.clone(), false);
 
     if env!("TARGET_ENV") == "local" {
-        render_grid(&grid, map_name.clone() + "_outline", true);
+        // render_grid(&grid, map_name.clone() + "_outline", true);
     }
 
     //------------------------------------------------------//

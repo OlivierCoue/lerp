@@ -62,10 +62,12 @@ fn enet_receive(
 
     println!("[ENet] initialized.");
 
+    // let address_str = std::env::var("S_RUST_SERVER_GAME_SERVICE_HOST").unwrap();
     let address_str = local_ip().unwrap().to_string();
     // let address_str = "0.0.0.0".to_string();
     println!("[ENet] Address: {}", address_str);
     let port = std::env::var(ENV_UDP_PORT).unwrap().parse::<u16>().unwrap();
+    println!("[ENet] Port: {}", port);
 
     let address: MaybeUninit<ENetAddress> = MaybeUninit::uninit();
     let mut address = unsafe { address.assume_init() };
@@ -131,6 +133,7 @@ fn enet_receive(
                         .unwrap();
                 }
                 _ENetEventType_ENET_EVENT_TYPE_RECEIVE => {
+                    println!("[ENet] _ENetEventType_ENET_EVENT_TYPE_RECEIVE");
                     let recv_packet_raw: &[u8] = unsafe {
                         std::slice::from_raw_parts(
                             (*event.0.packet).data,

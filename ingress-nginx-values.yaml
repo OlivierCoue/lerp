@@ -1,0 +1,6 @@
+udp: 
+  34254: "lerp/s-rust-server-game:34254"
+controller:
+  customTemplate:
+    configMapName: "nginx-custom"
+    configMapKey: "nginx-tmpl"

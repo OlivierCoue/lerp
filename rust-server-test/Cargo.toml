@@ -5,11 +5,14 @@ edition = "2021"
 
 [dependencies]
 aes-gcm-siv = "0.11.1"
-enet-sys = "1.0.4"
 dotenvy = "0.15.7"
+enet-sys = "1.0.4"
 hex = "0.4.3"
+k8s-openapi = { version = "0.21.0", features = ["latest"] }
+kube = "0.88.1"
 prost = "0.12"
 reqwest = { version = "0.11.24", features = ["blocking"] }
 rust-common = { path = "../rust-common" }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.7.0", features = ["v4"] }
+serde_json = "1.0.114"
