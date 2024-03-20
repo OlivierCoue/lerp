@@ -5,3 +5,5 @@
 /output
 .devcontainer/local
 .devcontainer/volume
+
+rust-server-game/image/rust-server-game

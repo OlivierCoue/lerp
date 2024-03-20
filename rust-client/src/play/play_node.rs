@@ -5,10 +5,11 @@ use godot::{
     prelude::*,
 };
 use rust_common::proto::*;
+use tokio::sync::oneshot;
 
 use crate::{
-    network::prelude::*,
-    root::{Root, Scenes, DEBUG, PATH_NETWORK, PATH_ROOT},
+    root::{Root, Scenes, DEBUG, PATH_ROOT},
+    udp::prelude::*,
     utils::{iso_to_cart, tile_type_to_atlas_coord},
 };
 
@@ -22,7 +23,7 @@ pub struct PlayNode {
     base: Base<Node2D>,
 
     root: OnReady<Gd<Root>>,
-    network: OnReady<Gd<NetworkManager>>,
+    udp_state: UdpState,
     entities: HashMap<u32, Gd<GameEntity>>,
     server_entities: HashMap<u32, Gd<GameServerEntity>>,
     time_since_last_input_sent: f64,
@@ -34,8 +35,6 @@ pub struct PlayNode {
 impl INode2D for PlayNode {
     fn ready(&mut self) {
         self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
-        self.network
-            .init(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
         self.base_mut().set_y_sort_enabled(true);
 
         if DEBUG {
@@ -46,7 +45,7 @@ impl INode2D for PlayNode {
         self.animated_sprite_2d_scene
             .init(load::<PackedScene>("res://animated_sprite_2d/warrior.tscn"));
 
-        self.network.bind().send_udp(MsgUpWrapper {
+        self.udp_state.send_udp(MsgUpWrapper {
             messages: vec![MsgUp {
                 r#type: MsgUpType::UserJoinWoldInstance.into(),
                 user_join_world_instance: Some(MsgUpUserJoinWorldInstance {
@@ -58,7 +57,7 @@ impl INode2D for PlayNode {
     }
 
     fn process(&mut self, delta: f64) {
-        let rx_udp_receiver = self.network.bind().rx_udp_receiver.clone();
+        let rx_udp_receiver = self.udp_state.rx_udp_receiver.clone();
         while let Ok(udp_msg_down_wrapper) = &rx_udp_receiver.try_recv() {
             for udp_msg_down in &udp_msg_down_wrapper.messages {
                 match UdpMsgDownType::try_from(udp_msg_down.r#type) {
@@ -78,6 +77,7 @@ impl INode2D for PlayNode {
                         }
                     }
                     Ok(UdpMsgDownType::UserLeaveWorldInstanceSuccess) => {
+                        self.udp_state.stop_client();
                         self.root.bind_mut().change_scene(Scenes::Lobby);
                     }
                     _ => {}
@@ -135,9 +135,7 @@ impl INode2D for PlayNode {
             }
 
             if !actions.is_empty() {
-                self.network
-                    .bind()
-                    .send_udp(MsgUpWrapper { messages: actions })
+                self.udp_state.send_udp(MsgUpWrapper { messages: actions })
             }
         }
     }
@@ -149,7 +147,7 @@ impl INode2D for PlayNode {
             self.base_mut()
                 .emit_signal("player_move_start".into(), &[mouse_position.to_variant()]);
 
-            self.network.bind().send_udp(MsgUpWrapper {
+            self.udp_state.send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     r#type: MsgUpType::PlayerMove.into(),
                     player_move: Some(Point {
@@ -165,7 +163,7 @@ impl INode2D for PlayNode {
             self.base_mut()
                 .emit_signal("player_throw_fireball_start".into(), &[]);
 
-            self.network.bind().send_udp(MsgUpWrapper {
+            self.udp_state.send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     r#type: MsgUpType::PlayerThrowFrozenOrb.into(),
                     player_throw_frozen_orb: Some(Point {
@@ -179,7 +177,7 @@ impl INode2D for PlayNode {
             godot_print!("Key R pressed");
             let mouse_position = iso_to_cart(&self.base().get_global_mouse_position());
 
-            self.network.bind().send_udp(MsgUpWrapper {
+            self.udp_state.send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     r#type: MsgUpType::PlayerTeleport.into(),
                     player_teleport: Some(Point {
@@ -192,14 +190,14 @@ impl INode2D for PlayNode {
         } else if event.is_action_pressed("key_n".into()) {
             godot_print!("Key N pressed");
 
-            self.network.bind().send_udp(MsgUpWrapper {
+            self.udp_state.send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     r#type: MsgUpType::SettingsToggleEnemies.into(),
                     ..Default::default()
                 }],
             })
         } else if event.is_action_pressed("key_escape".into()) {
-            self.network.bind().send_udp(MsgUpWrapper {
+            self.udp_state.send_udp(MsgUpWrapper {
                 messages: vec![MsgUp {
                     r#type: MsgUpType::UserLeaveWorldInstance.into(),
                     ..Default::default()
@@ -223,11 +221,11 @@ impl PlayNode {
 }
 
 impl PlayNode {
-    pub fn init(base: Base<Node2D>, world_instance_id: String) -> Self {
+    pub fn init(base: Base<Node2D>, world_instance_id: String, udp_state: UdpState) -> Self {
         Self {
             base,
             root: OnReady::manual(),
-            network: OnReady::manual(),
+            udp_state,
             entities: HashMap::new(),
             server_entities: HashMap::new(),
             time_since_last_input_sent: 0.0,

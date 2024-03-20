@@ -5,7 +5,7 @@
 
 ### Requirement (windows)
 
-Docker Desktop: https://docs.docker.com/desktop/install/windows-install/.
+Docker Desktop (with Kubernetes enabled): https://docs.docker.com/desktop/install/windows-install/.
 
 WSL: https://learn.microsoft.com/en-us/windows/wsl/install
 
@@ -69,9 +69,9 @@ Then change in the `win32.c`, add include `ws2tcpip.h`
 ```
 kubectl create namespace lerp
 kubectl create namespace ingress-nginx
-kubectl create configmap nginx-custom --from-file=nginx-tmpl=nginx.tmpl --namespace ingress-nginx
+kubectl create configmap nginx-custom --from-file=./k8s/nginx-tmpl=nginx.tmpl --namespace ingress-nginx
 
-helm upgrade -f ./ingress-nginx-values.yaml --install ingress-nginx ingress-nginx \
+helm upgrade -f ./k8s/ingress-nginx-values.yaml --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \
   --namespace ingress-nginx
 ```

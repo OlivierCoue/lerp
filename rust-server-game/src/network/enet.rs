@@ -133,7 +133,6 @@ fn enet_receive(
                         .unwrap();
                 }
                 _ENetEventType_ENET_EVENT_TYPE_RECEIVE => {
-                    println!("[ENet] _ENetEventType_ENET_EVENT_TYPE_RECEIVE");
                     let recv_packet_raw: &[u8] = unsafe {
                         std::slice::from_raw_parts(
                             (*event.0.packet).data,

@@ -124,7 +124,7 @@ impl ISprite2D for GameEntity {
 
     fn process(&mut self, delta: f64) {
         // Remove first element of position_target_queue if current position is aprox equal to it
-        if let Some(position_target) = self.position_target_queue.get(0) {
+        if let Some(position_target) = self.position_target_queue.front() {
             let vd = *position_target - iso_to_cart(&self.base().get_position());
             let len = vd.length();
             if len <= self.speed * delta as f32 || len < real::CMP_EPSILON {
@@ -135,7 +135,7 @@ impl ISprite2D for GameEntity {
 
         let mut is_moving = false;
         // Move to target if some exist
-        if let Some(position_target) = self.position_target_queue.get(0) {
+        if let Some(position_target) = self.position_target_queue.front() {
             is_moving = *position_target != iso_to_cart(&self.base().get_position());
 
             if is_moving {

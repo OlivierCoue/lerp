@@ -11,8 +11,7 @@ use godot::{
 
 use crate::{
     global_state::GlobalState,
-    network::prelude::*,
-    root::{Root, Scenes, PATH_AUTH, PATH_NETWORK, PATH_ROOT},
+    root::{Root, Scenes, PATH_AUTH, PATH_ROOT},
 };
 
 use super::auth_state::{AuthNodeEvent, AuthState, AuthStateEvent, AuthStateManager};
@@ -25,7 +24,6 @@ pub struct AuthNode {
     rx_state_events: Rc<crossbeam_channel::Receiver<AuthStateEvent>>,
     tx_node_events: crossbeam_channel::Sender<AuthNodeEvent>,
     root: OnReady<Gd<Root>>,
-    network: OnReady<Gd<NetworkManager>>,
 
     line_edit_login_username: OnReady<Gd<LineEdit>>,
     label_login_error: OnReady<Gd<Label>>,
@@ -40,8 +38,6 @@ pub struct AuthNode {
 impl INode2D for AuthNode {
     fn ready(&mut self) {
         self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
-        self.network
-            .init(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
 
         let auth_ui_scene = load::<PackedScene>("res://auth_ui.tscn");
         let auth_ui = auth_ui_scene.instantiate_as::<Node>();
@@ -147,7 +143,6 @@ impl AuthNode {
             rx_state_events: Rc::new(rx_state_events),
             tx_node_events,
             root: OnReady::manual(),
-            network: OnReady::manual(),
 
             label_login_error: OnReady::manual(),
             line_edit_login_username: OnReady::manual(),

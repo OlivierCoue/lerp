@@ -72,7 +72,7 @@ async fn main() -> Result<(), String> {
                 "name": "udp"
               }],
               "env": [
-                { "name": "DATABASE_URL", "value": "postgresql://admin:password@172.20.144.1:5432/lerp-local" },
+                { "name": "DATABASE_URL", "value": "postgresql://admin:password@192.168.1.27:5432/lerp-local" },
                 { "name": "UDP_PORT", "value": "34254" },
                ]
             }],

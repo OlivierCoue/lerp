@@ -1,4 +1,4 @@
-use std::thread;
+use std::thread::{self};
 
 use godot::{obj::WithBaseField, prelude::*};
 
@@ -6,16 +6,13 @@ use crate::{
     auth::auth_node::AuthNode,
     global_state::{GlobalState, GlobalStateManager},
     lobby::lobby_node::LobbyNode,
-    network::prelude::*,
     play::prelude::PlayNode,
+    udp::prelude::*,
 };
 
 pub const DEBUG: bool = false;
 
 pub const PATH_ROOT: &str = "/root/Root";
-
-pub const NODE_NETWORK: &str = "NetworkManager";
-pub const PATH_NETWORK: &str = "/root/Root/NetworkManager";
 
 pub const NODE_PLAY: &str = "Play";
 pub const PATH_PLAY: &str = "/root/Root/Play";
@@ -40,7 +37,7 @@ pub struct Root {
     base: Base<Node2D>,
     current_scene: Scenes,
     global_state: GlobalState,
-    network: OnReady<Gd<NetworkManager>>,
+    udp_state: UdpState,
 }
 
 #[godot_api]
@@ -68,21 +65,24 @@ impl INode2D for Root {
                 });
         });
 
+        let (tx_udp_state_in_events, rx_udp_state_in_events) = crossbeam_channel::unbounded();
+
+        let (mut udp_state_manager, udp_state) =
+            UdpStateManager::new_with_state(tx_udp_state_in_events);
+
+        thread::spawn(move || {
+            udp_state_manager.start(rx_udp_state_in_events);
+        });
+
         Self {
             base,
             current_scene: Scenes::Auth,
             global_state,
-            network: OnReady::manual(),
+            udp_state,
         }
     }
 
     fn ready(&mut self) {
-        let mut network: Gd<NetworkManager> =
-            Gd::<NetworkManager>::from_init_fn(NetworkManager::init);
-        network.set_name(NODE_NETWORK.into());
-        self.network.init(network.clone());
-        self.base_mut().add_child(network.upcast());
-
         let mut auth_node: Gd<AuthNode> =
             Gd::<AuthNode>::from_init_fn(|base| AuthNode::init(base, self.global_state.clone()));
         auth_node.set_name(NODE_AUTH.into());
@@ -117,20 +117,14 @@ impl Root {
             }
             Scenes::Lobby => {
                 let mut lobby_node: Gd<LobbyNode> = Gd::<LobbyNode>::from_init_fn(|base| {
-                    LobbyNode::init(
-                        base,
-                        self.global_state.clone(),
-                        self.network.bind().rx_udp_receiver.clone(),
-                        self.network.bind().tx_udp_sender.clone(),
-                        self.network.bind().tx_udp_handshake_sender.clone(),
-                    )
+                    LobbyNode::init(base, self.global_state.clone(), self.udp_state.clone())
                 });
                 lobby_node.set_name(NODE_LOBBY.into());
                 self.base_mut().add_child(lobby_node.upcast());
             }
             Scenes::Play(world_instance_id) => {
                 let mut play_node: Gd<PlayNode> = Gd::<PlayNode>::from_init_fn(|base| {
-                    PlayNode::init(base, world_instance_id.clone())
+                    PlayNode::init(base, world_instance_id.clone(), self.udp_state.clone())
                 });
                 play_node.set_name(NODE_PLAY.into());
                 self.base_mut().add_child(play_node.upcast());

@@ -11,8 +11,8 @@ use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
 
 use crate::{
     global_state::GlobalState,
-    network::prelude::*,
-    root::{Root, Scenes, PATH_LOBBY, PATH_NETWORK, PATH_ROOT},
+    root::{Root, Scenes, PATH_LOBBY, PATH_ROOT},
+    udp::prelude::UdpState,
 };
 
 use super::lobby_state::{LobbyNodeEvent, LobbyState, LobbyStateEvent, LobbyStateManager};
@@ -26,7 +26,6 @@ pub struct LobbyNode {
     rx_state_events: crossbeam_channel::Receiver<LobbyStateEvent>,
     tx_node_events: crossbeam_channel::Sender<LobbyNodeEvent>,
     root: OnReady<Gd<Root>>,
-    network: OnReady<Gd<NetworkManager>>,
     label_username: OnReady<Gd<Label>>,
     button_create_game: OnReady<Gd<Button>>,
     button_logout: OnReady<Gd<Button>>,
@@ -37,8 +36,6 @@ pub struct LobbyNode {
 impl INode2D for LobbyNode {
     fn ready(&mut self) {
         self.root.init(self.base().get_node_as::<Root>(PATH_ROOT));
-        self.network
-            .init(self.base().get_node_as::<NetworkManager>(PATH_NETWORK));
 
         let lobby_ui_scene = load::<PackedScene>("res://lobby_ui.tscn");
         let lobby_ui = lobby_ui_scene.instantiate_as::<Node>();
@@ -95,13 +92,7 @@ impl INode2D for LobbyNode {
 }
 
 impl LobbyNode {
-    pub fn init(
-        base: Base<Node2D>,
-        global_state: GlobalState,
-        rx_udp_receiver: crossbeam_channel::Receiver<UdpMsgDownWrapper>,
-        tx_udp_sender: crossbeam_channel::Sender<MsgUpWrapper>,
-        tx_udp_handshake_sender: crossbeam_channel::Sender<MsgUpHandshake>,
-    ) -> Self {
+    pub fn init(base: Base<Node2D>, global_state: GlobalState, udp_state: UdpState) -> Self {
         let state = Arc::new(Mutex::new(LobbyState { is_loading: false }));
 
         let (tx_state_events, rx_state_events) = crossbeam_channel::unbounded();
@@ -109,10 +100,9 @@ impl LobbyNode {
 
         let mut state_manager = LobbyStateManager::new(
             global_state.clone(),
+            udp_state,
             state.clone(),
             tx_state_events,
-            tx_udp_sender,
-            tx_udp_handshake_sender,
         );
 
         thread::spawn(move || {
@@ -122,7 +112,7 @@ impl LobbyNode {
                 .build()
                 .unwrap()
                 .block_on(async {
-                    state_manager.start(rx_node_events, rx_udp_receiver).await;
+                    state_manager.start(rx_node_events).await;
                 });
         });
 
@@ -133,7 +123,6 @@ impl LobbyNode {
             rx_state_events,
             tx_node_events,
             root: OnReady::manual(),
-            network: OnReady::manual(),
             label_username: OnReady::manual(),
             button_create_game: OnReady::manual(),
             button_logout: OnReady::manual(),

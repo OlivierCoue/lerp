@@ -2,11 +2,11 @@ use aes_gcm_siv::{aead::Aead, Aes256GcmSiv, KeyInit, Nonce};
 use crossbeam_channel::select;
 use rust_common::{
     api_auth::AuthApi,
-    proto::{MsgUp, MsgUpHandshake, MsgUpType, MsgUpWrapper, UdpMsgDownType, UdpMsgDownWrapper},
+    proto::{MsgUp, MsgUpHandshake, MsgUpType, MsgUpWrapper, UdpMsgDownType},
 };
 use std::sync::{Arc, Mutex};
 
-use crate::global_state::GlobalState;
+use crate::{global_state::GlobalState, udp::prelude::UdpState};
 
 pub enum LobbyNodeEvent {
     ButtonLogoutPressed,
@@ -27,35 +27,29 @@ pub struct LobbyState {
 
 pub struct LobbyStateManager {
     global_state: GlobalState,
+    udp_state: UdpState,
     state: Arc<Mutex<LobbyState>>,
     tx_state_events: crossbeam_channel::Sender<LobbyStateEvent>,
-    tx_udp_sender: crossbeam_channel::Sender<MsgUpWrapper>,
-    tx_udp_handshake_sender: crossbeam_channel::Sender<MsgUpHandshake>,
     http_client: reqwest::Client,
 }
 impl LobbyStateManager {
     pub fn new(
         global_state: GlobalState,
+        udp_state: UdpState,
         state: Arc<Mutex<LobbyState>>,
         tx_state_events: crossbeam_channel::Sender<LobbyStateEvent>,
-        tx_udp_sender: crossbeam_channel::Sender<MsgUpWrapper>,
-        tx_udp_handshake_sender: crossbeam_channel::Sender<MsgUpHandshake>,
     ) -> Self {
         Self {
             global_state,
             state,
+            udp_state,
             tx_state_events,
-            tx_udp_sender,
-            tx_udp_handshake_sender,
             http_client: reqwest::Client::new(),
         }
     }
 
-    pub async fn start(
-        &mut self,
-        rx_node_events: crossbeam_channel::Receiver<LobbyNodeEvent>,
-        rx_udp_receiver: crossbeam_channel::Receiver<UdpMsgDownWrapper>,
-    ) {
+    pub async fn start(&mut self, rx_node_events: crossbeam_channel::Receiver<LobbyNodeEvent>) {
+        let rx_udp_receiver = self.udp_state.rx_udp_receiver.clone();
         'outer: loop {
             select! {
                 recv(rx_node_events) -> node_event => match node_event {
@@ -109,12 +103,14 @@ impl LobbyStateManager {
             return;
         };
 
-        let is_connected_to_game_server = self.global_state.get_is_connected_to_game_server();
+        // let is_connected_to_game_server = self.global_state.get_is_connected_to_game_server();
 
-        if is_connected_to_game_server {
-            self.create_world_instance();
-            return;
-        }
+        // if is_connected_to_game_server {
+        //     self.create_world_instance();
+        //     return;
+        // }
+
+        self.udp_state.start_client_async().await;
 
         let vec_u8_aes_key = hex::decode(user.game_server_aes_key).unwrap();
         let cipher = Aes256GcmSiv::new_from_slice(&vec_u8_aes_key[..]).unwrap();
@@ -131,12 +127,10 @@ impl LobbyStateManager {
                 }
             };
 
-        self.tx_udp_handshake_sender
-            .send(MsgUpHandshake {
-                user_uuid: user.uuid,
-                signed_message: hex::encode(signed_message),
-            })
-            .unwrap()
+        self.udp_state.send_udp_handshake(MsgUpHandshake {
+            user_uuid: user.uuid,
+            signed_message: hex::encode(signed_message),
+        })
     }
 
     async fn on_game_server_connect_success(&mut self) {
@@ -158,14 +152,12 @@ impl LobbyStateManager {
         }
 
         if self.global_state.get_is_connected_to_game_server() {
-            self.tx_udp_sender
-                .send(MsgUpWrapper {
-                    messages: vec![MsgUp {
-                        r#type: MsgUpType::UserDisconnect.into(),
-                        ..Default::default()
-                    }],
-                })
-                .unwrap();
+            self.udp_state.send_udp(MsgUpWrapper {
+                messages: vec![MsgUp {
+                    r#type: MsgUpType::UserDisconnect.into(),
+                    ..Default::default()
+                }],
+            });
             self.global_state
                 .set_is_connected_to_game_server(false)
                 .await;
@@ -200,13 +192,11 @@ impl LobbyStateManager {
     }
 
     fn create_world_instance(&mut self) {
-        self.tx_udp_sender
-            .send(MsgUpWrapper {
-                messages: vec![MsgUp {
-                    r#type: MsgUpType::UserCreateWorldInstance.into(),
-                    ..Default::default()
-                }],
-            })
-            .unwrap()
+        self.udp_state.send_udp(MsgUpWrapper {
+            messages: vec![MsgUp {
+                r#type: MsgUpType::UserCreateWorldInstance.into(),
+                ..Default::default()
+            }],
+        });
     }
 }
