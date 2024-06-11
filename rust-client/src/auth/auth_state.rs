@@ -118,8 +118,6 @@ impl AuthStateManager {
                 uuid: login_response.uuid,
                 username: login_response.username,
                 auth_token: login_response.auth_token,
-                game_server_aes_key: login_response.game_server_aes_key,
-                game_server_aes_nonce: login_response.game_server_aes_nonce,
                 game_server_handshake_challenge: login_response.game_server_handshake_challenge,
             }))
             .await;

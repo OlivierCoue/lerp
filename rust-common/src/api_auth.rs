@@ -1,21 +1,20 @@
-use crate::proto::{
-    HttpError, HttpLoginInput, HttpLoginResponse, HttpLogoutResponse, HttpRegisterInput,
-    HttpRegisterResponse, HttpUserGetCurrentResponse,
+use crate::{
+    api_common::{send_request, FAKE_PING, HEADER_AUTH_TOKEN_KEY},
+    proto::{
+        HttpError, HttpLoginInput, HttpLoginResponse, HttpLogoutResponse, HttpRegisterInput,
+        HttpRegisterResponse, HttpUserGetCurrentResponse,
+    },
 };
 use prost::Message;
-use reqwest::RequestBuilder;
-use tokio::time::{sleep, Duration};
+use tokio::time::sleep;
 
 fn get_server_auth_url() -> String {
     match env!("TARGET_ENV") {
-        "local" => "http://127.0.0.1:3000/lambda-url/rust-server-auth".to_string(),
+        "local" => "http://127.0.0.1:3000/lambda-url/rust-lambda-auth".to_string(),
         "dev" => "https://gnmtmvv2qe6mk6fx3vjzmxs3e40aknel.lambda-url.eu-west-3.on.aws".to_string(),
         _ => panic!("Invalid TARGET_ENV value"),
     }
 }
-
-pub const HEADER_AUTH_TOKEN_KEY: &str = "auth-token";
-pub const FAKE_PING: Duration = Duration::from_millis(0);
 
 pub enum ServerAuthRoute {
     Register,
@@ -103,24 +102,4 @@ impl AuthApi {
         )
         .await
     }
-}
-
-async fn send_request<T>(request_builder: RequestBuilder) -> Result<T, HttpError>
-where
-    T: prost::Message + Default,
-{
-    let response = match request_builder.send().await {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(HttpError {
-                message: err.to_string(),
-            })
-        }
-    };
-
-    if response.status().is_success() {
-        return Ok(T::decode(response.bytes().await.unwrap()).unwrap());
-    }
-
-    Err(HttpError::decode(response.bytes().await.unwrap()).unwrap())
 }

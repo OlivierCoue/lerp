@@ -27,18 +27,22 @@ Build:
 cargo build
 ```
 
-Start rust-server-auth:
+Start lambdas (rust-server-auth & rust-server-scaler):
 
 ```
 cargo lambda watch -a 0.0.0.0 -p 3000 --ignore-changes
-// http://127.0.0.1:3000/lambda-url/rust-server-auth
 ```
 
 Start rust-server-game:
 
 ```
-cargo run -p rust-server-game
 ./rust-server-game/build-debug.sh
+```
+
+Invoke rust-server-scaler:
+
+```
+cargo lambda invoke rust-lambda-scaler -a 0.0.0.0 -p 3000 --data-example eventbridge-schedule
 ```
 
 Build rust-client for windows (first, set the LERP_GODOT_LOCATION variable in your .env)
@@ -69,7 +73,7 @@ Then change in the `win32.c`, add include `ws2tcpip.h`
 ```
 kubectl create namespace lerp
 kubectl create namespace ingress-nginx
-kubectl create configmap nginx-custom --from-file=./k8s/nginx-tmpl=nginx.tmpl --namespace ingress-nginx
+kubectl create configmap nginx-custom --from-file=./k8s/nginx-tmpl --namespace ingress-nginx
 
 helm upgrade -f ./k8s/ingress-nginx-values.yaml --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \

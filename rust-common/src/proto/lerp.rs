@@ -240,10 +240,6 @@ pub struct HttpLoginResponse {
     #[prost(string, tag="3")]
     pub auth_token: std::string::String,
     #[prost(string, tag="4")]
-    pub game_server_aes_key: std::string::String,
-    #[prost(string, tag="5")]
-    pub game_server_aes_nonce: std::string::String,
-    #[prost(string, tag="6")]
     pub game_server_handshake_challenge: std::string::String,
 }
 ////// Logout
@@ -259,4 +255,16 @@ pub struct HttpUserGetCurrentResponse {
     pub uuid: std::string::String,
     #[prost(string, tag="2")]
     pub username: std::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HttpGetGameServerInput {
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HttpGetGameServerResponse {
+    #[prost(int32, tag="1")]
+    pub udp_port: i32,
+    #[prost(string, tag="2")]
+    pub aes_key: std::string::String,
+    #[prost(string, tag="3")]
+    pub aes_nonce: std::string::String,
 }

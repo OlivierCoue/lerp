@@ -19,8 +19,6 @@ unsafe impl Send for ENetPeerPtrWrapper {}
 
 const ADDRESS: &str = env!("SERVER_GAME_IP");
 
-const PORT: u16 = 34254;
-
 #[allow(clippy::too_many_arguments)]
 pub fn udp_client_start(
     tx_receiver_ready: oneshot::Sender<()>,
@@ -33,6 +31,8 @@ pub fn udp_client_start(
     rx_udp_sender: crossbeam_channel::Receiver<MsgUpWrapper>,
     rx_udp_handshake_sender: crossbeam_channel::Receiver<MsgUpHandshake>,
     tx_udp_receiver: crossbeam_channel::Sender<UdpMsgDownWrapper>,
+
+    server_port: u16,
 ) {
     let peers: Arc<Mutex<Option<ENetPeerPtrWrapper>>> = Arc::new(Mutex::new(None));
     let peers_for_manage = Arc::clone(&peers);
@@ -48,7 +48,7 @@ pub fn udp_client_start(
 
         let address: MaybeUninit<ENetAddress> = MaybeUninit::uninit();
         let mut address = unsafe { address.assume_init() };
-        address.port = PORT;
+        address.port = server_port;
 
         let address_hostname = CString::new(ADDRESS).unwrap();
 

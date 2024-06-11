@@ -59,6 +59,7 @@ async fn main() -> Result<(), String> {
           "namespace": "lerp",
           "name": "p-rust-server-game",
           "labels": { 
+            "app": "game-server",
             "game-server-name": "1"
           }
         },

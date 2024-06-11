@@ -1,0 +1,22 @@
+apiVersion: v1
+data:
+  "34256": lerp/s-rust-server-game-2b914e84-6d89-4778-8868-9ef8313c10b1:34254
+  "34255": lerp/s-rust-server-game-44e2b711-e1f3-4635-9f53-585705d98e47:34255
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: ingress-nginx
+    meta.helm.sh/release-namespace: ingress-nginx
+  creationTimestamp: "2024-02-29T15:22:38Z"
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.10.0
+    helm.sh/chart: ingress-nginx-4.10.0
+  name: ingress-nginx-udp
+  namespace: ingress-nginx
+  resourceVersion: "2871468"
+  uid: aa63ac0e-0642-4b77-8fd7-f6789f9b58dd

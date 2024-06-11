@@ -51,7 +51,15 @@ jobs:
 
       - name: Publish lambda auth to AWS S3 
         shell: bash
-        run: aws s3 cp ./target/lambda/rust-server-auth/bootstrap.zip s3://lambda-artefacts-${{ github.ref_name }}/auth/
+        run: aws s3 cp ./target/lambda/rust-lambda-auth/bootstrap.zip s3://lambda-artefacts-${{ github.ref_name }}/auth/
+
+      - name: Publish lambda lobby to AWS S3 
+        shell: bash
+        run: aws s3 cp ./target/lambda/rust-lambda-lobby/bootstrap.zip s3://lambda-artefacts-${{ github.ref_name }}/lobby/
+
+      - name: Publish lambda scaler to AWS S3 
+        shell: bash
+        run: aws s3 cp ./target/lambda/rust-lambda-scaler/bootstrap.zip s3://lambda-artefacts-${{ github.ref_name }}/scaler/
 
       - name: Login to AWS ECR
         id: login-ecr

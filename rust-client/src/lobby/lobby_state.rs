@@ -2,7 +2,10 @@ use aes_gcm_siv::{aead::Aead, Aes256GcmSiv, KeyInit, Nonce};
 use crossbeam_channel::select;
 use rust_common::{
     api_auth::AuthApi,
-    proto::{MsgUp, MsgUpHandshake, MsgUpType, MsgUpWrapper, UdpMsgDownType},
+    api_lobby::LobbyApi,
+    proto::{
+        HttpGetGameServerInput, MsgUp, MsgUpHandshake, MsgUpType, MsgUpWrapper, UdpMsgDownType,
+    },
 };
 use std::sync::{Arc, Mutex};
 
@@ -110,11 +113,33 @@ impl LobbyStateManager {
         //     return;
         // }
 
-        self.udp_state.start_client_async().await;
+        let game_server = match LobbyApi::get_game_server(
+            &self.http_client,
+            user.auth_token,
+            HttpGetGameServerInput {},
+        )
+        .await
+        {
+            Ok(game_server) => game_server,
+            Err(err) => {
+                self.state.lock().unwrap().is_loading = false;
+                self.tx_state_events
+                    .send(LobbyStateEvent::IsLoadingChanged)
+                    .unwrap();
+                println!("{}", err.message);
+                return;
+            }
+        };
 
-        let vec_u8_aes_key = hex::decode(user.game_server_aes_key).unwrap();
+        println!("{:#?}", game_server);
+
+        self.udp_state
+            .start_client_async(game_server.udp_port as u16)
+            .await;
+
+        let vec_u8_aes_key = hex::decode(game_server.aes_key).unwrap();
         let cipher = Aes256GcmSiv::new_from_slice(&vec_u8_aes_key[..]).unwrap();
-        let game_server_aes_nonce = user.game_server_aes_nonce.to_string();
+        let game_server_aes_nonce = game_server.aes_nonce.to_string();
         let game_server_aes_nonce = game_server_aes_nonce.as_bytes();
         let nonce = Nonce::from_slice(game_server_aes_nonce);
 

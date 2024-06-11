@@ -12,6 +12,7 @@ fn main() {
                 "src/proto/udp-down.proto",
                 "src/proto/udp-up.proto",
                 "src/proto/http-auth.proto",
+                "src/proto/http-lobby.proto",
             ],
             &["src/proto"],
         )

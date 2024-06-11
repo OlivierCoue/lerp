@@ -7,7 +7,6 @@ use godot::{
     engine::{Button, Label, LineEdit},
     prelude::*,
 };
-use rust_common::proto::{MsgUpHandshake, MsgUpWrapper, UdpMsgDownWrapper};
 
 use crate::{
     global_state::GlobalState,

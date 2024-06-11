@@ -5,7 +5,6 @@ use godot::{
     prelude::*,
 };
 use rust_common::proto::*;
-use tokio::sync::oneshot;
 
 use crate::{
     root::{Root, Scenes, DEBUG, PATH_ROOT},

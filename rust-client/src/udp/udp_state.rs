@@ -13,11 +13,12 @@ pub struct UdpState {
 }
 
 pub enum UdpStateInEvent {
-    StartClient(oneshot::Sender<()>),
+    StartClient(oneshot::Sender<()>, u16),
     StopClient(oneshot::Sender<()>),
 }
 
 pub struct UdpStateManager {
+    #[allow(dead_code)]
     state: UdpState,
 
     rx_udp_sender: crossbeam_channel::Receiver<MsgUpWrapper>,
@@ -31,18 +32,18 @@ pub struct UdpStateManager {
 }
 
 impl UdpState {
-    pub fn start_client(&mut self) {
+    pub fn start_client(&mut self, server_port: u16) {
         let (tx, rx) = oneshot::channel();
         self.tx_udp_state_in_events
-            .send(UdpStateInEvent::StartClient(tx))
+            .send(UdpStateInEvent::StartClient(tx, server_port))
             .unwrap();
         rx.blocking_recv().unwrap();
     }
 
-    pub async fn start_client_async(&mut self) {
+    pub async fn start_client_async(&mut self, server_port: u16) {
         let (tx, rx) = oneshot::channel();
         self.tx_udp_state_in_events
-            .send(UdpStateInEvent::StartClient(tx))
+            .send(UdpStateInEvent::StartClient(tx, server_port))
             .unwrap();
         rx.await.unwrap();
     }
@@ -112,8 +113,8 @@ impl UdpStateManager {
     pub fn start(&mut self, rx_udp_state_in_events: crossbeam_channel::Receiver<UdpStateInEvent>) {
         for event in &rx_udp_state_in_events {
             match event {
-                UdpStateInEvent::StartClient(tx) => {
-                    self.start_udp_client();
+                UdpStateInEvent::StartClient(tx, server_port) => {
+                    self.start_udp_client(server_port);
                     tx.send(()).unwrap();
                 }
                 UdpStateInEvent::StopClient(tx) => {
@@ -124,7 +125,7 @@ impl UdpStateManager {
         }
     }
 
-    fn start_udp_client(&mut self) {
+    fn start_udp_client(&mut self, server_port: u16) {
         if self.running_thread_handle.is_some()
             || self.tx_sender_stop.is_some()
             || self.tx_sender_handshake_stop.is_some()
@@ -158,6 +159,8 @@ impl UdpStateManager {
                 rx_udp_sender,
                 rx_udp_handshake_sender,
                 tx_udp_receiver,
+                //
+                server_port,
             )
         }));
 

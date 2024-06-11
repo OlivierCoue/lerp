@@ -1,80 +1,17 @@
-use aes_gcm_siv::{aead::OsRng, Aes256GcmSiv, KeyInit};
-use axum::{
-    async_trait, debug_handler,
-    extract::{FromRequestParts, State},
-    http::{request::Parts, StatusCode},
-    routing::post,
-    Router,
-};
+use axum::{debug_handler, extract::State, http::StatusCode, routing::post, Router};
 use axum_extra::protobuf::Protobuf;
 use lambda_http::{run, Error};
 use rust_common::{
-    api_auth::{ServerAuthRoute, HEADER_AUTH_TOKEN_KEY},
+    api_auth::ServerAuthRoute,
     proto::{
         HttpError, HttpLoginInput, HttpLoginResponse, HttpLogoutResponse, HttpRegisterInput,
         HttpUserGetCurrentResponse,
     },
 };
+use rust_lambda_common::{internal_error, ExtractUser, ENV_POSTGRES_DATABASE_URL};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::str::FromStr;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use uuid::Uuid;
-
-pub const ENV_POSTGRES_DATABASE_URL: &str = "DATABASE_URL";
-
-fn internal_error<E>(err: E) -> (StatusCode, Protobuf<HttpError>)
-where
-    E: std::error::Error,
-{
-    let http_error = HttpError {
-        message: err.to_string(),
-    };
-
-    (StatusCode::INTERNAL_SERVER_ERROR, Protobuf(http_error))
-}
-
-struct ContextUser {
-    uuid: Uuid,
-}
-
-struct ExtractUser(ContextUser);
-
-#[async_trait]
-impl FromRequestParts<PgPool> for ExtractUser {
-    type Rejection = (StatusCode, Protobuf<HttpError>);
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        pg_pool: &PgPool,
-    ) -> Result<Self, Self::Rejection> {
-        let Some(auth_token) = parts.headers.get(HEADER_AUTH_TOKEN_KEY) else {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Protobuf(HttpError {
-                    message: "Missing auth-token.".into(),
-                }),
-            ));
-        };
-
-        let Some(context_user) = sqlx::query_as!(
-            ContextUser,
-            "SELECT uuid FROM users WHERE auth_token = $1",
-            Uuid::from_str(auth_token.to_str().unwrap()).unwrap()
-        )
-        .fetch_optional(pg_pool)
-        .await
-        .unwrap() else {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Protobuf(HttpError {
-                    message: "Invalid auth-token.".into(),
-                }),
-            ));
-        };
-
-        Ok(ExtractUser(context_user))
-    }
-}
 
 #[debug_handler]
 async fn register(
@@ -162,20 +99,14 @@ async fn login(
     };
 
     let auth_token = Uuid::new_v4();
-    let game_server_aes_key = hex::encode(Aes256GcmSiv::generate_key(&mut OsRng));
-    let game_server_aes_nonce = "aaaaaaaaaaaa".to_string();
     let game_server_handshake_challenge = Uuid::new_v4();
 
     sqlx::query!(
         "UPDATE users SET 
         auth_token = $1,
-        game_server_aes_key = $2,
-        game_server_aes_nonce = $3,
-        game_server_handshake_challenge = $4
-        WHERE uuid = $5; ",
+        game_server_handshake_challenge = $2
+        WHERE uuid = $3; ",
         auth_token,
-        game_server_aes_key,
-        game_server_aes_nonce,
         game_server_handshake_challenge,
         user.uuid
     )
@@ -187,8 +118,6 @@ async fn login(
         uuid: user.uuid.to_string(),
         username: user.username,
         auth_token: auth_token.to_string(),
-        game_server_aes_key,
-        game_server_aes_nonce,
         game_server_handshake_challenge: game_server_handshake_challenge.to_string(),
     };
 

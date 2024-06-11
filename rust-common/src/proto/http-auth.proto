@@ -28,9 +28,7 @@ message HttpLoginResponse {
     string uuid = 1;
     string username = 2;
     string auth_token = 3;
-    string game_server_aes_key = 4;
-    string game_server_aes_nonce = 5;
-    string game_server_handshake_challenge = 6;
+    string game_server_handshake_challenge = 4;
 }
 
 ////// Logout

@@ -3,6 +3,8 @@ use std::str::FromStr;
 use rust_common::proto::*;
 use uuid::Uuid;
 
+use crate::env::{env_aes_key, env_aes_nonce};
+
 use self::service_area::ApiServiceArea;
 use aes_gcm_siv::{
     aead::{Aead, KeyInit},
@@ -53,8 +55,6 @@ impl ApiServiceUser {
 
         struct PgResult {
             uuid: Uuid,
-            game_server_aes_key: Option<String>,
-            game_server_aes_nonce: Option<String>,
             game_server_handshake_challenge: Option<Uuid>,
         }
 
@@ -63,9 +63,7 @@ impl ApiServiceUser {
             r#"
             SELECT 
                 uuid,
-                game_server_aes_key,
-                game_server_aes_nonce,
-                game_server_handshake_challenge 
+                game_server_handshake_challenge
             FROM users 
             WHERE uuid = $1"#,
             user_uuid
@@ -102,16 +100,7 @@ impl ApiServiceUser {
             return Some(udp_messages);
         };
 
-        let (
-            Some(game_server_aes_key),
-            Some(game_server_aes_nonce),
-            Some(game_server_handshake_challenge),
-        ) = (
-            user.game_server_aes_key,
-            user.game_server_aes_nonce,
-            user.game_server_handshake_challenge,
-        )
-        else {
+        let Some(game_server_handshake_challenge) = user.game_server_handshake_challenge else {
             udp_messages.push(UdpMsgDown {
                 r#type: UdpMsgDownType::UserConnectFailed.into(),
                 user_connect_failed: Some(UdpMsgDownUserConnectFailed {
@@ -122,15 +111,25 @@ impl ApiServiceUser {
             return Some(udp_messages);
         };
 
-        let vec_u8_aes_key = hex::decode(game_server_aes_key).unwrap();
+        let vec_u8_aes_key = hex::decode(env_aes_key()).unwrap();
         let cipher = Aes256GcmSiv::new_from_slice(&vec_u8_aes_key[..]).unwrap();
-        let game_server_aes_nonce = game_server_aes_nonce.to_string();
+        let game_server_aes_nonce = env_aes_nonce();
         let game_server_aes_nonce = game_server_aes_nonce.as_bytes();
         let nonce = Nonce::from_slice(game_server_aes_nonce);
 
-        let plain_message = cipher
-            .decrypt(nonce, hex::decode(signed_message).unwrap().as_slice())
-            .unwrap();
+        let plain_message = match cipher.decrypt(nonce, &hex::decode(signed_message).unwrap()[..]) {
+            Ok(plain_message) => plain_message,
+            Err(_) => {
+                udp_messages.push(UdpMsgDown {
+                    r#type: UdpMsgDownType::UserConnectFailed.into(),
+                    user_connect_failed: Some(UdpMsgDownUserConnectFailed {
+                        error_message: "Invalid signed_message.".into(),
+                    }),
+                    ..Default::default()
+                });
+                return Some(udp_messages);
+            }
+        };
 
         if String::from_utf8(plain_message.clone()).unwrap()
             != game_server_handshake_challenge.to_string()
@@ -138,7 +137,7 @@ impl ApiServiceUser {
             udp_messages.push(UdpMsgDown {
                 r#type: UdpMsgDownType::UserConnectFailed.into(),
                 user_connect_failed: Some(UdpMsgDownUserConnectFailed {
-                    error_message: "Invalid signed_message.".into(),
+                    error_message: "Wrong signed_message.".into(),
                 }),
                 ..Default::default()
             });

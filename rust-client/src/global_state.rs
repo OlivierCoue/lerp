@@ -6,8 +6,6 @@ pub struct StateUser {
     pub uuid: String,
     pub username: String,
     pub auth_token: String,
-    pub game_server_aes_key: String,
-    pub game_server_aes_nonce: String,
     pub game_server_handshake_challenge: String,
 }
 

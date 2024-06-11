@@ -2,7 +2,10 @@
 members = [
     "rust-client",
     "rust-common",
-    "rust-server-auth",
+    "rust-lambda-auth",
+    "rust-lambda-common",
+    "rust-lambda-lobby",
+    "rust-lambda-scaler",
     "rust-server-common",
     "rust-server-game",
     "rust-server-test",

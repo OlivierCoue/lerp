@@ -1,5 +1,5 @@
 [package]
-name = "rust-server-auth"
+name = "rust-lambda-lobby"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,9 +8,10 @@ aes-gcm-siv = "0.11.1"
 axum = { version = "0.7.4", features = ["macros"] }
 axum-extra = { version = "0.9.2", features = ["protobuf"] }
 hex = "0.4.3"
-lambda_http = "0.9.2"
-lambda_runtime = "0.9.1"
+lambda_http = "0.10.0"
+lambda_runtime = "0.10.0"
 rust-common = { path = "../rust-common" }
+rust-lambda-common = { path = "../rust-lambda-common" }
 sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
 sqlx-cli = { version = "0.7.3" }
 tokio = { version = "1", features = ["macros"] }
