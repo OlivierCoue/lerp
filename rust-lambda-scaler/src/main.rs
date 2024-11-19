@@ -78,7 +78,7 @@ async fn function_handler(_: LambdaEvent<EventBridgeEvent<Empty>>) -> Result<(),
 
         // Create new game server if needed
 
-        let desired_game_server_count = 2;
+        let desired_game_server_count = 1;
         let game_servers = get_game_server_pg_entries(&pg_pool).await?;
         let game_server_to_start_count = desired_game_server_count - game_servers.len();
 
@@ -177,7 +177,8 @@ async fn create_game_server(
     pods_lerp: &Api<Pod>,
     services_lerp: &Api<Service>,
 ) {
-    let database_url = String::from("postgresql://admin:password@192.168.1.15:5432/lerp-local");
+    let database_url =
+        String::from("postgresql://admin:password@host.docker.internal:5432/lerp-local");
 
     let game_server_uuid = Uuid::new_v4();
     let game_server_service_name = format!("s-rust-server-game-{}", game_server_uuid);

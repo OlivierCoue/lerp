@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 
 use rust_common::{
-    collisions::{collide_point_to_poly, collide_rect_to_rect},
+    collisions::{collide_poly_to_circle, collide_poly_to_point, collide_rect_to_rect},
     math::Vec2,
 };
 
@@ -51,7 +51,7 @@ pub fn update_pathfinder_state(
             if let Some(rect) = &collider_mvt.shape.rect {
                 pathfinder_state.block_nodes_in_rect(entity, &position.current, rect)
             } else if let Some(poly) = &collider_mvt.shape.poly {
-                pathfinder_state.block_nodes_in_poly(entity, poly, collider_mvt.reversed)
+                pathfinder_state.block_nodes_in_poly(entity, poly, collider_mvt.shape.inverse)
             }
         }
         pathfinder_state.is_init = true;
@@ -95,34 +95,25 @@ pub fn movement(
                 let mut collide_with_blocking_entity = false;
                 // Only apply collision with others entities if the entity we attempt to move also have a collider
                 if let Some(collider_mvt) = opt_collider_mvt {
-                    for (entity_blocking, _, position_blocking, _, opt_collider_mvt_blocking, _) in
-                        &query_entities_to_move
+                    'outer: for (
+                        entity_blocking,
+                        _,
+                        position_blocking,
+                        _,
+                        opt_collider_mvt_blocking,
+                        _,
+                    ) in &query_entities_to_move
                     {
                         if let Some(collider_mvt_blocking) = opt_collider_mvt_blocking {
                             if entity_blocking != entity {
-                                if let (Some(rect), Some(rect_blocking)) =
-                                    (&collider_mvt.shape.rect, &collider_mvt_blocking.shape.rect)
-                                {
-                                    if collide_rect_to_rect(
-                                        rect,
-                                        &new_position_current,
-                                        rect_blocking,
-                                        &position_blocking.current,
-                                    ) {
-                                        collide_with_blocking_entity = true;
-                                        break;
-                                    }
-                                } else if let Some(poly_blocking) =
-                                    &collider_mvt_blocking.shape.poly
-                                {
-                                    if collide_point_to_poly(
-                                        &new_position_current,
-                                        poly_blocking,
-                                        collider_mvt_blocking.reversed,
-                                    ) {
-                                        collide_with_blocking_entity = true;
-                                        break;
-                                    }
+                                let collide = collider_mvt.shape.collide(
+                                    &new_position_current,
+                                    &collider_mvt_blocking.shape,
+                                    &position_blocking.current,
+                                );
+                                if collide {
+                                    collide_with_blocking_entity = true;
+                                    break 'outer;
                                 }
                             }
                         }

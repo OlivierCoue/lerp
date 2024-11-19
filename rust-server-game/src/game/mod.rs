@@ -375,8 +375,8 @@ impl Game {
                             entity_ref
                                 .get::<ColliderMvt>()
                                 .map(|collider| UdpColliderMvt {
-                                    reversed: collider.reversed,
-                                    rect: collider.shape.rect.map(|rect| vec2_to_point(&rect)),
+                                    reversed: collider.shape.inverse,
+                                    rect: collider.shape.rect.as_ref().map(vec2_to_point),
                                     poly: collider
                                         .shape
                                         .poly
@@ -385,6 +385,11 @@ impl Game {
                                         .iter()
                                         .map(vec2_to_point)
                                         .collect(),
+                                    circle: collider.shape.circle.as_ref().map(|circle| {
+                                        UdpCircle {
+                                            rayon: circle.rayon,
+                                        }
+                                    }),
                                 });
                         let health_current = entity_ref
                             .get::<Health>()
@@ -397,10 +402,7 @@ impl Game {
                                 id: game_entity.id,
                                 object_type: game_entity._type.into(),
                                 location_current,
-                                location_target_queue: match location_target_queue {
-                                    Some(x) => x,
-                                    None => Vec::new(),
-                                },
+                                location_target_queue: location_target_queue.unwrap_or_default(),
                                 collider_dmg_in_rect,
                                 collider_mvt,
                                 velocity_speed: velocity_speed.unwrap_or_default(),

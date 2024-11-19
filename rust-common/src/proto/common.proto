@@ -7,6 +7,10 @@ message Point {
     float y = 2;
 }
 
+message UdpCircle {
+    float rayon = 1;
+}
+
 message UdpPolygon {
     repeated Point points = 1;
 }

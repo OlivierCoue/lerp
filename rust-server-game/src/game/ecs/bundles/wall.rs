@@ -17,7 +17,7 @@ impl WallBundle {
             game_entity: GameEntity::new(GameEntityBaseType::Wall),
             position: Position::new(position_current),
             collider_dmg_in: ColliderDmgIn::new(rect),
-            collider_mvt: ColliderMvt::new(ColliderShape::new_rect(rect), false),
+            collider_mvt: ColliderMvt::new(ColliderShape::new_rect(rect, false)),
         }
     }
     pub fn new_poly(poly: Vec<Vec2>, reversed: bool) -> Self {
@@ -25,7 +25,7 @@ impl WallBundle {
             game_entity: GameEntity::new(GameEntityBaseType::Wall),
             position: Position::new(Vec2::new(0.0, 0.0)),
             collider_dmg_in: ColliderDmgIn::new(Vec2::new(0.0, 0.0)),
-            collider_mvt: ColliderMvt::new(ColliderShape::new_poly(poly), reversed),
+            collider_mvt: ColliderMvt::new(ColliderShape::new_poly(poly, reversed)),
         }
     }
 }

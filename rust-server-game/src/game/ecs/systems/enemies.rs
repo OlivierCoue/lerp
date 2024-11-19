@@ -50,8 +50,7 @@ pub fn enemies_ai(
     let aggro_range = 700.0;
     for (enemy_entity, mut enemy, enemy_position, team) in &mut query_enemies {
         let current_game_time = time.current_millis;
-        if enemy.last_action_at_millis != 0
-            && enemy.last_action_at_millis + 1000 > current_game_time
+        if enemy.last_action_at_millis != 0 && enemy.last_action_at_millis + 500 > current_game_time
         {
             continue;
         }
@@ -112,11 +111,12 @@ pub fn enemies_ai(
                 writer_update_velocity_target_with_pathfinder.send(
                     UpdateVelocityTargetWithPathFinder {
                         entity: enemy_entity,
-                        target: get_point_from_points_and_distance(
-                            closest_player_location,
-                            enemy_position.current,
-                            350.0,
-                        ),
+                        // target: get_point_from_points_and_distance(
+                        //     closest_player_location,
+                        //     enemy_position.current,
+                        //     350.0,
+                        // ),
+                        target: closest_player_location,
                     },
                 );
             }

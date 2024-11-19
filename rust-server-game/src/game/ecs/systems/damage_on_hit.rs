@@ -45,7 +45,7 @@ pub fn damage_on_hit(
                 &damageable_collider_dmg_in.rect,
                 &damageable_position.current,
             ) && team != damageable_team
-                && dmg_on_hit.hitted_entities.get(&damageable_entity).is_none()
+                && !dmg_on_hit.hitted_entities.contains_key(&damageable_entity)
             {
                 if dmg_on_hit.damage_value < damageable_health.get_current() {
                     let current = damageable_health.get_current();

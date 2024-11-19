@@ -6,6 +6,11 @@ pub struct Point {
     pub y: f32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UdpCircle {
+    #[prost(float, tag="1")]
+    pub rayon: f32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UdpPolygon {
     #[prost(message, repeated, tag="1")]
     pub points: ::std::vec::Vec<Point>,
@@ -82,6 +87,8 @@ pub struct UdpColliderMvt {
     pub rect: ::std::option::Option<Point>,
     #[prost(message, repeated, tag="3")]
     pub poly: ::std::vec::Vec<Point>,
+    #[prost(message, optional, tag="4")]
+    pub circle: ::std::option::Option<UdpCircle>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UdpCast {

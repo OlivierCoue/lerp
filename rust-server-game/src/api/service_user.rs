@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry;
 use std::str::FromStr;
 
 use rust_common::proto::*;
@@ -39,8 +40,7 @@ impl ApiServiceUser {
         if app
             .get_users_state_lock()
             .udp_peer_id_user_uuid_map
-            .get(&udp_peer_id)
-            .is_some()
+            .contains_key(&udp_peer_id)
         {
             udp_messages.push(UdpMsgDown {
                 r#type: UdpMsgDownType::UserConnectFailed.into(),
@@ -145,28 +145,23 @@ impl ApiServiceUser {
         }
 
         let mut users_state_lock = app.get_users_state_lock();
-        if users_state_lock
-            .user_uuid_user_map
-            .get(&user.uuid)
-            .is_some()
-        {
-            udp_messages.push(UdpMsgDown {
-                r#type: UdpMsgDownType::UserConnectFailed.into(),
-                user_connect_failed: Some(UdpMsgDownUserConnectFailed {
-                    error_message: "User is already connected from another client.".into(),
-                }),
-                ..Default::default()
-            })
-        } else {
-            users_state_lock
-                .user_uuid_user_map
-                .insert(user.uuid, User::new(user.uuid, udp_peer_id));
+
+        if let Entry::Vacant(e) = users_state_lock.user_uuid_user_map.entry(user.uuid) {
+            e.insert(User::new(user.uuid, udp_peer_id));
             users_state_lock
                 .udp_peer_id_user_uuid_map
                 .insert(udp_peer_id, user.uuid);
 
             udp_messages.push(UdpMsgDown {
                 r#type: UdpMsgDownType::UserConnectSuccess.into(),
+                ..Default::default()
+            })
+        } else {
+            udp_messages.push(UdpMsgDown {
+                r#type: UdpMsgDownType::UserConnectFailed.into(),
+                user_connect_failed: Some(UdpMsgDownUserConnectFailed {
+                    error_message: "User is already connected from another client.".into(),
+                }),
                 ..Default::default()
             })
         }

@@ -256,6 +256,31 @@ impl GameEntity {
                 shape.set_points(packed_vector2_array);
                 collision_shape_2d.set_shape(shape.upcast());
                 self.base_mut().add_child(collision_shape_2d.upcast());
+            } else if let Some(circle) = collider_mvt.circle.as_ref() {
+                let rayon = circle.rayon;
+                // Create the CollisionShape2D node
+                let mut collision_shape_2d = CollisionShape2D::new_alloc();
+
+                // Create the ConvexPolygonShape2D for the isometric projection
+                let mut shape = ConvexPolygonShape2D::new_gd();
+                let mut packed_vector2_array = PackedVector2Array::new();
+
+                // Define the points of the ellipse in isometric projection
+                let steps = 16; // Increase for smoother circle approximation
+                for i in 0..steps {
+                    let angle = (i as f32 / steps as f32) * std::f32::consts::PI * 2.0;
+
+                    let point =
+                        cart_to_iso(&Vector2::new(rayon * angle.cos(), rayon * angle.sin()));
+
+                    packed_vector2_array.push(point);
+                }
+
+                shape.set_points(packed_vector2_array);
+                collision_shape_2d.set_shape(shape.upcast());
+
+                // Add the CollisionShape2D to the current object
+                self.base_mut().add_child(collision_shape_2d.upcast());
             } else if !collider_mvt.poly.is_empty() && collider_mvt.reversed {
                 // For reverse polygon, we have to create a polygon which cover all the map minus the shape of the given polygon
                 // This case is only used for the shape of the global map atm

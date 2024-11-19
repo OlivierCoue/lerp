@@ -239,7 +239,7 @@ pub fn pathfinder_get_path(
     // Create path in a hashmap
     let mut current_node = &grid[closest_to_goal.0][closest_to_goal.1];
     let mut path = HashMap::new();
-    let mut i = 0;
+    let mut i: usize = 0;
     path.insert(i, closest_to_goal);
     while let Some((x, y)) = current_node.parent {
         i += 1;
@@ -250,7 +250,7 @@ pub fn pathfinder_get_path(
     // Smooth path (only keep required points)
     let mut check_point: usize = 0;
     let mut current_point: usize = 1;
-    while path.get(&(current_point + 1)).is_some() {
+    while path.contains_key(&(current_point + 1)) {
         if is_walkable(
             &grid,
             &entity,
@@ -285,6 +285,8 @@ pub fn pathfinder_get_path(
     let len = path_vec_vector_2d.len();
     if len > 0 && path_vec_vector_2d.get(len - 1).is_some() {
         path_vec_vector_2d[len - 1] = to;
+    } else {
+        path_vec_vector_2d.push(to);
     }
 
     Some(path_vec_vector_2d)

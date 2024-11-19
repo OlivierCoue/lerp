@@ -108,7 +108,7 @@ impl ApiServiceArea {
                 .remove(&world_instance_uuid)
             {
                 if let Some(user) = users_state_lock.user_uuid_user_map.get_mut(&user.uuid) {
-                    if world_instance.user_uuids.get(&user.uuid).is_none()
+                    if !world_instance.user_uuids.contains_key(&user.uuid)
                         && user.current_world_instance_uuid.is_none()
                     {
                         user.current_world_instance_uuid = Some(world_instance_uuid);
@@ -169,20 +169,16 @@ impl ApiServiceArea {
     pub async fn leave(app: App, user: &User) -> Option<Vec<UdpMsgDown>> {
         let mut udp_messages = Vec::new();
 
-        let Some(instance_uuid) = user.current_world_instance_uuid else {
-            return None;
-        };
+        let instance_uuid = user.current_world_instance_uuid?;
 
         {
             let mut users_state_lock = app.get_users_state_lock();
-            let Some(user_mut) = users_state_lock.user_uuid_user_map.get_mut(&user.uuid) else {
-                return None;
-            };
+            let user_mut = users_state_lock.user_uuid_user_map.get_mut(&user.uuid)?;
             user_mut.current_world_instance_uuid = None;
 
-            let Some(instance) = users_state_lock.world_instance_map.get_mut(&instance_uuid) else {
-                return None;
-            };
+            let instance = users_state_lock
+                .world_instance_map
+                .get_mut(&instance_uuid)?;
 
             instance
                 .to_instance_internal_messages

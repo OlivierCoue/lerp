@@ -33,6 +33,7 @@ message UdpColliderMvt {
     bool reversed = 1;
     Point rect = 2;
     repeated Point poly = 3;
+    UdpCircle circle = 4;
 }
 
 message UdpCast {

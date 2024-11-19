@@ -29,12 +29,9 @@ impl EnemyBundle {
                 is_wizard,
             },
             position: Position::new(position_current),
-            velocity: Velocity::new(Some(Vec2::new(1024.0, 1024.0)), 150.0, false),
+            velocity: Velocity::new(None, 150.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
-            collider_mvt: ColliderMvt::new(
-                ColliderShape::new_rect(Vec2 { x: 20.0, y: 20.0 }),
-                false,
-            ),
+            collider_mvt: ColliderMvt::new(ColliderShape::new_circle(10.0, false)),
             health: Health::new(10),
             team: Team::Enemy,
         }
