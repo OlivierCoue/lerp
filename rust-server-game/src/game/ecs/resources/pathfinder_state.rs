@@ -5,7 +5,7 @@ use std::{
 
 use bevy_ecs::prelude::*;
 use rust_common::{
-    collisions::{collide_poly_to_circle, collide_poly_to_point},
+    collisions::{collid_poly_to_rect, collide_poly_to_circle, collide_poly_to_point},
     math::Vec2,
 };
 
@@ -83,7 +83,15 @@ impl PathfinderState {
             for y in 0..self.grid[0].len() {
                 let point = self.grid.get(x).unwrap().get(y).unwrap();
                 // let collide = collide_point_to_poly(&Vec2::new(point.x, point.y), poly, reversed);
-                let collide = collide_poly_to_circle(poly, reversed, point.x, point.y, 15.0);
+                // let collide = collide_poly_to_circle(poly, reversed, point.x, point.y, 15.0);
+                let collide = collid_poly_to_rect(
+                    poly,
+                    reversed,
+                    point.x - (PATHFINDER_TILE_SIZE - 1.0) / 2.0,
+                    point.y - (PATHFINDER_TILE_SIZE - 1.0) / 2.0,
+                    PATHFINDER_TILE_SIZE - 1.0,
+                    PATHFINDER_TILE_SIZE - 1.0,
+                );
                 if collide {
                     if let Some(row) = self.grid.get_mut(x) {
                         if let Some(node) = row.get_mut(y) {

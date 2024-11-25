@@ -31,7 +31,7 @@ impl EnemyBundle {
             position: Position::new(position_current),
             velocity: Velocity::new(None, 150.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
-            collider_mvt: ColliderMvt::new(ColliderShape::new_circle(10.0, false)),
+            collider_mvt: ColliderMvt::new(ColliderShape::new_circle(8.0, false)),
             health: Health::new(10),
             team: Team::Enemy,
         }

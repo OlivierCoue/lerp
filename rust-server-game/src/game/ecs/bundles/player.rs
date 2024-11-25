@@ -25,7 +25,7 @@ impl PlayerBundle {
             position: Position::new(position),
             velocity: Velocity::new(None, 400.0, false),
             collider_dmg_in: ColliderDmgIn::new(Vec2 { x: 50.0, y: 50.0 }),
-            collider_mvt: ColliderMvt::new(ColliderShape::new_circle(15.0, false)),
+            collider_mvt: ColliderMvt::new(ColliderShape::new_circle(14.0, false)),
             health: Health::new(900),
             team: Team::Player,
         }

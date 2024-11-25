@@ -63,6 +63,7 @@ impl Velocity {
     pub fn add_target(&mut self, area_config: &AreaConfig, new_target: Vec2) {
         self.target_queue
             .push_front(world_bounded_vector2(area_config, new_target));
+        self.revision += 1;
     }
 
     pub fn remove_current_target(&mut self) -> bool {

@@ -82,12 +82,12 @@ pub fn pathfinder_get_path(
     grid_to_left_node: (usize, usize),
 ) -> Option<Vec<Vec2>> {
     let unsafe_start = (
-        from.x as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
-        from.y as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
+        f32::floor(from.x) as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
+        f32::floor(from.y) as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
     );
     let unsafe_goal = (
-        to.x as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
-        to.y as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
+        f32::floor(to.x) as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.0 as i32,
+        f32::floor(to.y) as i32 / PATHFINDER_TILE_SIZE as i32 - grid_to_left_node.1 as i32,
     );
 
     if unsafe_start.0 < 0
@@ -111,6 +111,8 @@ pub fn pathfinder_get_path(
     let start_node = &mut grid[start.0][start.1];
     start_node.is_open = true;
     start_node.display = Some('S');
+    let start_x = start_node.x;
+    let start_y = start_node.y;
 
     let mut current_open;
     let mut opt_open_tail = Some(start);
@@ -236,6 +238,10 @@ pub fn pathfinder_get_path(
         }
     }
 
+    if closest_to_goal == start {
+        return Some(vec![]);
+    }
+
     // Create path in a hashmap
     let mut current_node = &grid[closest_to_goal.0][closest_to_goal.1];
     let mut path = HashMap::new();
@@ -266,28 +272,40 @@ pub fn pathfinder_get_path(
         }
     }
 
+    // Remove the starting point
+    // if start_x != from.x && start_y != from.y {
+    //     path.remove(&i);
+    // }
+
+    path.remove(&i);
+
     for (x, y) in path.values() {
         grid[*x][*y].is_path = true;
     }
-    // display_grid_path(&grid);
 
-    // Remove the starting point
-    path.remove(&i);
     // Transform hashmap path to vector (in the correct order)
     let mut path_vec = path.iter().collect::<Vec<_>>();
     path_vec.sort_by(|a, b| b.0.cmp(a.0));
 
-    let mut path_vec_vector_2d = path_vec
+    let path_vec_vector_2d = path_vec
         .iter()
         .map(|(_, (x, y))| Vec2::new(grid[*x][*y].x, grid[*x][*y].y))
         .collect::<Vec<_>>();
+
+    // let to_coord = Vec2::new(
+    //     (goal.0 as f32 + grid_to_left_node.0 as f32 + 0.5) * PATHFINDER_TILE_SIZE,
+    //     (goal.1 as f32 + grid_to_left_node.1 as f32 + 0.5) * PATHFINDER_TILE_SIZE,
+    // );
+
+    // println!("{:#?}", path_vec_vector_2d);
     // Update the last point to the exact goal coordonate
-    let len = path_vec_vector_2d.len();
-    if len > 0 && path_vec_vector_2d.get(len - 1).is_some() {
-        path_vec_vector_2d[len - 1] = to;
-    } else {
-        path_vec_vector_2d.push(to);
-    }
+    // let len = path_vec_vector_2d.len();
+    // if len > 0 && path_vec_vector_2d.get(len - 1).is_some() {
+    //     path_vec_vector_2d[len - 1] = to_coord;
+    // } else {
+    //     path_vec_vector_2d.push(to_coord);
+    // }
+    // path_vec_vector_2d.push(to);
 
     Some(path_vec_vector_2d)
 }
@@ -306,17 +324,56 @@ fn is_walkable(
         (to_tile.0 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
         (to_tile.1 as f32) * (PATHFINDER_TILE_SIZE) + PATHFINDER_TILE_SIZE / 2.0,
     );
-    let mut points = vec![from];
 
-    while *points.last().unwrap() != to {
-        points.push(
-            points
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+
+    // Normalize direction
+    let length = (dx * dx + dy * dy).sqrt();
+    if length == 0.0 {
+        return !grid[from_tile.0][from_tile.1].is_blocked_for(entity);
+    }
+
+    // Compute the offsets for the object's width
+    let object_width = 28.0;
+    let offset_x = -dy / length * (object_width / 2.0);
+    let offset_y = dx / length * (object_width / 2.0);
+
+    let start_left = Vec2::new(from.x + offset_x, from.y + offset_y);
+    let end_left = Vec2::new(to.x + offset_x, to.y + offset_y);
+
+    let mut points_1 = vec![start_left];
+
+    while *points_1.last().unwrap() != end_left {
+        points_1.push(
+            points_1
                 .last()
                 .unwrap()
-                .move_toward(to, PATHFINDER_TILE_SIZE / 5.0),
+                .move_toward(end_left, PATHFINDER_TILE_SIZE / 5.0),
         );
     }
-    for point in points {
+    for point in points_1 {
+        let x: usize = f32::floor(point.x / PATHFINDER_TILE_SIZE) as usize;
+        let y = f32::floor(point.y / PATHFINDER_TILE_SIZE) as usize;
+        if grid[x][y].is_blocked_for(entity) {
+            return false;
+        }
+    }
+
+    let start_right = Vec2::new(from.x - offset_x, from.y - offset_y);
+    let end_right = Vec2::new(to.x - offset_x, to.y - offset_y);
+
+    let mut points_2 = vec![start_right];
+
+    while *points_2.last().unwrap() != end_right {
+        points_2.push(
+            points_2
+                .last()
+                .unwrap()
+                .move_toward(end_right, PATHFINDER_TILE_SIZE / 5.0),
+        );
+    }
+    for point in points_2 {
         let x: usize = f32::floor(point.x / PATHFINDER_TILE_SIZE) as usize;
         let y = f32::floor(point.y / PATHFINDER_TILE_SIZE) as usize;
         if grid[x][y].is_blocked_for(entity) {

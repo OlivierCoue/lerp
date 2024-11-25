@@ -64,7 +64,8 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
     // Pick a map
     let map = maps.remove(map_index);
     let map_name = map.name.clone();
-    let oob_tile_type = map.oob_type; // Generate map grid
+    let oob_tile_type = map.oob_type;
+    // Generate map grid
     let (mut grid, player_spawn_position, packs) = generate_map(&mut rng, map);
 
     //------------------------------------------------------//
@@ -113,7 +114,7 @@ pub fn generate_area(map_index: usize) -> AreaGenerationOutput {
         height: grid[0].len() as u32,
         oob_polygons,
         player_spawn_position,
-        enemies,
+        enemies: vec![],
         oob_tile_type,
         tile_grid: tranport_grid,
     }

@@ -37,6 +37,7 @@ pub struct GameEntity {
     direction: Direction,
     is_casting: bool,
     casting_target: Option<Vector2>,
+    current_target: Option<Gd<Label>>,
 }
 
 #[godot_api]
@@ -58,6 +59,7 @@ impl ISprite2D for GameEntity {
             direction: Direction::N,
             is_casting: false,
             casting_target: None,
+            current_target: None,
         }
     }
 
@@ -125,6 +127,10 @@ impl ISprite2D for GameEntity {
     fn process(&mut self, delta: f64) {
         // Remove first element of position_target_queue if current position is aprox equal to it
         if let Some(position_target) = self.position_target_queue.front() {
+            if let Some(current_target) = &mut self.current_target {
+                current_target.set_global_position(cart_to_iso(position_target));
+            }
+
             let vd = *position_target - iso_to_cart(&self.base().get_position());
             let len = vd.length();
             if len <= self.speed * delta as f32 || len < real::CMP_EPSILON {
@@ -210,6 +216,13 @@ impl GameEntity {
             self.health_label = Some(health_label.clone());
             self.base_mut().add_child(health_label.upcast());
         }
+
+        // Set current target
+        let mut target_node2d = Label::new_alloc();
+        target_node2d.set_text(String::from("T").into());
+        target_node2d.set_position(Vector2::new(0.0, 0.0));
+        self.current_target = Some(target_node2d.clone());
+        self.base_mut().add_child(target_node2d.upcast());
 
         if DEBUG {
             if let Some(collider_dmg_in_rect) = &entity_update.collider_dmg_in_rect {

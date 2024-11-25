@@ -105,6 +105,12 @@ pub fn define_floor_patterns() -> Vec<Map> {
 
     let maps: Vec<Map> = vec![
         Map {
+            name: String::from("Test"),
+            oob_type: TileType::Water,
+            biomes: vec![short_path_bottom_right_dir.clone()],
+            density: 0.01,
+        },
+        Map {
             name: String::from("Island"),
             oob_type: TileType::Water,
             biomes: vec![many_tiny_all_dir.clone(), small_all_dir.clone()],
