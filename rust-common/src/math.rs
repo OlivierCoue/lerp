@@ -15,8 +15,11 @@ pub struct Vec2 {
     pub x: f32,
     pub y: f32,
 }
+
 impl Vec2 {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub const ZERO: Vec2 = Self::new(0.0, 0.0);
+
+    pub const fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
@@ -34,6 +37,18 @@ impl Vec2 {
         self.to_glam().length()
     }
 
+    pub fn normalize(self) -> Vec2 {
+        Self::from_glam(self.to_glam().normalize())
+    }
+
+    pub fn reject_from_normalized(self, rhs: Self) -> Vec2 {
+        Self::from_glam(self.to_glam().reject_from_normalized(Self::to_glam(rhs)))
+    }
+
+    pub fn dot(self, rhs: Vec2) -> f32 {
+        (self.x * rhs.x) + (self.y * rhs.y)
+    }
+
     pub fn distance_to(self, to: Self) -> f32 {
         (to - self).length()
     }
@@ -48,6 +63,10 @@ impl Vec2 {
 
     fn to_glam(self) -> glam::Vec2 {
         glam::Vec2::new(self.x, self.y)
+    }
+
+    fn from_glam(vec2: glam::Vec2) -> Vec2 {
+        Vec2::new(vec2.x, vec2.y)
     }
 }
 impl ops::Sub<Vec2> for Vec2 {

@@ -18,6 +18,20 @@ pub fn cart_to_iso(vect2: &Vector2) -> Vector2 {
     }
 }
 
+fn cartesian_to_isometric(x: f32, y: f32) -> Vec2 {
+    Vec2::new(
+        x - y,         // X-axis in isometric space
+        (x + y) / 2.0, // Y-axis in isometric space
+    )
+}
+
+fn isometric_to_cartesian(iso_x: f32, iso_y: f32) -> Vec2 {
+    Vec2::new(
+        (iso_x + 2.0 * iso_y) / 2.0, // Cartesian X
+        (2.0 * iso_y - iso_x) / 2.0, // Cartesian Y
+    )
+}
+
 pub fn point_to_vector2(point: &Point) -> Vector2 {
     Vector2 {
         x: point.x,

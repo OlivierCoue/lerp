@@ -88,7 +88,7 @@ pub fn movement(
                     continue;
                 }
 
-                let new_position_current = position
+                let mut new_position_current = position
                     .current
                     .move_toward(*target, velocity.get_speed() * time.delta);
 
@@ -112,7 +112,31 @@ pub fn movement(
                                     &position_blocking.current,
                                 );
                                 if collide {
-                                    collide_with_blocking_entity = true;
+                                    let collision_normal =
+                                        collider_mvt.shape.collision_normal(&position.current);
+
+                                    // Calculate the adjusted target position, resolving the collision by sliding
+                                    let adjusted_target = position.current
+                                        + (position.current - position_blocking.current) // Direction away from collision
+                                        .reject_from_normalized(collision_normal) // Slide along the surface
+                                        .normalize() // Normalize the sliding direction
+                                        * 30.0; // Account for the moving shape's size
+
+                                    // Move toward the adjusted target directly
+                                    let adjusted_position = position
+                                        .current
+                                        .move_toward(adjusted_target, velocity.get_speed());
+
+                                    if !collider_mvt.shape.collide(
+                                        &adjusted_position,
+                                        &collider_mvt_blocking.shape,
+                                        &position_blocking.current,
+                                    ) {
+                                        new_position_current = adjusted_position
+                                    } else {
+                                        collide_with_blocking_entity = true;
+                                    }
+
                                     break 'outer;
                                 }
                             }

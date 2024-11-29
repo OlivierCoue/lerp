@@ -38,6 +38,31 @@ impl ColliderShape {
         }
     }
 
+    pub fn collision_normal(&self, current_position: &Vec2) -> Vec2 {
+        let Some(poly) = &self.poly else {
+            return Vec2::new(1.0, 0.0);
+        };
+
+        let mut closest_distance = f32::MAX;
+        let mut closest_normal = Vec2::ZERO;
+
+        for i in 0..poly.len() {
+            let a = poly[i];
+            let b = poly[(i + 1) % poly.len()];
+
+            let edge = b - a;
+            let normal = Vec2::new(-edge.y, edge.x).normalize();
+
+            let distance = normal.dot(*current_position - a);
+            if distance < closest_distance {
+                closest_distance = distance;
+                closest_normal = normal;
+            }
+        }
+
+        closest_normal
+    }
+
     pub fn collide(&self, self_pos: &Vec2, to_shape: &ColliderShape, to_pos: &Vec2) -> bool {
         if let Some(rect) = &self.rect {
             if let Some(to_rect) = &to_shape.rect {
