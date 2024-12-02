@@ -23,6 +23,13 @@ pub fn isometric_to_cartesian(iso_x: f32, iso_y: f32) -> Vec2 {
     )
 }
 
+pub fn apply_render_mode(render_config: &RenderConfig, position: &Vec2) -> Vec2 {
+    match render_config.mode {
+        RenderMode::Iso => cartesian_to_isometric(position.x, position.y),
+        RenderMode::Cart => *position,
+    }
+}
+
 #[derive(Clone, Copy)]
 pub enum RenderMode {
     Iso,

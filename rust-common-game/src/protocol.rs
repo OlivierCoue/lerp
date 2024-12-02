@@ -1,9 +1,6 @@
 use avian2d::prelude::*;
-use lightyear::utils::avian2d::*;
-
 use bevy::prelude::*;
 use lightyear::client::components::ComponentSyncMode;
-use std::ops::{Add, Mul};
 
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};

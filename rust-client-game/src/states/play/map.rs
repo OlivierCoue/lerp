@@ -30,17 +30,15 @@ pub fn setup_map(
                 .spawn((PlaySceneTag, Position::from_xy(cart_coord.x, cart_coord.y)))
                 .id();
 
-            if (row % 6 == 0 && col % 6 == 0)
-                || (row == 0)
-                || (row == 99)
-                || (col == 0)
-                || (col == 99)
-            {
+            let is_border = (row == 0) || (row == 99) || (col == 0) || (col == 99);
+            let is_obstacle = row % 6 == 0 && col % 6 == 0;
+
+            if is_border || is_obstacle {
                 commands.entity(entity).insert((
                     RigidBody::Static,
                     Restitution::new(1.0),
                     Friction::new(0.0),
-                    Collider::rectangle(ENTITY_SIZE, ENTITY_SIZE),
+                    Collider::rectangle(ENTITY_SIZE - 1., ENTITY_SIZE - 1.),
                 ));
 
                 match render_config.mode {

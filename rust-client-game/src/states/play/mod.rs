@@ -1,24 +1,20 @@
+mod camera;
 mod map;
 mod player;
-use std::net::IpAddr;
-use std::net::Ipv4Addr;
-use std::net::SocketAddr;
-use std::str::FromStr;
-use std::time::Duration;
-
 use crate::common::*;
+use crate::states::play::camera::*;
 use crate::states::play::map::*;
 use crate::states::play::player::*;
-use avian2d::prelude::*;
+
 use bevy::prelude::*;
 
 use bevy_transform_interpolation::TransformEasingSet;
-use bevy_transform_interpolation::TransformInterpolationPlugin;
+
 use lightyear::client::input::native::InputSystemSet;
 use lightyear::prelude::client::*;
 use lightyear::prelude::*;
 use rust_common_game::settings::*;
-use rust_common_game::shared::SharedPlugin;
+use rust_common_game::shared::*;
 
 #[derive(Component)]
 pub struct PlaySceneTag;
@@ -51,87 +47,37 @@ pub fn play_scene_cleanup(mut commands: Commands, query: Query<Entity, With<Play
     }
 }
 
-fn display_network_status(state: Res<State<NetworkingState>>) {
-    if state.is_changed() {
-        match state.get() {
-            NetworkingState::Disconnected => {
-                println!("NET: Disconnected");
-            }
-            NetworkingState::Connecting => {
-                println!("NET: Connecting");
-            }
-            NetworkingState::Connected => {
-                println!("NET: Connected");
-            }
-        };
-    }
-}
-
 pub struct PlayPlugin;
 
 impl Plugin for PlayPlugin {
     fn build(&self, app: &mut App) {
-        let client_id = 0;
-        let link_conditioner = LinkConditionerConfig {
-            incoming_latency: Duration::from_millis(100),
-            incoming_jitter: Duration::from_millis(0),
-            incoming_loss: 0.00,
-        };
-
-        let server_addr = SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), 34255);
-        let client_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
-        let io_config =
-            client::IoConfig::from_transport(client::ClientTransport::UdpSocket(client_addr))
-                .with_conditioner(link_conditioner);
-        let auth = client::Authentication::Manual {
-            server_addr,
-            client_id,
-            private_key: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0,
-            ],
-            protocol_id: 0,
-        };
-        let netcode_config = client::NetcodeConfig::default();
-
-        let net_config = client::NetConfig::Netcode {
-            auth,
-            io: io_config,
-            config: netcode_config,
-        };
-
-        let client_config = client::ClientConfig {
-            shared: shared_config(Mode::Separate),
-            net: net_config,
-            replication: ReplicationConfig {
-                send_interval: REPLICATION_INTERVAL,
-                ..default()
-            },
-            prediction: PredictionConfig {
-                always_rollback: false,
-                ..Default::default()
-            },
-            ..default()
-        };
-        let client_plugin = client::ClientPlugins::new(client_config);
-        app.add_plugins(client_plugin);
-        app.add_plugins(SharedPlugin);
-
-        app.add_plugins(TransformInterpolationPlugin::default());
-
-        app.add_systems(OnEnter(AppState::Play), play_scene_setup);
-        app.add_systems(Update, play_scene_logic.run_if(in_state(AppState::Play)));
+        app.add_systems(OnEnter(AppState::Play), (play_scene_setup, setup_map));
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
-        app.add_systems(OnEnter(AppState::Play), setup_map);
-
-        app.add_systems(Update, handle_new_player.run_if(in_state(AppState::Play)));
         app.add_systems(
-            FixedPostUpdate,
-            sync_position_to_transform
-                .before(TransformSystem::TransformPropagate)
+            FixedPreUpdate,
+            buffer_input.in_set(InputSystemSet::BufferInputs),
+        );
+
+        app.add_systems(
+            Update,
+            (
+                play_scene_logic,
+                handle_new_player,
+                draw_confirmed_player,
+                draw_predicted_target,
+            )
                 .run_if(in_state(AppState::Play)),
         );
+
+        app.add_systems(
+            FixedUpdate,
+            (movement, set_player_target)
+                .chain()
+                .in_set(FixedSet::Main)
+                .run_if(in_state(AppState::Play)),
+        );
+
         app.add_systems(
             PostUpdate,
             camera_follow
@@ -139,26 +85,5 @@ impl Plugin for PlayPlugin {
                 .after(TransformEasingSet)
                 .run_if(in_state(AppState::Play)),
         );
-
-        app.add_systems(FixedUpdate, movement.run_if(in_state(AppState::Play)));
-        // app.add_systems(Update, capture_world_click.run_if(in_state(AppState::Play)));
-        app.add_systems(Update, set_player_target.run_if(in_state(AppState::Play)));
-        app.add_systems(
-            Update,
-            display_network_status.run_if(in_state(AppState::Play)),
-        );
-        app.add_systems(
-            Update,
-            (
-                draw_confirmed_player.run_if(in_state(AppState::Play)),
-                draw_predicted_target.run_if(in_state(AppState::Play)),
-            ),
-        );
-        app.add_systems(
-            FixedPreUpdate,
-            buffer_input.in_set(InputSystemSet::BufferInputs),
-        );
-
-        // app.add_event::<LeftClickEvent>();
     }
 }

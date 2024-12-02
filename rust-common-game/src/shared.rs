@@ -1,12 +1,7 @@
-use std::time::Duration;
-
 use avian2d::prelude::*;
 use avian2d::sync::SyncPlugin;
 use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
-
-use lightyear::prelude::*;
-use lightyear::shared::config::Mode;
 
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
@@ -28,20 +23,12 @@ impl Plugin for SharedPlugin {
 
         // Physics
         //
-        // we use Position and Rotation as primary source of truth, so no need to sync changes
-        // from Transform->Pos, just Pos->Transform.
-        app.insert_resource(avian2d::sync::SyncConfig {
-            transform_to_position: false,
-            position_to_transform: false,
-        });
-        // We change SyncPlugin to PostUpdate, because we want the visually interpreted values
-        // synced to transform every time, not just when Fixed schedule runs.
+        // we use Position and Rotation as primary source of truth, so no need to sync changes with SyncPlugin
         app.add_plugins(
             PhysicsPlugins::new(FixedUpdate)
                 .build()
                 .disable::<SyncPlugin>(),
         );
-        // .add_plugins(SyncPlugin::new(PostUpdate));
 
         app.insert_resource(Time::new_with(Physics::fixed_once_hz(FIXED_TIMESTEP_HZ)));
         app.insert_resource(Gravity(Vec2::ZERO));
@@ -87,10 +74,6 @@ pub fn shared_movement_behaviour(
 
             // If the next step overshoots the target, use reduced velocity
             if max_distance > distance_to_target {
-                println!(
-                    "Close to target, max_distance: {} distance_to_target: {}",
-                    max_distance, distance_to_target
-                );
                 *velocity = LinearVelocity(direction * (distance_to_target / time.delta_seconds()));
             // Else go at max speed
             } else {

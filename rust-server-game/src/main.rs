@@ -77,12 +77,7 @@ fn set_player_target(
 }
 
 fn main() {
-    let server_addr = SocketAddr::new(
-        Ipv4Addr::from_str(local_ip().unwrap().to_string().as_str())
-            .unwrap()
-            .into(),
-        34255,
-    );
+    let server_addr = SocketAddr::new(local_ip().unwrap().to_canonical(), 34255);
 
     let netcode_config = NetcodeConfig::default().with_protocol_id(0).with_key([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -98,7 +93,6 @@ fn main() {
     let net_config = NetConfig::Netcode {
         config: netcode_config,
         io: IoConfig {
-            // the address specified here is the server_address, because we open a UDP socket on the server
             transport: ServerTransport::UdpSocket(server_addr),
             ..default()
         },
@@ -124,9 +118,11 @@ fn main() {
         })
         .add_plugins(server_plugin.build())
         .add_plugins(SharedPlugin)
-        .add_systems(Update, handle_connections)
         .add_systems(Startup, start_server)
-        .add_systems(FixedUpdate, movement)
-        .add_systems(FixedUpdate, set_player_target)
+        .add_systems(Update, handle_connections)
+        .add_systems(
+            FixedUpdate,
+            (movement, set_player_target).chain().in_set(FixedSet::Main),
+        )
         .run();
 }

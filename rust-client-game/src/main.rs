@@ -1,17 +1,22 @@
-use bevy::{prelude::*, sprite::Wireframe2dPlugin};
+use bevy::prelude::*;
 use bevy_simple_text_input::TextInputPlugin;
+use bevy_transform_interpolation::TransformInterpolationPlugin;
 use common::*;
+use lightyear::*;
 use states::auth::*;
 use states::lobby::*;
 use states::play::*;
 use ui::*;
+use utils::*;
 
 mod common;
+mod lightyear;
 mod states;
 mod ui;
+mod utils;
 
 fn setup() {
-    println!("Setup")
+    println!("Setup!")
 }
 
 fn transition_to_auth_scene(mut app_state: ResMut<NextState<AppState>>) {
@@ -34,8 +39,20 @@ impl Plugin for SetupPlugin {
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, Wireframe2dPlugin, TextInputPlugin))
-        .add_plugins((UiPlugin, SetupPlugin, AuthPlugin, LobbyPlugin, PlayPlugin))
+        .add_plugins((
+            // Deps
+            DefaultPlugins,
+            TextInputPlugin,
+            TransformInterpolationPlugin::default(),
+            // Internal
+            UtilsPlugin,
+            UiPlugin,
+            SetupPlugin,
+            LightyearPlugin,
+            AuthPlugin,
+            LobbyPlugin,
+            PlayPlugin,
+        ))
         .insert_resource(RenderConfig {
             mode: RenderMode::Iso,
         })
