@@ -6,4 +6,5 @@
 .devcontainer/local
 .devcontainer/volume
 
-rust-server-game/image/rust-server-game
+rust-server-game/docker/rust-server-game
+rust-server-game-legacy/image/rust-server-game

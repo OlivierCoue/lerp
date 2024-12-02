@@ -1,4 +1,3 @@
-use avian2d::prelude::*;
 use bevy::{prelude::*, sprite::Wireframe2dPlugin};
 use bevy_simple_text_input::TextInputPlugin;
 use common::*;
@@ -35,16 +34,10 @@ impl Plugin for SetupPlugin {
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins,
-            Wireframe2dPlugin,
-            TextInputPlugin,
-            PhysicsPlugins::default(),
-        ))
-        .insert_resource(Gravity(Vec2::ZERO))
+        .add_plugins((DefaultPlugins, Wireframe2dPlugin, TextInputPlugin))
         .add_plugins((UiPlugin, SetupPlugin, AuthPlugin, LobbyPlugin, PlayPlugin))
         .insert_resource(RenderConfig {
-            mode: RenderMode::Cart,
+            mode: RenderMode::Iso,
         })
         .run();
 }

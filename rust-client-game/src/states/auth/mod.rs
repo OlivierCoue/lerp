@@ -1,12 +1,10 @@
 use crate::common::*;
 use crate::ui::*;
 use bevy::prelude::*;
+use bevy_simple_text_input::TextInputBundle;
 use bevy_simple_text_input::TextInputInactive;
 use bevy_simple_text_input::TextInputSettings;
 use bevy_simple_text_input::TextInputValue;
-use bevy_simple_text_input::{
-    TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem,
-};
 
 const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
 const BORDER_COLOR_INACTIVE: Color = Color::srgb(0.25, 0.25, 0.25);

@@ -1,5 +1,5 @@
 [package]
-name = "rust-server-game"
+name = "rust-common-game"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,5 @@ edition = "2021"
 [dependencies]
 avian2d = { version = "0.1.2", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize" ] }
 bevy = { version = "0.14", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
-bitflags = { version = "2.6", features = ["serde"] }
 lightyear = { version = "0.17", features = ["avian2d"] }
-rust-common-game = { path = "../rust-common-game" }
 serde = { version = "1.0.215", features = ["derive"] }
-local-ip-address = "0.6.0"

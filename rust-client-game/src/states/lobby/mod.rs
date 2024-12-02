@@ -7,7 +7,7 @@ pub struct LobbySceneTag;
 
 #[derive(Component)]
 enum ButtonAction {
-    Play,
+    Play(RenderMode),
     Logout,
 }
 
@@ -37,7 +37,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonAction::Play,
+                    ButtonAction::Play(RenderMode::Iso),
                     ButtonBundle {
                         style: Style {
                             width: Val::Px(150.0),
@@ -57,6 +57,31 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section("Play", TextStyle::default()));
+                });
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonAction::Play(RenderMode::Cart),
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Px(150.0),
+                            height: Val::Px(65.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            // horizontally center child text
+                            justify_content: JustifyContent::Center,
+                            // vertically center child text
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        border_color: BorderColor(Color::BLACK),
+                        border_radius: BorderRadius::MAX,
+                        background_color: NORMAL_BUTTON.into(),
+                        ..default()
+                    },
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section("Play Debug", TextStyle::default()));
                 });
         })
         .with_children(|parent| {
@@ -102,11 +127,13 @@ fn lobby_scene_button_logic(
         (&Interaction, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
+    mut render_config: ResMut<RenderConfig>,
 ) {
     for (interaction, action) in &mut interaction_query {
         match *interaction {
-            Interaction::Pressed => match *action {
-                ButtonAction::Play => {
+            Interaction::Pressed => match action {
+                ButtonAction::Play(render_mode) => {
+                    render_config.mode = *render_mode;
                     app_state.set(AppState::Play);
                 }
                 ButtonAction::Logout => {

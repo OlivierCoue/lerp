@@ -1,14 +1,8 @@
 [workspace]
 members = [
-    "rust-client-v2",
-    "rust-common",
-    "rust-lambda-auth",
-    "rust-lambda-common",
-    "rust-lambda-lobby",
-    "rust-lambda-scaler",
-    "rust-server-common",
+    "rust-client-game",
+    "rust-common-game",
     "rust-server-game",
-    "rust-server-test",
 ]
 resolver = "2"
 
