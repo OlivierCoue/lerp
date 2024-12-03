@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use leafwing_input_manager::prelude::*;
 use lightyear::client::components::ComponentSyncMode;
-
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -33,12 +33,21 @@ pub enum Inputs {
     None,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect, Actionlike)]
+pub enum PlayerActions {
+    Move,
+    Stop,
+    #[actionlike(DualAxis)]
+    Cursor,
+}
+
 pub struct ProtocolPlugin;
 
 impl Plugin for ProtocolPlugin {
     fn build(&self, app: &mut App) {
         // Inputs
-        app.add_plugins(InputPlugin::<Inputs>::default());
+        // app.add_plugins(InputPlugin::<Inputs>::default());
+        app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
 
         // Components
         app.register_component::<Player>(ChannelDirection::ServerToClient)

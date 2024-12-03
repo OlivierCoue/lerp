@@ -1,7 +1,9 @@
 use crate::states::play::*;
 use avian2d::prelude::*;
-use bevy::{input::mouse::MouseButtonInput, prelude::*};
+use bevy::prelude::*;
 use bevy_transform_interpolation::TranslationInterpolation;
+use leafwing_input_manager::prelude::*;
+
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
@@ -23,14 +25,16 @@ pub fn handle_new_player(
         commands.entity(entity).insert((
             PlaySceneTag,
             RigidBody::Dynamic,
-            Collider::circle(ENTITY_SIZE / 2.0),
+            Collider::circle(ENTITY_SIZE / 2.),
             LockedAxes::ROTATION_LOCKED,
-            Restitution::new(1.0),
-            Friction::new(0.0),
+            Restitution::new(1.),
+            Friction::new(0.),
+            InputMap::new([(PlayerActions::Stop, KeyCode::KeyS)])
+                .with(PlayerActions::Move, MouseButton::Left),
             TranslationInterpolation,
             SpriteBundle {
                 texture: asset_server.load("assets/gear-sorceress.png"),
-                transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                transform: Transform::from_xyz(0., 0., 1.),
                 ..default()
             },
         ));
@@ -91,56 +95,57 @@ pub fn movement(
     }
 }
 
-pub(crate) fn buffer_input(
-    tick_manager: Res<TickManager>,
-    mut input_manager: ResMut<InputManager<Inputs>>,
-    mut mouse_button_events: EventReader<MouseButtonInput>,
-    camera_query: Query<(&Camera, &GlobalTransform)>, // Camera query to convert screen space to world space
+pub fn sync_cursor_poisition(
+    camera_query: Query<(&Camera, &GlobalTransform)>,
     windows: Query<&Window>,
     render_config: Res<RenderConfig>,
+    mut action_state_query: Query<&mut ActionState<PlayerActions>, (With<Player>, With<Predicted>)>,
 ) {
-    let tick = tick_manager.tick();
+    let (camera, camera_transform) = camera_query.single();
 
-    for event in &mut mouse_button_events.read() {
-        if event.button == MouseButton::Left && event.state.is_pressed() {
-            let (camera, camera_transform) = camera_query.single();
+    let Some(screen_cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
 
-            let Some(cursor_position) = windows.single().cursor_position() else {
-                return;
-            };
+    // Calculate a world position based on the cursor's position.
+    let Some(world_cursor_position) =
+        camera.viewport_to_world_2d(camera_transform, screen_cursor_position)
+    else {
+        return;
+    };
 
-            // Calculate a world position based on the cursor's position.
-            let Some(world_position) =
-                camera.viewport_to_world_2d(camera_transform, cursor_position)
-            else {
-                return;
-            };
+    let new_cursor_position = match render_config.mode {
+        RenderMode::Iso => isometric_to_cartesian(world_cursor_position.x, world_cursor_position.y),
+        RenderMode::Cart => world_cursor_position,
+    };
 
-            let target = match render_config.mode {
-                RenderMode::Iso => isometric_to_cartesian(world_position.x, world_position.y),
-                RenderMode::Cart => world_position,
-            };
-            input_manager.add_input(
-                Inputs::Target(InputVec2 {
-                    x: target.x,
-                    y: target.y,
-                }),
-                tick,
-            )
-        }
-    }
+    let Ok(mut action_state) = action_state_query.get_single_mut() else {
+        println!("action_state_query.get_single_mut() return Err");
+        return;
+    };
+    let action = action_state.dual_axis_data_mut_or_default(&PlayerActions::Cursor);
+    action.fixed_update_pair = new_cursor_position;
 }
 
 pub fn set_player_target(
-    mut input_reader: EventReader<InputEvent<Inputs>>,
-    mut query: Query<&mut Targets, (With<Player>, With<Predicted>)>,
+    query_action: Query<&ActionState<PlayerActions>, (With<Player>, With<Predicted>)>,
+    mut query_targets: Query<&mut Targets, (With<Player>, With<Predicted>)>,
 ) {
-    for input in input_reader.read() {
-        if let Some(Inputs::Target(target)) = input.input() {
-            let Ok(mut targets) = query.get_single_mut() else {
+    for action in query_action.iter() {
+        if action.pressed(&PlayerActions::Move) {
+            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+                println!("cursor_position not set skipping");
                 return;
             };
-            *targets = Targets(vec![Vec2::new(target.x, target.y)])
+            let Ok(mut targets) = query_targets.get_single_mut() else {
+                println!("targets not set skipping");
+                return;
+            };
+
+            *targets = Targets(vec![Vec2::new(
+                cursor_position.pair.x,
+                cursor_position.pair.y,
+            )])
         }
     }
 }

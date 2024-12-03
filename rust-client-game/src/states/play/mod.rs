@@ -10,9 +10,12 @@ use bevy::prelude::*;
 
 use bevy_transform_interpolation::TransformEasingSet;
 
+use leafwing_input_manager::plugin::InputManagerSystem;
+use leafwing_input_manager::prelude::ActionState;
 use lightyear::client::input::native::InputSystemSet;
 use lightyear::prelude::client::*;
 use lightyear::prelude::*;
+use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
 use rust_common_game::shared::*;
 
@@ -55,8 +58,10 @@ impl Plugin for PlayPlugin {
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
         app.add_systems(
-            FixedPreUpdate,
-            buffer_input.in_set(InputSystemSet::BufferInputs),
+            PreUpdate,
+            sync_cursor_poisition
+                .in_set(InputManagerSystem::ManualControl)
+                .run_if(in_state(AppState::Play)),
         );
 
         app.add_systems(

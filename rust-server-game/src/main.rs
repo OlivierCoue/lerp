@@ -1,6 +1,4 @@
-use std::net::Ipv4Addr;
 use std::net::SocketAddr;
-use std::str::FromStr;
 
 use avian2d::prelude::*;
 
@@ -8,6 +6,7 @@ use bevy::log::Level;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
+use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
@@ -63,15 +62,25 @@ fn movement(
 }
 
 fn set_player_target(
-    mut input_reader: EventReader<InputEvent<Inputs>>,
-    mut query: Query<&mut Targets, With<Player>>,
+    query_action: Query<&ActionState<PlayerActions>, With<Player>>,
+    mut query_targets: Query<&mut Targets, With<Player>>,
 ) {
-    for input in input_reader.read() {
-        if let Some(Inputs::Target(target)) = input.input() {
-            let Ok(mut targets) = query.get_single_mut() else {
+    for action in query_action.iter() {
+        if action.pressed(&PlayerActions::Move) {
+            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+                println!("cursor_position not set skipping");
                 return;
             };
-            *targets = Targets(vec![Vec2::new(target.x, target.y)])
+
+            let Ok(mut targets) = query_targets.get_single_mut() else {
+                println!("targets not set skipping");
+                return;
+            };
+
+            *targets = Targets(vec![Vec2::new(
+                cursor_position.pair.x,
+                cursor_position.pair.y,
+            )])
         }
     }
 }

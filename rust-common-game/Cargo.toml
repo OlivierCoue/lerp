@@ -7,5 +7,6 @@ edition = "2021"
 [dependencies]
 avian2d = { version = "0.1.2", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize" ] }
 bevy = { version = "0.14", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
-lightyear = { version = "0.17", features = ["avian2d"] }
+leafwing-input-manager = "0.15"
+lightyear = { version = "0.17", features = ["avian2d", "leafwing"] }
 serde = { version = "1.0.215", features = ["derive"] }
