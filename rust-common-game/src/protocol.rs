@@ -1,8 +1,8 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use lightyear::client::components::ComponentSyncMode;
 use lightyear::prelude::*;
+use lightyear::{client::components::ComponentSyncMode, utils::avian2d::position};
 use serde::{Deserialize, Serialize};
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
@@ -46,7 +46,6 @@ pub struct ProtocolPlugin;
 impl Plugin for ProtocolPlugin {
     fn build(&self, app: &mut App) {
         // Inputs
-        // app.add_plugins(InputPlugin::<Inputs>::default());
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
 
         // Components
@@ -64,6 +63,9 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Position>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full);
+            .add_prediction(ComponentSyncMode::Full)
+            .add_interpolation(ComponentSyncMode::Full)
+            .add_interpolation_fn(position::lerp)
+            .add_correction_fn(position::lerp);
     }
 }

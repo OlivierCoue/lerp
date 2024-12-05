@@ -2,8 +2,9 @@ use crate::common::*;
 use crate::states::play::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 
-const SPRITE_SCALE_FACTOR: f32 = 4.;
+// const SPRITE_SCALE_FACTOR: f32 = 4.;
 
 pub fn setup_map(
     mut commands: Commands,
@@ -34,21 +35,25 @@ pub fn setup_map(
             let is_obstacle = row % 6 == 0 && col % 6 == 0;
 
             if is_border || is_obstacle {
-                commands.entity(entity).insert((
-                    RigidBody::Static,
-                    Restitution::new(1.0),
-                    Friction::new(0.0),
-                    Collider::rectangle(ENTITY_SIZE - 1., ENTITY_SIZE - 1.),
-                ));
+                if !is_border {
+                    commands.entity(entity).insert((
+                        RigidBody::Static,
+                        Collider::rectangle(ENTITY_SIZE - 1., ENTITY_SIZE - 1.),
+                    ));
+                }
 
                 match render_config.mode {
                     RenderMode::Iso => commands.entity(entity).insert(SpriteBundle {
                         texture: asset_server.load("assets/stone_W.png"),
-                        transform: Transform::default().with_scale(Vec3::new(
-                            1. / SPRITE_SCALE_FACTOR,
-                            1. / SPRITE_SCALE_FACTOR,
-                            1.,
-                        )),
+                        // transform: Transform::default().with_scale(Vec3::new(
+                        //     1. / SPRITE_SCALE_FACTOR,
+                        //     1. / SPRITE_SCALE_FACTOR,
+                        //     1.,
+                        // ))
+                        sprite: Sprite {
+                            anchor: Anchor::Custom(Vec2::new(0., -0.375)),
+                            ..Default::default()
+                        },
                         ..default()
                     }),
                     RenderMode::Cart => commands.entity(entity).insert(SpriteBundle {
@@ -64,11 +69,10 @@ pub fn setup_map(
                 match render_config.mode {
                     RenderMode::Iso => commands.entity(entity).insert(SpriteBundle {
                         texture: asset_server.load("assets/dirt_W.png"),
-                        transform: Transform::default().with_scale(Vec3::new(
-                            1. / SPRITE_SCALE_FACTOR,
-                            1. / SPRITE_SCALE_FACTOR,
-                            1.,
-                        )),
+                        sprite: Sprite {
+                            anchor: Anchor::Custom(Vec2::new(0., -0.375)),
+                            ..Default::default()
+                        },
                         ..default()
                     }),
                     RenderMode::Cart => commands.entity(entity).insert(SpriteBundle {
@@ -83,4 +87,29 @@ pub fn setup_map(
             }
         }
     }
+
+    // TOP
+    commands.spawn((
+        Position::from_xy(0., 1600. - ENTITY_SIZE),
+        RigidBody::Static,
+        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+    ));
+    // BOTOM
+    commands.spawn((
+        Position::from_xy(0., 0. - 1600.),
+        RigidBody::Static,
+        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+    ));
+    // LEFT
+    commands.spawn((
+        Position::from_xy(-1600., 0.),
+        RigidBody::Static,
+        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+    ));
+    // RIGHT
+    commands.spawn((
+        Position::from_xy(1600. - ENTITY_SIZE, 0.),
+        RigidBody::Static,
+        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+    ));
 }

@@ -1,11 +1,12 @@
 use bevy::prelude::*;
-use lightyear::prelude::client::*;
+use lightyear::{prelude::client::*, shared::replication::components::Controlled};
 use rust_common_game::protocol::*;
 
 // System to make the camera follow the player
+#[allow(clippy::type_complexity)]
 pub fn camera_follow(
     // time: Res<Time>,
-    player_query: Query<&Transform, (With<Player>, With<Predicted>)>,
+    player_query: Query<&Transform, (With<Player>, With<Predicted>, With<Controlled>)>,
     mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
 ) {
     if let Ok(player_transform) = player_query.get_single() {

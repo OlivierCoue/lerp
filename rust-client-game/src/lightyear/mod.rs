@@ -1,13 +1,13 @@
+use bevy::prelude::*;
+use lightyear::prelude::{client::*, *};
+use rand::Rng;
+use rust_common_game::settings::*;
+use rust_common_game::shared::*;
 use std::net::IpAddr;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::time::Duration;
-
-use bevy::prelude::*;
-use lightyear::prelude::{client::*, *};
-use rust_common_game::settings::*;
-use rust_common_game::shared::*;
 
 fn display_network_status(state: Res<State<NetworkingState>>) {
     if state.is_changed() {
@@ -29,7 +29,8 @@ pub struct LightyearPlugin;
 
 impl Plugin for LightyearPlugin {
     fn build(&self, app: &mut App) {
-        let client_id = 0;
+        let mut rng = rand::thread_rng();
+        let client_id = rng.gen_range(1..10001);
 
         let link_conditioner = LinkConditionerConfig {
             incoming_latency: Duration::from_millis(100),

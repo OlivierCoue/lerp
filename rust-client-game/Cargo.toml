@@ -11,6 +11,7 @@ bevy_simple_text_input = "0.9"
 bevy_transform_interpolation = { git = "https://github.com/Jondolf/bevy_transform_interpolation", rev = "93b7036" }
 leafwing-input-manager = "0.15"
 lightyear = { version = "0.17", features = ["avian2d", "leafwing"] }
+rand = "0.8"
 rust-common-game = { path = "../rust-common-game" }
 serde = { version = "1.0.215", features = ["derive"] }
 

@@ -3969,6 +3969,7 @@ dependencies = [
  "bevy_transform_interpolation",
  "leafwing-input-manager",
  "lightyear",
+ "rand",
  "rust-common-game",
  "serde",
 ]

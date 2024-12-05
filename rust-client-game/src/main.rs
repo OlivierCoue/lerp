@@ -1,4 +1,6 @@
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
+use bevy::window::PresentMode;
 use bevy_simple_text_input::TextInputPlugin;
 use bevy_transform_interpolation::TransformInterpolationPlugin;
 use common::*;
@@ -41,7 +43,16 @@ fn main() {
     App::new()
         .add_plugins((
             // Deps
-            DefaultPlugins,
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    present_mode: PresentMode::Immediate, // Disable VSync and keep high FPS
+                    focused: true,
+
+                    ..default()
+                }),
+                ..default()
+            }),
+            FrameTimeDiagnosticsPlugin,
             TextInputPlugin,
             TransformInterpolationPlugin::default(),
             // Internal

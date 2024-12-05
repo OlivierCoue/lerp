@@ -3,6 +3,7 @@ use avian2d::sync::SyncPlugin;
 use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
 
+use crate::character_controller::CharacterControllerPlugin;
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
 
@@ -29,6 +30,10 @@ impl Plugin for SharedPlugin {
                 .build()
                 .disable::<SyncPlugin>(),
         );
+        app.insert_resource(avian2d::sync::SyncConfig {
+            transform_to_position: false,
+            position_to_transform: false,
+        });
 
         app.insert_resource(Time::new_with(Physics::fixed_once_hz(FIXED_TIMESTEP_HZ)));
         app.insert_resource(Gravity(Vec2::ZERO));
@@ -47,6 +52,7 @@ impl Plugin for SharedPlugin {
                 (FixedSet::Main, FixedSet::Physics).chain(),
             ),
         );
+        app.add_plugins(CharacterControllerPlugin);
     }
 }
 
