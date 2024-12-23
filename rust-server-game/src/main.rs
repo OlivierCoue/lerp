@@ -1,3 +1,4 @@
+mod enemy;
 mod map;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -9,6 +10,7 @@ use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
 use bevy::utils::HashMap;
+use enemy::EnemyPlugin;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
@@ -194,5 +196,6 @@ fn main() {
             FixedUpdate,
             (movement, set_player_target).chain().in_set(FixedSet::Main),
         )
+        .add_plugins(EnemyPlugin)
         .run();
 }

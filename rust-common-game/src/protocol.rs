@@ -15,6 +15,9 @@ pub struct Player {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Enemy;
+
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Targets(pub Vec<Vec2>);
 
 // Inputs
@@ -50,6 +53,10 @@ impl Plugin for ProtocolPlugin {
 
         // Components
         app.register_component::<Player>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once)
+            .add_interpolation(ComponentSyncMode::Once);
+
+        app.register_component::<Enemy>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once)
             .add_interpolation(ComponentSyncMode::Once);
 
