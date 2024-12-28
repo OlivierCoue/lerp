@@ -1,10 +1,8 @@
 use crate::common::*;
 use crate::ui::*;
 use bevy::prelude::*;
-use bevy_simple_text_input::TextInputBundle;
-use bevy_simple_text_input::TextInputInactive;
-use bevy_simple_text_input::TextInputSettings;
-use bevy_simple_text_input::TextInputValue;
+use bevy::ui::FocusPolicy;
+use bevy_simple_text_input::*;
 
 const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
 const BORDER_COLOR_INACTIVE: Color = Color::srgb(0.25, 0.25, 0.25);
@@ -30,23 +28,17 @@ struct TextInputPassword;
 fn auth_scene_setup(mut commands: Commands) {
     println!("[auth_scene_setup]");
 
-    commands.spawn((AuthSceneTag, Camera2dBundle::default()));
-    commands.spawn((
-        AuthSceneTag,
-        TextBundle::from_section("Authentication Scene", TextStyle::default()),
-    ));
+    commands.spawn((AuthSceneTag, Camera2d::default()));
+    commands.spawn((AuthSceneTag, Text("Authentication Scene".to_string())));
     commands
         .spawn((
             AuthSceneTag,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    flex_direction: FlexDirection::Column,
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
             Interaction::None,
@@ -54,125 +46,115 @@ fn auth_scene_setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 TextInputUsername,
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(200.0),
-                        height: Val::Px(50.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        padding: UiRect::all(Val::Px(5.0)),
-                        ..default()
-                    },
-                    border_color: BORDER_COLOR_ACTIVE.into(),
-                    background_color: BACKGROUND_COLOR.into(),
-                    focus_policy: bevy::ui::FocusPolicy::Block,
+                BorderColor(BORDER_COLOR_ACTIVE.into()),
+                BackgroundColor(BACKGROUND_COLOR.into()),
+                FocusPolicy::Block,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(50.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    padding: UiRect::all(Val::Px(5.0)),
                     ..default()
                 },
-                TextInputBundle::default()
-                    .with_text_style(TextStyle {
+                TextInput,
+                TextInputTextFont(TextFont {
+                    font_size: 20.,
+                    ..default()
+                }),
+                TextInputTextColor(TextColor(TEXT_COLOR)),
+                TextInputSettings {
+                    retain_on_submit: true,
+                    ..default()
+                },
+                TextInputPlaceholder {
+                    value: "Username".to_string(),
+                    text_color: Some(TextColor(TEXT_COLOR_PLACEHOLDER)),
+                    text_font: Some(TextFont {
                         font_size: 20.,
-                        color: TEXT_COLOR,
                         ..default()
-                    })
-                    .with_settings(TextInputSettings {
-                        retain_on_submit: true,
-                        ..default()
-                    })
-                    .with_placeholder(
-                        "Username",
-                        Some(TextStyle {
-                            font_size: 20.,
-                            color: TEXT_COLOR_PLACEHOLDER,
-                            ..default()
-                        }),
-                    )
-                    .with_inactive(true),
+                    }),
+                },
+                TextInputInactive(true),
             ));
         })
         .with_children(|parent| {
             parent.spawn((
                 TextInputPassword,
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(200.0),
-                        height: Val::Px(50.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        padding: UiRect::all(Val::Px(5.0)),
-                        ..default()
-                    },
-                    border_color: BORDER_COLOR_ACTIVE.into(),
-                    background_color: BACKGROUND_COLOR.into(),
-                    focus_policy: bevy::ui::FocusPolicy::Block,
+                BorderColor(BORDER_COLOR_ACTIVE.into()),
+                BackgroundColor(BACKGROUND_COLOR.into()),
+                FocusPolicy::Block,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(50.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    padding: UiRect::all(Val::Px(5.0)),
                     ..default()
                 },
-                TextInputBundle::default()
-                    .with_text_style(TextStyle {
+                TextInput,
+                TextInputTextFont(TextFont {
+                    font_size: 20.,
+                    ..default()
+                }),
+                TextInputTextColor(TextColor(TEXT_COLOR)),
+                TextInputSettings {
+                    retain_on_submit: true,
+                    mask_character: Some('*'),
+                },
+                TextInputPlaceholder {
+                    value: "Password".to_string(),
+                    text_color: Some(TextColor(TEXT_COLOR_PLACEHOLDER)),
+                    text_font: Some(TextFont {
                         font_size: 20.,
-                        color: TEXT_COLOR,
                         ..default()
-                    })
-                    .with_settings(TextInputSettings {
-                        mask_character: Some('*'),
-                        retain_on_submit: true,
-                    })
-                    .with_placeholder(
-                        "Password",
-                        Some(TextStyle {
-                            font_size: 20.,
-                            color: TEXT_COLOR_PLACEHOLDER,
-                            ..default()
-                        }),
-                    )
-                    .with_inactive(true),
+                    }),
+                },
+                TextInputInactive(true),
             ));
         })
         .with_children(|parent| {
             parent
                 .spawn((
                     ButtonAction::Login,
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        border_radius: BorderRadius::MAX,
-                        background_color: NORMAL_BUTTON.into(),
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Login", TextStyle::default()));
+                    parent.spawn(Text("Login".to_string()));
                 });
         })
         .with_children(|parent| {
             parent
                 .spawn((
                     ButtonAction::Exit,
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        border_radius: BorderRadius::MAX,
-                        background_color: NORMAL_BUTTON.into(),
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Exit", TextStyle::default()));
+                    parent.spawn(Text("Exit".to_string()));
                 });
         });
 }

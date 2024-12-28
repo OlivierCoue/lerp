@@ -191,11 +191,8 @@ fn main() {
         })
         .add_systems(Startup, (start_server, setup_map))
         .add_systems(Update, handle_connections)
-        .add_systems(FixedUpdate, aplly_auto_move.in_set(FixedSet::Main))
-        .add_systems(
-            FixedUpdate,
-            (movement, set_player_target).chain().in_set(FixedSet::Main),
-        )
+        .add_systems(FixedUpdate, aplly_auto_move)
+        .add_systems(FixedUpdate, (movement, set_player_target).chain())
         .add_plugins(EnemyPlugin)
         .run();
 }

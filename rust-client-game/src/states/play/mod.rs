@@ -28,40 +28,24 @@ pub fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
 
     commands.connect_client();
-    commands.spawn((PlaySceneTag, Camera2dBundle::default()));
+    commands.spawn((PlaySceneTag, Camera2d::default()));
 
     commands
         .spawn((
             PlaySceneTag,
-            NodeBundle {
-                style: Style {
-                    align_items: AlignItems::Start,
-                    justify_content: JustifyContent::Start,
-                    flex_direction: FlexDirection::Column,
-                    ..default()
-                },
+            Node {
+                align_items: AlignItems::Start,
+                justify_content: JustifyContent::Start,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
         ))
         .with_children(|parent| {
-            parent.spawn((TextBundle::from_section("Play Scene", TextStyle::default()),));
+            parent.spawn(Text("Play Scene".to_string()));
             parent.spawn((
                 FpsDisplayTag,
-                TextBundle::from_sections([
-                    TextSection::new("FPS: ", TextStyle::default()),
-                    TextSection::new(
-                        "0",
-                        TextStyle {
-                            color: Color::linear_rgb(0., 1., 0.),
-                            ..default()
-                        },
-                    ),
-                ])
-                .with_style(Style {
-                    justify_content: JustifyContent::FlexEnd,
-                    align_items: AlignItems::FlexStart,
-                    ..default()
-                }),
+                Text("FPS: 0".to_string()),
+                TextColor(Color::linear_rgb(0., 1., 0.)),
             ));
         });
 }
@@ -92,7 +76,7 @@ pub fn update_fps(
         .and_then(|fps| fps.average())
     {
         for mut text in &mut query {
-            text.sections[1].value = format!("{:.1}", fps);
+            text.0 = format!("FPS: {:.1}", fps);
         }
     }
 }
@@ -127,7 +111,6 @@ impl Plugin for PlayPlugin {
             FixedUpdate,
             (movement, set_player_target)
                 .chain()
-                .in_set(FixedSet::Main)
                 .run_if(in_state(AppState::Play)),
         );
 
@@ -135,7 +118,7 @@ impl Plugin for PlayPlugin {
             PostUpdate,
             camera_follow
                 .before(TransformSystem::TransformPropagate)
-                .after(TransformEasingSet)
+                .after(TransformEasingSet::UpdateEasingTick)
                 .run_if(in_state(AppState::Play)),
         );
     }

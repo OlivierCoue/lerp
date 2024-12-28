@@ -2,7 +2,8 @@ use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy_simple_text_input::TextInputPlugin;
-use bevy_transform_interpolation::TransformInterpolationPlugin;
+
+use bevy_transform_interpolation::prelude::TransformInterpolationPlugin;
 use common::*;
 use lightyear::*;
 use states::auth::*;
@@ -54,7 +55,6 @@ fn main() {
             }),
             FrameTimeDiagnosticsPlugin,
             TextInputPlugin,
-            TransformInterpolationPlugin::default(),
             // Internal
             UtilsPlugin,
             UiPlugin,

@@ -2,9 +2,10 @@ use crate::states::play::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use bevy_transform_interpolation::TranslationInterpolation;
+
 use leafwing_input_manager::prelude::*;
 
+use avian2d::collision::Collider;
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::character_controller::*;
 use rust_common_game::protocol::*;
@@ -17,32 +18,35 @@ pub fn handle_new_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut player_query: Query<
-        (Entity, Has<Controlled>),
+        (Entity, Has<Controlled>, Has<Enemy>),
         (Or<(Added<Predicted>, Added<Interpolated>)>, With<Player>),
     >,
 ) {
-    for (entity, is_controlled) in player_query.iter_mut() {
+    for (entity, is_controlled, is_enemy) in player_query.iter_mut() {
         println!(
             "[handle_new_player] New Player with id: {}",
             connection.id()
         );
 
+        let collider = if is_enemy {
+            Collider::circle(ENTITY_SIZE / 2.0 / 2.)
+        } else {
+            Collider::circle(ENTITY_SIZE / 2.)
+        };
+
         commands.entity(entity).insert((
             PlaySceneTag,
             RigidBody::Kinematic,
             CharacterController,
-            Collider::circle(ENTITY_SIZE / 2.),
+            collider,
             LockedAxes::ROTATION_LOCKED,
-            TranslationInterpolation,
-            SpriteBundle {
-                texture: asset_server.load("assets/gear-sorceress.png"),
-                transform: Transform::from_xyz(0., 0., 1.),
-                sprite: Sprite {
-                    anchor: Anchor::Custom(Vec2::new(0., -0.20)),
-                    ..default()
-                },
+            TransformInterpolation,
+            Sprite {
+                image: (asset_server.load("assets/gear-sorceress.png")),
+                anchor: Anchor::Custom(Vec2::new(0., -0.20)),
                 ..default()
             },
+            Transform::from_xyz(0., 0., 1.),
         ));
 
         if is_controlled {
@@ -57,13 +61,18 @@ pub fn handle_new_player(
 #[allow(clippy::type_complexity)]
 pub(crate) fn draw_confirmed_player(
     mut gizmos: Gizmos,
-    confirmed_q: Query<&Position, (With<Player>, With<Confirmed>)>,
+    confirmed_q: Query<(&Position, Has<Enemy>), (With<Player>, With<Confirmed>)>,
     render_config: Res<RenderConfig>,
 ) {
-    for position in confirmed_q.iter() {
+    for (position, is_enemy) in confirmed_q.iter() {
+        let radius = if is_enemy {
+            ENTITY_SIZE / 2.0 / 2.
+        } else {
+            ENTITY_SIZE / 2.
+        };
         gizmos.circle_2d(
             apply_render_mode(&render_config, &position.0),
-            15.,
+            radius,
             Color::linear_rgb(1., 0., 0.),
         );
     }
@@ -140,7 +149,7 @@ pub fn sync_cursor_poisition(
         return;
     };
 
-    let Some(world_cursor_position) =
+    let Ok(world_cursor_position) =
         camera.viewport_to_world_2d(camera_transform, screen_cursor_position)
     else {
         return;

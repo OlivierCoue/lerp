@@ -5,7 +5,7 @@ use bevy::{prelude::*, time::Timer};
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use rust_common_game::{
-    character_controller::CharacterController, protocol::*, settings::ENTITY_SIZE, shared::FixedSet,
+    character_controller::CharacterController, protocol::*, settings::ENTITY_SIZE,
 };
 
 use crate::AutoMove;
@@ -31,7 +31,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
             Targets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
-            Collider::circle(ENTITY_SIZE / 2.0),
+            Collider::circle(ENTITY_SIZE / 2.0 / 2.),
             LockedAxes::ROTATION_LOCKED,
             Replicate {
                 sync: SyncTarget {
@@ -55,7 +55,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
 
 #[allow(clippy::type_complexity)]
 fn set_enemy_target(
-    mut query_enemies: Query<&mut Targets, With<Enemy>>,
+    mut query_enemies: Query<(&mut Targets, &Position, &mut LinearVelocity), With<Enemy>>,
     query_players: Query<&mut Position, (With<Player>, Without<Enemy>, Without<AutoMove>)>,
 ) {
     let mut nearest_player_position_opt = None;
@@ -67,8 +67,14 @@ fn set_enemy_target(
         return;
     };
 
-    for mut enemy_target in &mut query_enemies {
-        enemy_target.0 = vec![*nearest_player_position];
+    for (mut enemy_target, enemy_position, mut enemy_velocity) in &mut query_enemies {
+        let distance_to_player = enemy_position.distance(*nearest_player_position);
+        if distance_to_player > 25. {
+            enemy_target.0 = vec![*nearest_player_position];
+        } else {
+            enemy_target.0 = vec![];
+            enemy_velocity.0 = Vec2::ZERO;
+        }
     }
 }
 
@@ -80,9 +86,6 @@ impl Plugin for EnemyPlugin {
             timer: Timer::new(Duration::from_secs(4), TimerMode::Repeating),
             count: 0,
         });
-        app.add_systems(
-            FixedUpdate,
-            (spaw_enemy, set_enemy_target).in_set(FixedSet::Main),
-        );
+        app.add_systems(FixedUpdate, (spaw_enemy, set_enemy_target));
     }
 }

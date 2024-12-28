@@ -14,23 +14,17 @@ enum ButtonAction {
 pub fn lobby_scene_setup(mut commands: Commands) {
     println!("[lobby_scene_setup]");
 
-    commands.spawn((LobbySceneTag, Camera2dBundle::default()));
-    commands.spawn((
-        LobbySceneTag,
-        TextBundle::from_section("Lobby Scene", TextStyle::default()),
-    ));
+    commands.spawn((LobbySceneTag, Camera2d::default()));
+    commands.spawn((LobbySceneTag, Text("Lobby Scene".to_string())));
     commands
         .spawn((
             LobbySceneTag,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    flex_direction: FlexDirection::Column,
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
         ))
@@ -38,75 +32,69 @@ pub fn lobby_scene_setup(mut commands: Commands) {
             parent
                 .spawn((
                     ButtonAction::Play(RenderMode::Iso),
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        border_radius: BorderRadius::MAX,
-                        background_color: NORMAL_BUTTON.into(),
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Play", TextStyle::default()));
+                    parent.spawn(Text("Play".to_string()));
                 });
         })
         .with_children(|parent| {
             parent
                 .spawn((
                     ButtonAction::Play(RenderMode::Cart),
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        border_radius: BorderRadius::MAX,
-                        background_color: NORMAL_BUTTON.into(),
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Play Debug", TextStyle::default()));
+                    parent.spawn(Text("Play Debug".to_string()));
                 });
         })
         .with_children(|parent| {
             parent
                 .spawn((
                     ButtonAction::Logout,
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        border_radius: BorderRadius::MAX,
-                        background_color: NORMAL_BUTTON.into(),
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Logout", TextStyle::default()));
+                    parent.spawn(Text("Logout".to_string()));
                 });
         });
 }

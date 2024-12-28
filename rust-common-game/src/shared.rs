@@ -7,14 +7,6 @@ use crate::character_controller::CharacterControllerPlugin;
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
 
-#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum FixedSet {
-    // main fixed update systems (handle inputs)
-    Main,
-    // apply physics steps
-    Physics,
-}
-
 #[derive(Clone)]
 pub struct SharedPlugin;
 
@@ -33,25 +25,11 @@ impl Plugin for SharedPlugin {
         app.insert_resource(avian2d::sync::SyncConfig {
             transform_to_position: false,
             position_to_transform: false,
+            transform_to_collider_scale: false,
         });
-
-        app.insert_resource(Time::new_with(Physics::fixed_once_hz(FIXED_TIMESTEP_HZ)));
+        app.insert_resource(Time::<Fixed>::from_hz(FIXED_TIMESTEP_HZ));
         app.insert_resource(Gravity(Vec2::ZERO));
 
-        app.configure_sets(
-            FixedUpdate,
-            (
-                // make sure that any physics simulation happens after the Main SystemSet
-                // (where we apply user's actions)
-                (
-                    PhysicsSet::Prepare,
-                    PhysicsSet::StepSimulation,
-                    PhysicsSet::Sync,
-                )
-                    .in_set(FixedSet::Physics),
-                (FixedSet::Main, FixedSet::Physics).chain(),
-            ),
-        );
         app.add_plugins(CharacterControllerPlugin);
     }
 }
@@ -76,11 +54,11 @@ pub fn shared_movement_behaviour(
             // Calculate direction to the target
             let direction = to_target.normalize_or_zero();
             // Compute movement distance based on speed and delta time
-            let max_distance = speed * time.delta_seconds();
+            let max_distance = speed * time.delta_secs();
 
             // If the next step overshoots the target, use reduced velocity
             if max_distance > distance_to_target {
-                *velocity = LinearVelocity(direction * (distance_to_target / time.delta_seconds()));
+                *velocity = LinearVelocity(direction * (distance_to_target / time.delta_secs()));
             // Else go at max speed
             } else {
                 *velocity = LinearVelocity((direction * speed).clamp_length_max(speed))

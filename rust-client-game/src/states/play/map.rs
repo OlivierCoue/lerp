@@ -43,44 +43,27 @@ pub fn setup_map(
                 }
 
                 match render_config.mode {
-                    RenderMode::Iso => commands.entity(entity).insert(SpriteBundle {
-                        texture: asset_server.load("assets/stone_W.png"),
-                        // transform: Transform::default().with_scale(Vec3::new(
-                        //     1. / SPRITE_SCALE_FACTOR,
-                        //     1. / SPRITE_SCALE_FACTOR,
-                        //     1.,
-                        // ))
-                        sprite: Sprite {
-                            anchor: Anchor::Custom(Vec2::new(0., -0.375)),
-                            ..Default::default()
-                        },
-                        ..default()
+                    RenderMode::Iso => commands.entity(entity).insert(Sprite {
+                        image: asset_server.load("assets/stone_W.png"),
+                        anchor: Anchor::Custom(Vec2::new(0., -0.375)),
+                        ..Default::default()
                     }),
-                    RenderMode::Cart => commands.entity(entity).insert(SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::srgb_u8(255, 0, 0),
-                            custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
-                            ..default()
-                        },
+                    RenderMode::Cart => commands.entity(entity).insert(Sprite {
+                        color: Color::srgb_u8(255, 0, 0),
+                        custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
                         ..default()
                     }),
                 };
             } else {
                 match render_config.mode {
-                    RenderMode::Iso => commands.entity(entity).insert(SpriteBundle {
-                        texture: asset_server.load("assets/dirt_W.png"),
-                        sprite: Sprite {
-                            anchor: Anchor::Custom(Vec2::new(0., -0.375)),
-                            ..Default::default()
-                        },
-                        ..default()
+                    RenderMode::Iso => commands.entity(entity).insert(Sprite {
+                        image: asset_server.load("assets/dirt_W.png"),
+                        anchor: Anchor::Custom(Vec2::new(0., -0.375)),
+                        ..Default::default()
                     }),
-                    RenderMode::Cart => commands.entity(entity).insert(SpriteBundle {
-                        sprite: Sprite {
-                            color,
-                            custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
-                            ..default()
-                        },
+                    RenderMode::Cart => commands.entity(entity).insert(Sprite {
+                        color,
+                        custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
                         ..default()
                     }),
                 };
