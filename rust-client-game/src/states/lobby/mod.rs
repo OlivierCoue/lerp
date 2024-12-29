@@ -14,7 +14,7 @@ enum ButtonAction {
 pub fn lobby_scene_setup(mut commands: Commands) {
     println!("[lobby_scene_setup]");
 
-    commands.spawn((LobbySceneTag, Camera2d::default()));
+    commands.spawn((LobbySceneTag, Camera2d));
     commands.spawn((LobbySceneTag, Text("Lobby Scene".to_string())));
     commands
         .spawn((
@@ -35,7 +35,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Node {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
@@ -58,7 +58,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Node {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
@@ -81,7 +81,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Node {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),

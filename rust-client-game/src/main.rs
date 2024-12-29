@@ -1,9 +1,9 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy::window::PresentMode;
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_simple_text_input::TextInputPlugin;
 
-use bevy_transform_interpolation::prelude::TransformInterpolationPlugin;
 use common::*;
 use lightyear::*;
 use states::auth::*;
@@ -55,6 +55,7 @@ fn main() {
             }),
             FrameTimeDiagnosticsPlugin,
             TextInputPlugin,
+            TilemapPlugin,
             // Internal
             UtilsPlugin,
             UiPlugin,

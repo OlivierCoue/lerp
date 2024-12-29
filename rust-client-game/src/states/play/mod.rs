@@ -16,7 +16,6 @@ use bevy_transform_interpolation::TransformEasingSet;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::prelude::client::*;
 use rust_common_game::settings::*;
-use rust_common_game::shared::*;
 
 #[derive(Component)]
 pub struct PlaySceneTag;
@@ -28,7 +27,7 @@ pub fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
 
     commands.connect_client();
-    commands.spawn((PlaySceneTag, Camera2d::default()));
+    commands.spawn((PlaySceneTag, Camera2d));
 
     commands
         .spawn((

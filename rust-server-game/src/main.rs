@@ -193,6 +193,6 @@ fn main() {
         .add_systems(Update, handle_connections)
         .add_systems(FixedUpdate, aplly_auto_move)
         .add_systems(FixedUpdate, (movement, set_player_target).chain())
-        .add_plugins(EnemyPlugin)
+        // .add_plugins(EnemyPlugin)
         .run();
 }
