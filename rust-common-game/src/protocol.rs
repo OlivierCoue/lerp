@@ -2,7 +2,10 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use lightyear::prelude::*;
-use lightyear::{client::components::ComponentSyncMode, utils::avian2d::position};
+use lightyear::{
+    client::components::ComponentSyncMode,
+    utils::avian2d::{linear_velocity, position},
+};
 use serde::{Deserialize, Serialize};
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
@@ -19,6 +22,9 @@ pub struct Enemy;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Targets(pub Vec<Vec2>);
+
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct MovementSpeed(pub f32);
 
 // Inputs
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -57,6 +63,10 @@ impl Plugin for ProtocolPlugin {
             .add_interpolation(ComponentSyncMode::Once);
 
         app.register_component::<Enemy>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once)
+            .add_interpolation(ComponentSyncMode::Once);
+
+        app.register_component::<MovementSpeed>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once)
             .add_interpolation(ComponentSyncMode::Once);
 

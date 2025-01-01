@@ -37,11 +37,10 @@ impl Plugin for SharedPlugin {
 pub fn shared_movement_behaviour(
     time: &Res<Time<Physics>>,
     position: &Position,
+    movement_speed: &MovementSpeed,
     mut velocity: Mut<LinearVelocity>,
     mut targets: Mut<Targets>,
 ) {
-    let speed = 500.0;
-
     if let Some(target) = targets.0.first() {
         let to_target: Vec2 = *target - position.0;
         let distance_to_target = to_target.length();
@@ -54,14 +53,16 @@ pub fn shared_movement_behaviour(
             // Calculate direction to the target
             let direction = to_target.normalize_or_zero();
             // Compute movement distance based on speed and delta time
-            let max_distance = speed * time.delta_secs();
+            let max_distance = movement_speed.0 * time.delta_secs();
 
             // If the next step overshoots the target, use reduced velocity
             if max_distance > distance_to_target {
                 *velocity = LinearVelocity(direction * (distance_to_target / time.delta_secs()));
             // Else go at max speed
             } else {
-                *velocity = LinearVelocity((direction * speed).clamp_length_max(speed))
+                *velocity = LinearVelocity(
+                    (direction * movement_speed.0).clamp_length_max(movement_speed.0),
+                )
             }
         }
     }

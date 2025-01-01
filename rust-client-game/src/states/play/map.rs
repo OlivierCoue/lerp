@@ -34,14 +34,20 @@ pub fn setup_map(
                 Color::srgb_u8(197, 211, 232)
             };
 
+            let center_offest = ENTITY_SIZE / 2.0;
             let cart_coord = Vec3::new(
-                col as f32 * ENTITY_SIZE - 1600.,
-                row as f32 * ENTITY_SIZE - 1600.,
+                col as f32 * ENTITY_SIZE - 1600. + center_offest,
+                row as f32 * ENTITY_SIZE - 1600. + center_offest,
                 0.,
             );
 
             let entity = commands
-                .spawn((PlaySceneTag, Position::from_xy(cart_coord.x, cart_coord.y)))
+                .spawn((
+                    PlaySceneTag,
+                    Position::from_xy(cart_coord.x, cart_coord.y),
+                    Transform::default(),
+                    Visibility::default(),
+                ))
                 .id();
 
             let is_border = (row == 0) || (row == 99) || (col == 0) || (col == 99);
@@ -106,8 +112,7 @@ pub fn setup_map(
         }
     }
 
-    let mut tilemap_transform = get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0);
-    tilemap_transform.translation.x -= tile_size.x / 2.;
+    let tilemap_transform = get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0);
     commands.entity(tilemap_entity).insert((
         PlaySceneTag,
         TilemapBundle {
@@ -122,27 +127,39 @@ pub fn setup_map(
         },
     ));
 
-    // TOP
+    // // TOP
     commands.spawn((
-        Position::from_xy(0., 1600. - ENTITY_SIZE),
+        PlaySceneTag,
+        Visibility::default(),
+        Position::from_xy(0., 1600. - ENTITY_SIZE / 2.),
+        Transform::default(),
         RigidBody::Static,
         Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
     ));
-    // BOTOM
+    // // BOTOM
     commands.spawn((
-        Position::from_xy(0., 0. - 1600.),
+        PlaySceneTag,
+        Visibility::default(),
+        Position::from_xy(0., 0. - 1600. + ENTITY_SIZE / 2.),
+        Transform::default(),
         RigidBody::Static,
         Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
     ));
-    // LEFT
+    // // LEFT
     commands.spawn((
-        Position::from_xy(-1600., 0.),
+        PlaySceneTag,
+        Visibility::default(),
+        Position::from_xy(-1600. + ENTITY_SIZE / 2., 0.),
+        Transform::default(),
         RigidBody::Static,
         Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
     ));
-    // RIGHT
+    // // RIGHT
     commands.spawn((
-        Position::from_xy(1600. - ENTITY_SIZE, 0.),
+        PlaySceneTag,
+        Visibility::default(),
+        Position::from_xy(1600. - ENTITY_SIZE / 2., 0.),
+        Transform::default(),
         RigidBody::Static,
         Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
     ));

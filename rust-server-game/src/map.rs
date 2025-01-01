@@ -7,9 +7,10 @@ pub fn setup_map(mut commands: Commands) {
 
     for row in 0..100 {
         for col in 0..100 {
+            let center_offest = ENTITY_SIZE / 2.0;
             let cart_coord = Vec3::new(
-                col as f32 * ENTITY_SIZE - 1600.,
-                row as f32 * ENTITY_SIZE - 1600.,
+                col as f32 * ENTITY_SIZE - 1600. + center_offest,
+                row as f32 * ENTITY_SIZE - 1600. + center_offest,
                 0.,
             );
 
@@ -26,27 +27,27 @@ pub fn setup_map(mut commands: Commands) {
         }
     }
 
-    // TOP
+    // // TOP
     commands.spawn((
-        Position::from_xy(0., 1600. - ENTITY_SIZE),
+        Position::from_xy(0., 1600. - ENTITY_SIZE / 2.),
         RigidBody::Static,
         Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
     ));
-    // BOTOM
+    // // BOTOM
     commands.spawn((
-        Position::from_xy(0., 0. - 1600.),
+        Position::from_xy(0., 0. - 1600. + ENTITY_SIZE / 2.),
         RigidBody::Static,
         Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
     ));
-    // LEFT
+    // // LEFT
     commands.spawn((
-        Position::from_xy(-1600., 0.),
+        Position::from_xy(-1600. + ENTITY_SIZE / 2., 0.),
         RigidBody::Static,
         Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
     ));
-    // RIGHT
+    // // RIGHT
     commands.spawn((
-        Position::from_xy(1600. - ENTITY_SIZE, 0.),
+        Position::from_xy(1600. - ENTITY_SIZE / 2., 0.),
         RigidBody::Static,
         Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
     ));

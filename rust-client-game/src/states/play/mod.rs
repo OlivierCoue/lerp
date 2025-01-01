@@ -1,9 +1,11 @@
 mod camera;
+mod debug;
 mod map;
 mod player;
 
 use crate::common::*;
 use crate::states::play::camera::*;
+use crate::states::play::debug::*;
 use crate::states::play::map::*;
 use crate::states::play::player::*;
 
@@ -99,8 +101,10 @@ impl Plugin for PlayPlugin {
             (
                 play_scene_logic,
                 handle_new_player,
-                draw_confirmed_player,
-                draw_predicted_target,
+                animate_sprite,
+                debug_draw_confirmed_entities,
+                // draw_predicted_target,
+                debug_draw_colliders,
                 update_fps,
             )
                 .run_if(in_state(AppState::Play)),

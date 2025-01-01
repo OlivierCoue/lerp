@@ -1,15 +1,23 @@
 use crate::states::play::*;
+use avian2d::collision::Collider;
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
-
 use leafwing_input_manager::prelude::*;
-
-use avian2d::collision::Collider;
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::character_controller::*;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
+
+#[derive(Component)]
+pub struct AnimationConfig {
+    pub atlas_walk: Handle<TextureAtlasLayout>,
+    pub texture_walk: Handle<Image>,
+    pub atlas_idle: Handle<TextureAtlasLayout>,
+    pub texture_idle: Handle<Image>,
+}
+
+#[derive(Component, Deref, DerefMut)]
+pub struct AnimationTimer(Timer);
 
 // System create the player
 #[allow(clippy::type_complexity)]
@@ -17,6 +25,7 @@ pub fn handle_new_player(
     connection: Res<ClientConnection>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut player_query: Query<
         (Entity, Has<Controlled>, Has<Enemy>),
         (Or<(Added<Predicted>, Added<Interpolated>)>, With<Player>),
@@ -28,26 +37,54 @@ pub fn handle_new_player(
             connection.id()
         );
 
-        let collider = if is_enemy {
+        let layout = TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
+
+        let player_walk_texture: Handle<Image> = asset_server.load("assets/atlas_player_walk.png");
+        let player_walk_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
+
+        let player_idle_texture: Handle<Image> = asset_server.load("assets/atlas_player_idle.png");
+        let player_idle_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
+
+        let animation_config = AnimationConfig {
+            atlas_walk: player_walk_texture_atlas_layout.clone(),
+            texture_walk: player_walk_texture.clone(),
+            atlas_idle: player_idle_texture_atlas_layout,
+            texture_idle: player_idle_texture,
+        };
+
+        let mut collider = if is_enemy {
             Collider::circle(ENTITY_SIZE / 2.0 / 2.)
         } else {
             Collider::circle(ENTITY_SIZE / 2.)
         };
+        collider.set_scale(Vec2::new(1., 1.), 10);
 
-        commands.entity(entity).insert((
-            PlaySceneTag,
-            RigidBody::Kinematic,
-            CharacterController,
-            collider,
-            LockedAxes::ROTATION_LOCKED,
-            TransformInterpolation,
-            Sprite {
-                image: (asset_server.load("assets/gear-sorceress.png")),
-                anchor: Anchor::Custom(Vec2::new(0., -0.20)),
-                ..default()
-            },
-            Transform::from_xyz(0., 0., 1.),
-        ));
+        commands
+            .entity(entity)
+            .insert((
+                PlaySceneTag,
+                RigidBody::Kinematic,
+                CharacterController,
+                collider,
+                LockedAxes::ROTATION_LOCKED,
+                TransformInterpolation,
+                Transform::from_xyz(0., 0., 1.),
+                Visibility::default(),
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Sprite::from_atlas_image(
+                        player_walk_texture,
+                        TextureAtlas {
+                            layout: player_walk_texture_atlas_layout,
+                            index: 0,
+                        },
+                    ),
+                    animation_config,
+                    AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
+                    Transform::from_scale(Vec3::new(2., 2., 0.)),
+                ));
+            });
 
         if is_controlled {
             commands
@@ -59,73 +96,91 @@ pub fn handle_new_player(
 }
 
 #[allow(clippy::type_complexity)]
-pub(crate) fn draw_confirmed_player(
-    mut gizmos: Gizmos,
-    confirmed_q: Query<(&Position, Has<Enemy>), (With<Player>, With<Confirmed>)>,
+pub fn animate_sprite(
+    time: Res<Time>,
     render_config: Res<RenderConfig>,
+    query_parent: Query<(&LinearVelocity, &Children), Without<AnimationTimer>>,
+    mut query_child: Query<
+        (&mut AnimationTimer, &mut Sprite, &AnimationConfig, &Parent),
+        With<AnimationTimer>,
+    >,
 ) {
-    for (position, is_enemy) in confirmed_q.iter() {
-        let radius = if is_enemy {
-            ENTITY_SIZE / 2.0 / 2.
-        } else {
-            ENTITY_SIZE / 2.
+    for (mut timer, mut sprite, animation_config, parent) in &mut query_child {
+        let Ok((velocity, _)) = query_parent.get(parent.get()) else {
+            continue;
         };
-        gizmos.circle_2d(
-            apply_render_mode(&render_config, &position.0),
-            radius,
-            Color::linear_rgb(1., 0., 0.),
-        );
-    }
-}
 
-#[allow(clippy::type_complexity)]
-pub(crate) fn draw_predicted_target(
-    mut gizmos: Gizmos,
-    confirmed_q: Query<&Targets, (With<Player>, With<Confirmed>)>,
-    predicted_q: Query<&Targets, (With<Player>, With<Predicted>)>,
-    interpolated_q: Query<&Targets, (With<Player>, With<Interpolated>)>,
-    render_config: Res<RenderConfig>,
-) {
-    // Predicted
-    for targets in predicted_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
-                15.,
-                Color::linear_rgb(0., 0., 1.),
-            );
-        }
-    }
+        timer.tick(time.delta());
 
-    // Confirmed
-    for targets in confirmed_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
-                12.,
-                Color::linear_rgb(0., 1., 0.),
-            );
-        }
-    }
+        if timer.just_finished() {
+            let mut direction_index = None;
+            let renderered_velocity = apply_render_mode(&render_config, &velocity.0);
 
-    // Interpolated
-    for targets in interpolated_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
-                12.,
-                Color::linear_rgb(0., 1., 1.),
-            );
+            if renderered_velocity.length_squared() != 0.0 {
+                // Calculate the angle in radians and normalize to [0, 2π]
+                let angle = renderered_velocity.y.atan2(renderered_velocity.x); // atan2(y, x) gives the angle relative to the X-axis
+                let mut angle_deg = angle.to_degrees(); // Convert to degrees
+                angle_deg = (angle_deg + 180.0).rem_euclid(360.0); // Normalize negative angles to [0, 360]
+
+                let adjusted_angle = 360. - ((angle_deg + 270.) % 360.0);
+
+                // Map the adjusted angle to one of 16 directions
+                let sector_size = 360.0 / 16.0; // Each direction covers 22.5 degrees
+                direction_index = Some(
+                    ((adjusted_angle + (sector_size / 2.0)) / sector_size).floor() as usize % 16,
+                );
+            }
+
+            let frame_per_anim = 8;
+
+            if let Some(direction_index) = direction_index {
+                if sprite.image != animation_config.texture_walk {
+                    sprite.image = animation_config.texture_walk.clone();
+                }
+
+                if let Some(atlas) = &mut sprite.texture_atlas {
+                    if atlas.layout != animation_config.atlas_walk {
+                        atlas.layout = animation_config.atlas_walk.clone();
+                        atlas.index = 0;
+                    }
+
+                    let first_frame_index = direction_index * frame_per_anim;
+                    atlas.index = if atlas.index % frame_per_anim == frame_per_anim - 1 {
+                        first_frame_index
+                    } else {
+                        first_frame_index + atlas.index % frame_per_anim + 1
+                    };
+                }
+            } else {
+                if sprite.image != animation_config.texture_idle {
+                    sprite.image = animation_config.texture_idle.clone();
+                }
+
+                if let Some(atlas) = &mut sprite.texture_atlas {
+                    if atlas.layout != animation_config.atlas_idle {
+                        atlas.layout = animation_config.atlas_idle.clone();
+                    }
+
+                    if atlas.index % frame_per_anim != 0 {
+                        atlas.index = atlas.index - atlas.index % frame_per_anim
+                    } else {
+                        atlas.index += 1
+                    }
+                }
+            }
         }
     }
 }
 
 pub fn movement(
     time: Res<Time<Physics>>,
-    mut query: Query<(&Position, &mut Targets, &mut LinearVelocity), With<Predicted>>,
+    mut query: Query<
+        (&Position, &mut Targets, &mut LinearVelocity, &MovementSpeed),
+        With<Predicted>,
+    >,
 ) {
-    for (position, targets, velocity) in &mut query {
-        shared_movement_behaviour(&time, position, velocity, targets);
+    for (position, targets, velocity, movement_speed) in &mut query {
+        shared_movement_behaviour(&time, position, movement_speed, velocity, targets);
     }
 }
 

@@ -33,6 +33,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
             CharacterController,
             Collider::circle(ENTITY_SIZE / 2.0 / 2.),
             LockedAxes::ROTATION_LOCKED,
+            MovementSpeed(150.),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::None,

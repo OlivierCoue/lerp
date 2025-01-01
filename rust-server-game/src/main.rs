@@ -46,6 +46,7 @@ fn start_server(mut commands: Commands) {
         CharacterController,
         Collider::circle(ENTITY_SIZE / 2.0),
         LockedAxes::ROTATION_LOCKED,
+        MovementSpeed(250.),
         AutoMove,
         Replicate {
             sync: SyncTarget {
@@ -81,6 +82,7 @@ fn handle_connections(
             CharacterController,
             Collider::circle(ENTITY_SIZE / 2.0),
             LockedAxes::ROTATION_LOCKED,
+            MovementSpeed(250.),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::Single(client_id),
@@ -104,10 +106,10 @@ fn handle_connections(
 
 fn movement(
     time: Res<Time<Physics>>,
-    mut query: Query<(&Position, &mut Targets, &mut LinearVelocity)>,
+    mut query: Query<(&Position, &mut Targets, &mut LinearVelocity, &MovementSpeed)>,
 ) {
-    for (position, targets, velocity) in &mut query {
-        shared_movement_behaviour(&time, position, velocity, targets);
+    for (position, targets, velocity, movement_speed) in &mut query {
+        shared_movement_behaviour(&time, position, movement_speed, velocity, targets);
     }
 }
 
@@ -193,6 +195,6 @@ fn main() {
         .add_systems(Update, handle_connections)
         .add_systems(FixedUpdate, aplly_auto_move)
         .add_systems(FixedUpdate, (movement, set_player_target).chain())
-        // .add_plugins(EnemyPlugin)
+        .add_plugins(EnemyPlugin)
         .run();
 }
