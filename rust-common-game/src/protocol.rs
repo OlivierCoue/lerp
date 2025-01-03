@@ -21,7 +21,7 @@ pub struct Player {
 pub struct Enemy;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Targets(pub Vec<Vec2>);
+pub struct MovementTargets(pub Vec<Vec2>);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MovementSpeed(pub f32);
@@ -33,18 +33,13 @@ pub struct InputVec2 {
     pub y: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub enum Inputs {
-    Target(InputVec2),
-    Delete,
-    Spawn,
-    /// NOTE: we NEED to provide a None input so that the server can distinguish between lost input packets and 'None' inputs
-    None,
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect, Actionlike)]
 pub enum PlayerActions {
     Move,
+    MoveUp,
+    MoveDown,
+    MoveLeft,
+    MoveRight,
     Stop,
     #[actionlike(DualAxis)]
     Cursor,
@@ -70,7 +65,7 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Once)
             .add_interpolation(ComponentSyncMode::Once);
 
-        app.register_component::<Targets>(ChannelDirection::ServerToClient)
+        app.register_component::<MovementTargets>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)

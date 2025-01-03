@@ -10,7 +10,7 @@ use rust_common_game::{
 
 use crate::AutoMove;
 
-const ENEMY_MAX_COUNT: u32 = 5;
+const ENEMY_MAX_COUNT: u32 = 50;
 
 #[derive(Resource)]
 pub struct EnemyState {
@@ -28,7 +28,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
                 client_id: ClientId::Netcode(999999999),
             },
             Enemy,
-            Targets(Vec::new()),
+            MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
             Collider::circle(ENTITY_SIZE / 2.0 / 2.),
@@ -55,8 +55,8 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
 }
 
 #[allow(clippy::type_complexity)]
-fn set_enemy_target(
-    mut query_enemies: Query<(&mut Targets, &Position, &mut LinearVelocity), With<Enemy>>,
+fn enemy_movement_behavior(
+    mut query_enemies: Query<(&Position, &mut LinearVelocity, &MovementSpeed), With<Enemy>>,
     query_players: Query<&mut Position, (With<Player>, Without<Enemy>, Without<AutoMove>)>,
 ) {
     let mut nearest_player_position_opt = None;
@@ -68,12 +68,50 @@ fn set_enemy_target(
         return;
     };
 
-    for (mut enemy_target, enemy_position, mut enemy_velocity) in &mut query_enemies {
+    // Store all enemies position for later use
+    let enemies_position: Vec<Position> = query_enemies
+        .iter()
+        .map(|(position, _, _)| *position)
+        .collect();
+
+    // Loop over enemies in make them move toward the player
+    for (enemy_position, mut enemy_velocity, movement_speed) in &mut query_enemies {
         let distance_to_player = enemy_position.distance(*nearest_player_position);
         if distance_to_player > 25. {
-            enemy_target.0 = vec![*nearest_player_position];
+            let target_pos = nearest_player_position;
+
+            // SEEK behavior
+            let desired_velocity = (target_pos - enemy_position.0).normalize() * movement_speed.0;
+
+            // ARRIVE behavior (adjust speed near the target)
+            let distance = (target_pos - enemy_position.0).length();
+            let slowing_radius = ENTITY_SIZE; // Adjust as needed
+            let adjusted_speed = if distance < slowing_radius {
+                movement_speed.0 * (distance / slowing_radius)
+            } else {
+                movement_speed.0
+            };
+            let arrived_velocity = desired_velocity.clamp_length(0.0, adjusted_speed);
+
+            // SEPARATION behavior
+            let mut separation_force = Vec2::ZERO;
+            let separation_distance = 1. * ENTITY_SIZE; // Adjust based on scale (e.g., 4x object size)
+            for other_position in enemies_position.iter() {
+                if other_position != enemy_position {
+                    let diff = enemy_position.0 - other_position.0;
+                    let dist_sq = diff.length_squared();
+                    if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
+                        // Separation force scaling
+                        let strength = 20.0; // Experiment with this value
+                        separation_force += (diff / dist_sq.sqrt()) * strength;
+                    }
+                }
+            }
+
+            // Combine behaviors
+            let steering = (arrived_velocity - enemy_velocity.0) + separation_force;
+            enemy_velocity.0 += steering.clamp_length_max(movement_speed.0);
         } else {
-            enemy_target.0 = vec![];
             enemy_velocity.0 = Vec2::ZERO;
         }
     }
@@ -84,9 +122,9 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnemyState {
-            timer: Timer::new(Duration::from_secs(4), TimerMode::Repeating),
+            timer: Timer::new(Duration::from_millis(500), TimerMode::Repeating),
             count: 0,
         });
-        app.add_systems(FixedUpdate, (spaw_enemy, set_enemy_target));
+        app.add_systems(FixedUpdate, (spaw_enemy, enemy_movement_behavior));
     }
 }

@@ -70,5 +70,9 @@ fn main() {
         .insert_resource(RenderConfig {
             mode: RenderMode::Iso,
         })
+        .insert_resource(DebugConfig {
+            show_colliders: true,
+            show_confirmed_entities: true,
+        })
         .run();
 }

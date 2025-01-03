@@ -112,7 +112,7 @@ impl Plugin for PlayPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (movement, set_player_target)
+            (move_to_target, handle_move_wasd, handle_move_click)
                 .chain()
                 .run_if(in_state(AppState::Play)),
         );

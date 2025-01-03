@@ -41,7 +41,7 @@ fn start_server(mut commands: Commands) {
         Player {
             client_id: ClientId::Netcode(999999999),
         },
-        Targets(Vec::new()),
+        MovementTargets(Vec::new()),
         RigidBody::Kinematic,
         CharacterController,
         Collider::circle(ENTITY_SIZE / 2.0),
@@ -77,7 +77,7 @@ fn handle_connections(
         info!("New client {:?}", client_id);
         let player = (
             Player { client_id },
-            Targets(Vec::new()),
+            MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
             Collider::circle(ENTITY_SIZE / 2.0),
@@ -104,33 +104,46 @@ fn handle_connections(
     }
 }
 
-fn movement(
+fn move_to_target(
     time: Res<Time<Physics>>,
-    mut query: Query<(&Position, &mut Targets, &mut LinearVelocity, &MovementSpeed)>,
+    mut query: Query<(
+        &Position,
+        &mut MovementTargets,
+        &mut LinearVelocity,
+        &MovementSpeed,
+    )>,
 ) {
     for (position, targets, velocity, movement_speed) in &mut query {
-        shared_movement_behaviour(&time, position, movement_speed, velocity, targets);
+        shared_move_to_target_behaviour(&time, position, movement_speed, velocity, targets);
     }
 }
 
-fn set_player_target(mut query: Query<(&ActionState<PlayerActions>, &mut Targets), With<Player>>) {
-    for (action, mut targets) in query.iter_mut() {
-        if action.pressed(&PlayerActions::Move) {
-            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("[set_player_target] cursor_position not set skipping");
-                return;
-            };
+fn handle_move_click(
+    mut query: Query<(&ActionState<PlayerActions>, &mut MovementTargets), With<Player>>,
+) {
+    for (action, targets) in query.iter_mut() {
+        shared_handle_move_click_behavior(action, targets);
+    }
+}
 
-            *targets = Targets(vec![Vec2::new(
-                cursor_position.pair.x,
-                cursor_position.pair.y,
-            )])
-        }
+#[allow(clippy::type_complexity)]
+pub fn handle_move_wasd(
+    mut query: Query<
+        (
+            &ActionState<PlayerActions>,
+            &MovementSpeed,
+            &mut LinearVelocity,
+        ),
+        With<Player>,
+    >,
+) {
+    for (action, movement_speed, velocity) in query.iter_mut() {
+        shared_handle_move_wasd_behavior(action, movement_speed, velocity);
     }
 }
 
 fn aplly_auto_move(
-    mut query: Query<&mut Targets, With<AutoMove>>,
+    mut query: Query<&mut MovementTargets, With<AutoMove>>,
     time: Res<Time>,
     mut config: ResMut<AutoMoveConfig>,
 ) {
@@ -139,7 +152,7 @@ fn aplly_auto_move(
     if config.timer.finished() {
         config.direction = -config.direction;
         for mut targets in &mut query {
-            *targets = Targets(vec![Vec2::new(1000. * config.direction, 0.)])
+            *targets = MovementTargets(vec![Vec2::new(1000. * config.direction, 0.)])
         }
     }
 }
@@ -194,7 +207,10 @@ fn main() {
         .add_systems(Startup, (start_server, setup_map))
         .add_systems(Update, handle_connections)
         .add_systems(FixedUpdate, aplly_auto_move)
-        .add_systems(FixedUpdate, (movement, set_player_target).chain())
+        .add_systems(
+            FixedUpdate,
+            (move_to_target, handle_move_wasd, handle_move_click).chain(),
+        )
         .add_plugins(EnemyPlugin)
         .run();
 }

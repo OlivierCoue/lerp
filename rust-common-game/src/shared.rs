@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use avian2d::sync::SyncPlugin;
 use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
+use leafwing_input_manager::prelude::ActionState;
 
 use crate::character_controller::CharacterControllerPlugin;
 use crate::protocol::*;
@@ -34,12 +35,12 @@ impl Plugin for SharedPlugin {
     }
 }
 
-pub fn shared_movement_behaviour(
+pub fn shared_move_to_target_behaviour(
     time: &Res<Time<Physics>>,
     position: &Position,
     movement_speed: &MovementSpeed,
     mut velocity: Mut<LinearVelocity>,
-    mut targets: Mut<Targets>,
+    mut targets: Mut<MovementTargets>,
 ) {
     if let Some(target) = targets.0.first() {
         let to_target: Vec2 = *target - position.0;
@@ -66,4 +67,54 @@ pub fn shared_movement_behaviour(
             }
         }
     }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn shared_handle_move_click_behavior(
+    action: &ActionState<PlayerActions>,
+    mut targets: Mut<MovementTargets>,
+) {
+    if action.pressed(&PlayerActions::Move) {
+        let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+            println!("cursor_position not set skipping");
+            return;
+        };
+
+        *targets = MovementTargets(vec![Vec2::new(
+            cursor_position.pair.x,
+            cursor_position.pair.y,
+        )])
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn shared_handle_move_wasd_behavior(
+    action: &ActionState<PlayerActions>,
+    movement_speed: &MovementSpeed,
+    mut velocity: Mut<LinearVelocity>,
+) {
+    let up = action.pressed(&PlayerActions::MoveUp);
+    let down = action.pressed(&PlayerActions::MoveDown);
+    let left = action.pressed(&PlayerActions::MoveLeft);
+    let right = action.pressed(&PlayerActions::MoveRight);
+
+    // Adjust directions for isometric mapping
+    let mut direction = Vec2::ZERO;
+
+    if up {
+        direction += Vec2::new(-1.0, 1.0); // Up-left
+    }
+    if down {
+        direction += Vec2::new(1.0, -1.0); // Down-right
+    }
+    if left {
+        direction += Vec2::new(-1.0, -1.0); // Down-left
+    }
+    if right {
+        direction += Vec2::new(1.0, 1.0); // Up-right
+    }
+
+    direction = direction.clamp_length_max(1.0);
+
+    velocity.0 = direction * movement_speed.0
 }

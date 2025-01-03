@@ -9,9 +9,11 @@ pub struct LobbySceneTag;
 enum ButtonAction {
     Play(RenderMode),
     Logout,
+    ToggleDebugShowCollider,
+    ToggleDebugShowConfirmed,
 }
 
-pub fn lobby_scene_setup(mut commands: Commands) {
+pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>) {
     println!("[lobby_scene_setup]");
 
     commands.spawn((LobbySceneTag, Camera2d));
@@ -40,9 +42,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
-                        // horizontally center child text
                         justify_content: JustifyContent::Center,
-                        // vertically center child text
                         align_items: AlignItems::Center,
                         ..default()
                     },
@@ -63,9 +63,7 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
-                        // horizontally center child text
                         justify_content: JustifyContent::Center,
-                        // vertically center child text
                         align_items: AlignItems::Center,
                         ..default()
                     },
@@ -86,15 +84,79 @@ pub fn lobby_scene_setup(mut commands: Commands) {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
-                        // horizontally center child text
                         justify_content: JustifyContent::Center,
-                        // vertically center child text
                         align_items: AlignItems::Center,
                         ..default()
                     },
                 ))
                 .with_children(|parent| {
                     parent.spawn(Text("Logout".to_string()));
+                });
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(40.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text("Show collider".to_string()),
+                        TextFont::from_font_size(12.),
+                    ));
+                    parent.spawn((
+                        ButtonAction::ToggleDebugShowCollider,
+                        Button,
+                        BorderRadius::MAX,
+                        BackgroundColor(NORMAL_BUTTON),
+                        BorderColor(Color::BLACK),
+                        Node {
+                            width: Val::Px(30.0),
+                            height: Val::Px(30.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        Checkbox {
+                            checked: debug_config.show_colliders,
+                        },
+                    ));
+                });
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(40.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text("Show confirmed".to_string()),
+                        TextFont::from_font_size(12.),
+                    ));
+                    parent.spawn((
+                        ButtonAction::ToggleDebugShowConfirmed,
+                        Button,
+                        BorderRadius::MAX,
+                        BackgroundColor(NORMAL_BUTTON),
+                        BorderColor(Color::BLACK),
+                        Node {
+                            width: Val::Px(30.0),
+                            height: Val::Px(30.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        Checkbox {
+                            checked: debug_config.show_confirmed_entities,
+                        },
+                    ));
                 });
         });
 }
@@ -111,13 +173,14 @@ pub fn lobby_scene_logic(
 #[allow(clippy::type_complexity)]
 fn lobby_scene_button_logic(
     mut app_state: ResMut<NextState<AppState>>,
+    mut debug_config: ResMut<DebugConfig>,
     mut interaction_query: Query<
-        (&Interaction, &ButtonAction),
+        (&Interaction, &ButtonAction, Option<&mut Checkbox>),
         (Changed<Interaction>, With<Button>),
     >,
     mut render_config: ResMut<RenderConfig>,
 ) {
-    for (interaction, action) in &mut interaction_query {
+    for (interaction, action, checkbox) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => match action {
                 ButtonAction::Play(render_mode) => {
@@ -126,6 +189,18 @@ fn lobby_scene_button_logic(
                 }
                 ButtonAction::Logout => {
                     app_state.set(AppState::Auth);
+                }
+                ButtonAction::ToggleDebugShowCollider => {
+                    if let Some(mut checkbox) = checkbox {
+                        checkbox.checked = !checkbox.checked;
+                        debug_config.show_colliders = checkbox.checked;
+                    };
+                }
+                ButtonAction::ToggleDebugShowConfirmed => {
+                    if let Some(mut checkbox) = checkbox {
+                        checkbox.checked = !checkbox.checked;
+                        debug_config.show_confirmed_entities = checkbox.checked;
+                    };
                 }
             },
             Interaction::Hovered => {}

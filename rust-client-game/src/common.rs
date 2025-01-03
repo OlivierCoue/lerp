@@ -40,3 +40,9 @@ pub enum RenderMode {
 pub struct RenderConfig {
     pub mode: RenderMode,
 }
+
+#[derive(Resource)]
+pub struct DebugConfig {
+    pub show_colliders: bool,
+    pub show_confirmed_entities: bool,
+}

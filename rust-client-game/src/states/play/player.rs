@@ -87,10 +87,13 @@ pub fn handle_new_player(
             });
 
         if is_controlled {
-            commands
-                .entity(entity)
-                .insert((InputMap::new([(PlayerActions::Stop, KeyCode::KeyS)])
-                    .with(PlayerActions::Move, MouseButton::Left),));
+            commands.entity(entity).insert((InputMap::new([
+                (PlayerActions::MoveUp, KeyCode::KeyW),
+                (PlayerActions::MoveDown, KeyCode::KeyS),
+                (PlayerActions::MoveLeft, KeyCode::KeyA),
+                (PlayerActions::MoveRight, KeyCode::KeyD),
+            ])
+            .with(PlayerActions::Move, MouseButton::Left),));
         }
     }
 }
@@ -172,18 +175,6 @@ pub fn animate_sprite(
     }
 }
 
-pub fn movement(
-    time: Res<Time<Physics>>,
-    mut query: Query<
-        (&Position, &mut Targets, &mut LinearVelocity, &MovementSpeed),
-        With<Predicted>,
-    >,
-) {
-    for (position, targets, velocity, movement_speed) in &mut query {
-        shared_movement_behaviour(&time, position, movement_speed, velocity, targets);
-    }
-}
-
 #[allow(clippy::type_complexity)]
 pub fn sync_cursor_poisition(
     camera_query: Query<(&Camera, &GlobalTransform)>,
@@ -223,24 +214,47 @@ pub fn sync_cursor_poisition(
     action.fixed_update_pair = actual_world_cursor_position;
 }
 
-#[allow(clippy::type_complexity)]
-pub fn set_player_target(
+pub fn move_to_target(
+    time: Res<Time<Physics>>,
     mut query: Query<
-        (&ActionState<PlayerActions>, &mut Targets),
+        (
+            &Position,
+            &mut MovementTargets,
+            &mut LinearVelocity,
+            &MovementSpeed,
+        ),
+        With<Predicted>,
+    >,
+) {
+    for (position, targets, velocity, movement_speed) in &mut query {
+        shared_move_to_target_behaviour(&time, position, movement_speed, velocity, targets);
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn handle_move_click(
+    mut query: Query<
+        (&ActionState<PlayerActions>, &mut MovementTargets),
         (With<Player>, With<Predicted>, With<Controlled>),
     >,
 ) {
-    for (action, mut targets) in query.iter_mut() {
-        if action.pressed(&PlayerActions::Move) {
-            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("cursor_position not set skipping");
-                return;
-            };
+    for (action, targets) in query.iter_mut() {
+        shared_handle_move_click_behavior(action, targets);
+    }
+}
 
-            *targets = Targets(vec![Vec2::new(
-                cursor_position.pair.x,
-                cursor_position.pair.y,
-            )])
-        }
+#[allow(clippy::type_complexity)]
+pub fn handle_move_wasd(
+    mut query: Query<
+        (
+            &ActionState<PlayerActions>,
+            &MovementSpeed,
+            &mut LinearVelocity,
+        ),
+        (With<Player>, With<Predicted>, With<Controlled>),
+    >,
+) {
+    for (action, movement_speed, velocity) in query.iter_mut() {
+        shared_handle_move_wasd_behavior(action, movement_speed, velocity);
     }
 }

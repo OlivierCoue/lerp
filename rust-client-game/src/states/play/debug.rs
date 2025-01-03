@@ -8,10 +8,15 @@ use rust_common_game::{protocol::*, settings::*};
 use super::PlaySceneTag;
 
 pub fn debug_draw_colliders(
+    debug_config: Res<DebugConfig>,
     mut commands: Commands,
     query: Query<(Entity, &Collider), Added<Collider>>,
     render_config: Res<RenderConfig>,
 ) {
+    if !debug_config.show_colliders {
+        return;
+    }
+
     for (entity, collider) in query.iter() {
         if let Some(ball) = collider.shape().as_ball() {
             let radii_y = match render_config.mode {
@@ -67,26 +72,31 @@ pub fn debug_draw_colliders(
 }
 
 #[derive(Component)]
-pub struct DebugComfirmedEntity;
+pub struct DebugConfirmedEntity;
 
 #[derive(Component)]
-pub struct DebugComfirmedEntityRef(pub Entity);
+pub struct DebugConfirmedEntityRef(pub Entity);
 
 #[allow(clippy::type_complexity)]
 pub(crate) fn debug_draw_confirmed_entities(
+    debug_config: Res<DebugConfig>,
     mut commands: Commands,
     confirmed_q: Query<
         (
             Entity,
             &Position,
             Has<Enemy>,
-            Option<&DebugComfirmedEntityRef>,
+            Option<&DebugConfirmedEntityRef>,
         ),
-        (With<Player>, With<Confirmed>, Without<DebugComfirmedEntity>),
+        (With<Player>, With<Confirmed>, Without<DebugConfirmedEntity>),
     >,
-    mut confirmed_debug_q: Query<&mut Transform, With<DebugComfirmedEntity>>,
+    mut confirmed_debug_q: Query<&mut Transform, With<DebugConfirmedEntity>>,
     render_config: Res<RenderConfig>,
 ) {
+    if !debug_config.show_confirmed_entities {
+        return;
+    }
+
     for (entity, position, is_enemy, debug_entity_ref) in confirmed_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = confirmed_debug_q.get_mut(debug_entity_ref.0) {
@@ -112,7 +122,7 @@ pub(crate) fn debug_draw_confirmed_entities(
             let debug_entity = commands
                 .spawn((
                     PlaySceneTag,
-                    DebugComfirmedEntity,
+                    DebugConfirmedEntity,
                     ShapeBundle {
                         path: GeometryBuilder::build_as(&shape),
                         transform: Transform::from_translation(
@@ -125,7 +135,7 @@ pub(crate) fn debug_draw_confirmed_entities(
                 .id();
             commands
                 .entity(entity)
-                .insert(DebugComfirmedEntityRef(debug_entity));
+                .insert(DebugConfirmedEntityRef(debug_entity));
         }
     }
 }
@@ -133,9 +143,9 @@ pub(crate) fn debug_draw_confirmed_entities(
 #[allow(clippy::type_complexity)]
 pub(crate) fn debug_draw_targets(
     mut gizmos: Gizmos,
-    confirmed_q: Query<&Targets, (With<Player>, With<Confirmed>)>,
-    predicted_q: Query<&Targets, (With<Player>, With<Predicted>)>,
-    interpolated_q: Query<&Targets, (With<Player>, With<Interpolated>)>,
+    confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
+    predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
+    interpolated_q: Query<&MovementTargets, (With<Player>, With<Interpolated>)>,
     render_config: Res<RenderConfig>,
 ) {
     // Predicted
