@@ -69,8 +69,14 @@ impl Plugin for LightyearPlugin {
                 ..default()
             },
             prediction: client::PredictionConfig {
-                always_rollback: false,
-                ..Default::default()
+                maximum_predicted_ticks: 26,
+                ..default()
+            },
+            interpolation: client::InterpolationConfig {
+                delay: InterpolationDelay {
+                    min_delay: Duration::from_millis(0),
+                    send_interval_ratio: 1.,
+                },
             },
             ..default()
         };

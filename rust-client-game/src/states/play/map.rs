@@ -3,6 +3,7 @@ use crate::states::play::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+use rust_common_game::shared::PIXEL_METER;
 
 // const SPRITE_SCALE_FACTOR: f32 = 4.;
 
@@ -34,10 +35,10 @@ pub fn setup_map(
                 Color::srgb_u8(197, 211, 232)
             };
 
-            let center_offest = ENTITY_SIZE / 2.0;
+            let center_offest = PIXEL_METER / 2.0;
             let cart_coord = Vec3::new(
-                col as f32 * ENTITY_SIZE - 1600. + center_offest,
-                row as f32 * ENTITY_SIZE - 1600. + center_offest,
+                col as f32 * PIXEL_METER - 1600. + center_offest,
+                row as f32 * PIXEL_METER - 1600. + center_offest,
                 0.,
             );
 
@@ -57,7 +58,7 @@ pub fn setup_map(
                 if !is_border {
                     commands.entity(entity).insert((
                         RigidBody::Static,
-                        Collider::rectangle(ENTITY_SIZE, ENTITY_SIZE),
+                        Collider::rectangle(PIXEL_METER, PIXEL_METER),
                     ));
                 }
 
@@ -79,7 +80,7 @@ pub fn setup_map(
                     RenderMode::Cart => {
                         commands.entity(entity).insert(Sprite {
                             color: Color::srgb_u8(255, 0, 0),
-                            custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
+                            custom_size: Some(Vec2::new(PIXEL_METER, PIXEL_METER)),
                             ..default()
                         });
                     }
@@ -103,7 +104,7 @@ pub fn setup_map(
                     RenderMode::Cart => {
                         commands.entity(entity).insert(Sprite {
                             color,
-                            custom_size: Some(Vec2::new(ENTITY_SIZE, ENTITY_SIZE)),
+                            custom_size: Some(Vec2::new(PIXEL_METER, PIXEL_METER)),
                             ..default()
                         });
                     }
@@ -131,36 +132,36 @@ pub fn setup_map(
     commands.spawn((
         PlaySceneTag,
         Visibility::default(),
-        Position::from_xy(0., 1600. - ENTITY_SIZE / 2.),
+        Position::from_xy(0., 1600. - PIXEL_METER / 2.),
         Transform::default(),
         RigidBody::Static,
-        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+        Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // BOTOM
     commands.spawn((
         PlaySceneTag,
         Visibility::default(),
-        Position::from_xy(0., 0. - 1600. + ENTITY_SIZE / 2.),
+        Position::from_xy(0., 0. - 1600. + PIXEL_METER / 2.),
         Transform::default(),
         RigidBody::Static,
-        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+        Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // LEFT
     commands.spawn((
         PlaySceneTag,
         Visibility::default(),
-        Position::from_xy(-1600. + ENTITY_SIZE / 2., 0.),
+        Position::from_xy(-1600. + PIXEL_METER / 2., 0.),
         Transform::default(),
         RigidBody::Static,
-        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+        Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),
     ));
     // // RIGHT
     commands.spawn((
         PlaySceneTag,
         Visibility::default(),
-        Position::from_xy(1600. - ENTITY_SIZE / 2., 0.),
+        Position::from_xy(1600. - PIXEL_METER / 2., 0.),
         Transform::default(),
         RigidBody::Static,
-        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+        Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),
     ));
 }

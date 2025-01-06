@@ -1,16 +1,16 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::settings::*;
+use rust_common_game::shared::PIXEL_METER;
 
 pub fn setup_map(mut commands: Commands) {
     println!("[setup_map]");
 
     for row in 0..100 {
         for col in 0..100 {
-            let center_offest = ENTITY_SIZE / 2.0;
+            let center_offest = PIXEL_METER / 2.0;
             let cart_coord = Vec3::new(
-                col as f32 * ENTITY_SIZE - 1600. + center_offest,
-                row as f32 * ENTITY_SIZE - 1600. + center_offest,
+                col as f32 * PIXEL_METER - 1600. + center_offest,
+                row as f32 * PIXEL_METER - 1600. + center_offest,
                 0.,
             );
 
@@ -21,7 +21,7 @@ pub fn setup_map(mut commands: Commands) {
                 commands.spawn((
                     Position::from_xy(cart_coord.x, cart_coord.y),
                     RigidBody::Static,
-                    Collider::rectangle(ENTITY_SIZE - 1., ENTITY_SIZE - 1.),
+                    Collider::rectangle(PIXEL_METER, PIXEL_METER),
                 ));
             }
         }
@@ -29,26 +29,26 @@ pub fn setup_map(mut commands: Commands) {
 
     // // TOP
     commands.spawn((
-        Position::from_xy(0., 1600. - ENTITY_SIZE / 2.),
+        Position::from_xy(0., 1600. - PIXEL_METER / 2.),
         RigidBody::Static,
-        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+        Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // BOTOM
     commands.spawn((
-        Position::from_xy(0., 0. - 1600. + ENTITY_SIZE / 2.),
+        Position::from_xy(0., 0. - 1600. + PIXEL_METER / 2.),
         RigidBody::Static,
-        Collider::rectangle(100. * ENTITY_SIZE, ENTITY_SIZE),
+        Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // LEFT
     commands.spawn((
-        Position::from_xy(-1600. + ENTITY_SIZE / 2., 0.),
+        Position::from_xy(-1600. + PIXEL_METER / 2., 0.),
         RigidBody::Static,
-        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+        Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),
     ));
     // // RIGHT
     commands.spawn((
-        Position::from_xy(1600. - ENTITY_SIZE / 2., 0.),
+        Position::from_xy(1600. - PIXEL_METER / 2., 0.),
         RigidBody::Static,
-        Collider::rectangle(ENTITY_SIZE, 100. * ENTITY_SIZE),
+        Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),
     ));
 }

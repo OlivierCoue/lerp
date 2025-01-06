@@ -2,6 +2,7 @@ mod camera;
 mod debug;
 mod map;
 mod player;
+mod projectile;
 
 use crate::common::*;
 use crate::states::play::camera::*;
@@ -16,14 +17,22 @@ use bevy::prelude::*;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use leafwing_input_manager::plugin::InputManagerSystem;
+use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
-use rust_common_game::settings::*;
+use projectile::handle_new_projectile;
+use rust_common_game::projectile::move_projectiles;
 
 #[derive(Component)]
 pub struct PlaySceneTag;
 
 #[derive(Component)]
 pub struct FpsDisplayTag;
+
+#[derive(Component)]
+pub struct RollBackHistoric(pub [bool; 100]);
+
+#[derive(Component)]
+pub struct RollbackStateLineItem;
 
 pub fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
@@ -48,6 +57,29 @@ pub fn play_scene_setup(mut commands: Commands) {
                 Text("FPS: 0".to_string()),
                 TextColor(Color::linear_rgb(0., 1., 0.)),
             ));
+            parent
+                .spawn((
+                    RollBackHistoric([false; 100]),
+                    Node {
+                        justify_content: JustifyContent::SpaceBetween,
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::Row,
+                        ..default()
+                    },
+                ))
+                .with_children(|parent| {
+                    for _ in 0..100 {
+                        parent.spawn((
+                            RollbackStateLineItem,
+                            Node {
+                                width: Val::Px(3.0),
+                                height: Val::Px(10.0),
+                                ..default()
+                            },
+                            BackgroundColor(Color::linear_rgb(0., 1., 0.)),
+                        ));
+                    }
+                });
         });
 }
 
@@ -82,6 +114,29 @@ pub fn update_fps(
     }
 }
 
+pub fn update_rollback_state(
+    rollback: Res<Rollback>,
+    mut query_container: Query<(&mut RollBackHistoric, &Children), Without<RollbackStateLineItem>>,
+    mut query_line_item: Query<&mut BackgroundColor, With<RollbackStateLineItem>>,
+) {
+    for (mut rollback_historic, children) in &mut query_container {
+        for i in 0..99 {
+            rollback_historic.0[i] = rollback_historic.0[i + 1];
+        }
+        rollback_historic.0[99] = rollback.is_rollback();
+
+        for (i, &is_rollback) in rollback_historic.0.iter().enumerate() {
+            let child_id = children.get(i).unwrap();
+            let mut background_color = query_line_item.get_mut(*child_id).unwrap();
+            background_color.0 = if is_rollback {
+                Color::linear_rgb(1., 0., 0.)
+            } else {
+                Color::srgb(0.15, 0.15, 0.15)
+            };
+        }
+    }
+}
+
 pub struct PlayPlugin;
 
 impl Plugin for PlayPlugin {
@@ -90,8 +145,9 @@ impl Plugin for PlayPlugin {
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
         app.add_systems(
-            PreUpdate,
+            FixedPreUpdate,
             sync_cursor_poisition
+                .before(InputSystemSet::BufferClientInputs)
                 .in_set(InputManagerSystem::ManualControl)
                 .run_if(in_state(AppState::Play)),
         );
@@ -101,10 +157,13 @@ impl Plugin for PlayPlugin {
             (
                 play_scene_logic,
                 handle_new_player,
+                handle_new_projectile,
                 animate_sprite,
                 debug_draw_confirmed_entities,
+                debug_undraw_confirmed_entities,
                 // draw_predicted_target,
                 debug_draw_colliders,
+                draw_elements,
                 update_fps,
             )
                 .run_if(in_state(AppState::Play)),
@@ -112,7 +171,18 @@ impl Plugin for PlayPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (move_to_target, handle_move_wasd, handle_move_click)
+            (update_rollback_state).run_if(in_state(AppState::Play)),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            (
+                move_to_target,
+                handle_move_wasd,
+                handle_move_click,
+                handle_skill_slot,
+                move_projectiles.run_if(not(is_in_rollback)),
+            )
                 .chain()
                 .run_if(in_state(AppState::Play)),
         );

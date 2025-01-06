@@ -1,4 +1,6 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::log::Level;
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -45,15 +47,21 @@ fn main() {
     App::new()
         .add_plugins((
             // Deps
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    present_mode: PresentMode::Immediate, // Disable VSync and keep high FPS
-                    focused: true,
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        present_mode: PresentMode::Immediate, // Disable VSync and keep high FPS
+                        focused: true,
 
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(LogPlugin {
+                    level: Level::INFO,
+                    filter: "wgpu=error,bevy_render=info,bevy_ecs=warn,bevy_time=war".to_string(),
                     ..default()
                 }),
-                ..default()
-            }),
             FrameTimeDiagnosticsPlugin,
             TextInputPlugin,
             TilemapPlugin,

@@ -2,8 +2,12 @@ use crate::common::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use lightyear::prelude::client::*;
-use rust_common_game::{protocol::*, settings::*};
+use lightyear::prelude::{client::*, PreSpawnedPlayerObject};
+use rust_common_game::{
+    projectile::Projectile,
+    protocol::*,
+    shared::{ENEMY_SIZE, PLAYER_SIZE, PROJECTILE_SIZE},
+};
 
 use super::PlaySceneTag;
 
@@ -19,13 +23,8 @@ pub fn debug_draw_colliders(
 
     for (entity, collider) in query.iter() {
         if let Some(ball) = collider.shape().as_ball() {
-            let radii_y = match render_config.mode {
-                RenderMode::Iso => ball.radius * (2.0f32.sqrt() / 2.0),
-                RenderMode::Cart => ball.radius,
-            };
-
             let shape = shapes::Ellipse {
-                radii: Vec2::new(ball.radius, radii_y),
+                radii: apply_render_mode_radius(&render_config, ball.radius),
                 center: Vec2::ZERO,
             };
 
@@ -80,42 +79,40 @@ pub struct DebugConfirmedEntityRef(pub Entity);
 #[allow(clippy::type_complexity)]
 pub(crate) fn debug_draw_confirmed_entities(
     debug_config: Res<DebugConfig>,
+    render_config: Res<RenderConfig>,
     mut commands: Commands,
     confirmed_q: Query<
         (
             Entity,
             &Position,
             Has<Enemy>,
+            Has<Projectile>,
             Option<&DebugConfirmedEntityRef>,
         ),
-        (With<Player>, With<Confirmed>, Without<DebugConfirmedEntity>),
+        (With<Confirmed>, Without<DebugConfirmedEntity>),
     >,
     mut confirmed_debug_q: Query<&mut Transform, With<DebugConfirmedEntity>>,
-    render_config: Res<RenderConfig>,
 ) {
     if !debug_config.show_confirmed_entities {
         return;
     }
 
-    for (entity, position, is_enemy, debug_entity_ref) in confirmed_q.iter() {
+    for (entity, position, is_enemy, is_projectile, debug_entity_ref) in confirmed_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = confirmed_debug_q.get_mut(debug_entity_ref.0) {
                 transform.translation = apply_render_mode(&render_config, position).extend(3.);
             }
         } else {
             let radius = if is_enemy {
-                ENTITY_SIZE / 2.0 / 2.
+                ENEMY_SIZE / 2.
+            } else if is_projectile {
+                PROJECTILE_SIZE / 2.
             } else {
-                ENTITY_SIZE / 2.
-            };
-
-            let radii_y = match render_config.mode {
-                RenderMode::Iso => radius * (2.0f32.sqrt() / 2.0),
-                RenderMode::Cart => radius,
+                PLAYER_SIZE / 2.
             };
 
             let shape = shapes::Ellipse {
-                radii: Vec2::new(radius, radii_y),
+                radii: apply_render_mode_radius(&render_config, radius),
                 center: Vec2::ZERO,
             };
 
@@ -131,11 +128,30 @@ pub(crate) fn debug_draw_confirmed_entities(
                         ..default()
                     },
                     Stroke::new(Color::linear_rgb(1., 0., 0.), 2.0),
+                    DebugConfirmedEntityRef(entity),
                 ))
                 .id();
             commands
                 .entity(entity)
                 .insert(DebugConfirmedEntityRef(debug_entity));
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub(crate) fn debug_undraw_confirmed_entities(
+    debug_config: Res<DebugConfig>,
+    mut commands: Commands,
+    confirmed_q: Query<Entity, (With<Confirmed>, Without<DebugConfirmedEntity>)>,
+    confirmed_debug_q: Query<(Entity, &DebugConfirmedEntityRef), With<DebugConfirmedEntity>>,
+) {
+    if !debug_config.show_confirmed_entities {
+        return;
+    }
+
+    for (debug_confirmed_entity, confirmed_entity_ref) in confirmed_debug_q.iter() {
+        if confirmed_q.get(confirmed_entity_ref.0).is_err() {
+            commands.entity(debug_confirmed_entity).despawn();
         }
     }
 }
@@ -179,5 +195,43 @@ pub(crate) fn debug_draw_targets(
                 Color::linear_rgb(0., 1., 1.),
             );
         }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub(crate) fn draw_elements(
+    render_config: Res<RenderConfig>,
+    mut gizmos: Gizmos,
+    prespawned_balls: Query<
+        &Position,
+        (
+            With<PreSpawnedPlayerObject>,
+            Without<Predicted>,
+            With<Projectile>,
+        ),
+    >,
+    predicted_balls: Query<
+        &Position,
+        (
+            With<Predicted>,
+            Without<PreSpawnedPlayerObject>,
+            With<Projectile>,
+        ),
+    >,
+) {
+    for position in &prespawned_balls {
+        gizmos.circle_2d(
+            apply_render_mode(&render_config, &position.0),
+            PROJECTILE_SIZE / 2.,
+            Color::linear_rgb(0., 0., 1.),
+        );
+    }
+
+    for position in &predicted_balls {
+        gizmos.circle_2d(
+            apply_render_mode(&render_config, &position.0),
+            PROJECTILE_SIZE / 2.,
+            Color::linear_rgb(0., 1., 0.),
+        );
     }
 }

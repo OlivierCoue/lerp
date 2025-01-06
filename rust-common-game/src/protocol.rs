@@ -2,11 +2,10 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use lightyear::prelude::*;
-use lightyear::{
-    client::components::ComponentSyncMode,
-    utils::avian2d::{linear_velocity, position},
-};
+use lightyear::{client::components::ComponentSyncMode, utils::avian2d::position};
 use serde::{Deserialize, Serialize};
+
+use crate::projectile::Projectile;
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 
@@ -40,9 +39,21 @@ pub enum PlayerActions {
     MoveDown,
     MoveLeft,
     MoveRight,
+    SkillSlot1,
+    SkillSlot2,
     Stop,
     #[actionlike(DualAxis)]
     Cursor,
+}
+
+pub fn position_should_rollback(this: &Position, that: &Position) -> bool {
+    let distance = this.distance(that.0);
+    distance > 1.
+}
+
+pub fn velocity_should_rollback(this: &LinearVelocity, that: &LinearVelocity) -> bool {
+    let distance = this.distance(that.0);
+    distance > 500.
 }
 
 pub struct ProtocolPlugin;
@@ -69,7 +80,8 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full);
+            .add_prediction(ComponentSyncMode::Full)
+            .add_should_rollback(velocity_should_rollback);
 
         app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
@@ -78,6 +90,11 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Full)
             .add_interpolation(ComponentSyncMode::Full)
             .add_interpolation_fn(position::lerp)
-            .add_correction_fn(position::lerp);
+            .add_correction_fn(position::lerp)
+            .add_should_rollback(position_should_rollback);
+
+        app.register_component::<Projectile>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once)
+            .add_interpolation(ComponentSyncMode::Once);
     }
 }

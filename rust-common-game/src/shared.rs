@@ -8,6 +8,19 @@ use crate::character_controller::CharacterControllerPlugin;
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
 
+/// Number of pixels per one meter
+pub const PIXEL_METER: f32 = 32.;
+/// Diameter of a player collider
+pub const PLAYER_SIZE: f32 = 32.;
+/// Diameter of an enemy collider
+pub const ENEMY_SIZE: f32 = 16.;
+/// Diameter of a projectile collider
+pub const PROJECTILE_SIZE: f32 = 8.;
+
+pub const PLAYER_BASE_MOVEMENT_SPEED: f32 = 8. * PIXEL_METER;
+pub const ENEMY_BASE_MOVEMENT_SPEED: f32 = 5. * PIXEL_METER;
+pub const PROJECTILE_BASE_MOVEMENT_SPEED: f32 = 30. * PIXEL_METER;
+
 #[derive(Clone)]
 pub struct SharedPlugin;
 
@@ -20,6 +33,7 @@ impl Plugin for SharedPlugin {
         // we use Position and Rotation as primary source of truth, so no need to sync changes with SyncPlugin
         app.add_plugins(
             PhysicsPlugins::new(FixedUpdate)
+                .with_length_unit(PIXEL_METER)
                 .build()
                 .disable::<SyncPlugin>(),
         );
@@ -115,6 +129,8 @@ pub fn shared_handle_move_wasd_behavior(
     }
 
     direction = direction.clamp_length_max(1.0);
-
-    velocity.0 = direction * movement_speed.0
+    let new_velocity = direction * movement_speed.0;
+    if new_velocity != velocity.0 {
+        velocity.0 = new_velocity
+    }
 }

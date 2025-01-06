@@ -3,8 +3,13 @@ use avian2d::collision::Collider;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use lightyear::prelude::PreSpawnedPlayerObject;
+use lightyear::prelude::TickManager;
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::character_controller::*;
+use rust_common_game::projectile::PreviousPosition;
+use rust_common_game::projectile::Projectile;
+use rust_common_game::projectile::ProjectileData;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
@@ -52,12 +57,11 @@ pub fn handle_new_player(
             texture_idle: player_idle_texture,
         };
 
-        let mut collider = if is_enemy {
-            Collider::circle(ENTITY_SIZE / 2.0 / 2.)
+        let collider = if is_enemy {
+            Collider::circle(ENEMY_SIZE / 2.)
         } else {
-            Collider::circle(ENTITY_SIZE / 2.)
+            Collider::circle(PLAYER_SIZE / 2.)
         };
-        collider.set_scale(Vec2::new(1., 1.), 10);
 
         commands
             .entity(entity)
@@ -93,7 +97,7 @@ pub fn handle_new_player(
                 (PlayerActions::MoveLeft, KeyCode::KeyA),
                 (PlayerActions::MoveRight, KeyCode::KeyD),
             ])
-            .with(PlayerActions::Move, MouseButton::Left),));
+            .with(PlayerActions::SkillSlot1, MouseButton::Left),));
         }
     }
 }
@@ -210,8 +214,7 @@ pub fn sync_cursor_poisition(
         return;
     };
 
-    let action = action_state.dual_axis_data_mut_or_default(&PlayerActions::Cursor);
-    action.fixed_update_pair = actual_world_cursor_position;
+    action_state.set_axis_pair(&PlayerActions::Cursor, actual_world_cursor_position);
 }
 
 pub fn move_to_target(
@@ -256,5 +259,46 @@ pub fn handle_move_wasd(
 ) {
     for (action, movement_speed, velocity) in query.iter_mut() {
         shared_handle_move_wasd_behavior(action, movement_speed, velocity);
+    }
+}
+
+pub fn handle_skill_slot(
+    render_config: Res<RenderConfig>,
+    rollback: Res<Rollback>,
+    tick_manager: Res<TickManager>,
+    mut commands: Commands,
+    mut query: Query<(&ActionState<PlayerActions>, &Position), With<Predicted>>,
+) {
+    for (action, player_position) in query.iter_mut() {
+        if action.pressed(&PlayerActions::SkillSlot1) {
+            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+                println!("cursor_position not set skipping");
+                return;
+            };
+            let direction = (cursor_position.pair - player_position.0).normalize();
+            let velocity = direction * PROJECTILE_BASE_MOVEMENT_SPEED;
+            let translation = apply_render_mode(&render_config, &player_position.0).extend(1.);
+            commands.spawn((
+                Projectile,
+                ProjectileData {
+                    max_distance: 10. * PIXEL_METER,
+                    distance_traveled: 0.,
+                },
+                RigidBody::Kinematic,
+                Collider::circle(PROJECTILE_SIZE / 2.),
+                LockedAxes::ROTATION_LOCKED,
+                PreviousPosition(player_position.0),
+                Position::from_xy(player_position.x, player_position.y),
+                LinearVelocity(velocity),
+                PreSpawnedPlayerObject::new(
+                    tick_manager.tick_or_rollback_tick(&rollback).0 as u64 + 65_535 + 1,
+                ),
+                // Client only
+                PlaySceneTag,
+                TransformInterpolation,
+                Transform::from_translation(translation),
+                Visibility::default(),
+            ));
+        }
     }
 }

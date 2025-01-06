@@ -5,7 +5,9 @@ use bevy::{prelude::*, time::Timer};
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use rust_common_game::{
-    character_controller::CharacterController, protocol::*, settings::ENTITY_SIZE,
+    character_controller::CharacterController,
+    protocol::*,
+    shared::{ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
 };
 
 use crate::AutoMove;
@@ -31,9 +33,9 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
             MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
-            Collider::circle(ENTITY_SIZE / 2.0 / 2.),
+            Collider::circle(ENEMY_SIZE / 2.),
             LockedAxes::ROTATION_LOCKED,
-            MovementSpeed(150.),
+            MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::None,
@@ -85,7 +87,7 @@ fn enemy_movement_behavior(
 
             // ARRIVE behavior (adjust speed near the target)
             let distance = (target_pos - enemy_position.0).length();
-            let slowing_radius = ENTITY_SIZE; // Adjust as needed
+            let slowing_radius = PIXEL_METER; // Adjust as needed
             let adjusted_speed = if distance < slowing_radius {
                 movement_speed.0 * (distance / slowing_radius)
             } else {
@@ -95,14 +97,14 @@ fn enemy_movement_behavior(
 
             // SEPARATION behavior
             let mut separation_force = Vec2::ZERO;
-            let separation_distance = 1. * ENTITY_SIZE; // Adjust based on scale (e.g., 4x object size)
+            let separation_distance = 1. * PIXEL_METER; // Adjust based on scale (e.g., 4x object size)
             for other_position in enemies_position.iter() {
                 if other_position != enemy_position {
                     let diff = enemy_position.0 - other_position.0;
                     let dist_sq = diff.length_squared();
                     if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
                         // Separation force scaling
-                        let strength = 20.0; // Experiment with this value
+                        let strength = PIXEL_METER; // Experiment with this value
                         separation_force += (diff / dist_sq.sqrt()) * strength;
                     }
                 }

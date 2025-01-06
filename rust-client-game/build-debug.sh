@@ -19,3 +19,5 @@ for file in ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86
         cp ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-pc-windows-gnu/lib/${file_name} "${LERP_GODOT_LOCATION}/export"
     fi
 done
+
+cp ./target/debug/deps/bevy_dylib-*.d ./test

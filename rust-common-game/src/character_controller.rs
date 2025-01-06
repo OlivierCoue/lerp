@@ -1,11 +1,18 @@
 use avian2d::{math::*, prelude::*};
-use bevy::{math::VectorSpace, prelude::*};
+use bevy::prelude::*;
 
-use crate::protocol::Enemy;
+use crate::{projectile::Projectile, protocol::Enemy};
 
 // Basic CharacterController taken from https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/kinematic_character_2d/plugin.rs
 // With a few update to addpat it for a top down game, the example was for a platformer with only x axes movement / jump / gravity...
 // Also adapted it to handle CharacterController x CharacterController collisions
+
+#[derive(PhysicsLayer, Default)]
+pub enum GameLayer {
+    #[default]
+    Default, // Layer 0 - the default layer that objects are assigned to
+    Projectile, // Layer 1
+}
 
 pub struct CharacterControllerPlugin;
 
@@ -36,7 +43,7 @@ pub struct CharacterController;
 #[allow(clippy::type_complexity)]
 fn kinematic_controller_collisions(
     collisions: Res<Collisions>,
-    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>)>,
+    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>), (Without<Projectile>)>,
     collider_parents: Query<&ColliderParent, Without<Sensor>>,
     mut character_controllers: Query<&mut Position, (With<RigidBody>, With<CharacterController>)>,
     time: Res<Time<Physics>>,
@@ -50,10 +57,12 @@ fn kinematic_controller_collisions(
             continue;
         };
 
-        let [(rb_1, mut linear_velocity_opt_1, is_enemy_1), (rb_2, mut linear_velocity_opt_2, is_enemy_2)] =
-            bodies
-                .get_many_mut([collider_parent1.get(), collider_parent2.get()])
-                .unwrap();
+        let Ok(
+            [(rb_1, mut linear_velocity_opt_1, is_enemy_1), (rb_2, mut linear_velocity_opt_2, is_enemy_2)],
+        ) = bodies.get_many_mut([collider_parent1.get(), collider_parent2.get()])
+        else {
+            continue;
+        };
 
         let is_controller_1 = character_controllers
             .get_mut(collider_parent1.get())
@@ -154,7 +163,7 @@ fn handle_kinematic_controller_collision(
                 // Any to wall (apply full correction to entity)
                 if !is_other_controller {
                     position.0 += normal * contact.penetration;
-                // Enemy to Enemy (aplly full correction if entity is moving and other is not, else apply only half, as the other will also get it position corrected by half)
+                    // Enemy to Enemy (aplly full correction if entity is moving and other is not, else apply only half, as the other will also get it position corrected by half)
                 } else if is_enemy_to_enemy {
                     let resolution_factor = 0.5;
                     if linear_velocity.0 != Vec2::ZERO && other_linear_velocity == Vec2::ZERO {
@@ -203,7 +212,6 @@ fn handle_kinematic_controller_collision(
             // Compute the impulse to apply.
             let impulse_magnitude = normal_speed - deepest_penetration / delta_seconds;
             let impulse = impulse_magnitude * normal;
-
             linear_velocity.0 =
                 (linear_velocity.0 - impulse).clamp_length_max(linear_velocity.length());
         }

@@ -23,10 +23,22 @@ pub fn isometric_to_cartesian(iso_x: f32, iso_y: f32) -> Vec2 {
     )
 }
 
+pub fn cartesian_to_isometric_radius(r: f32) -> Vec2 {
+    let sqrt_2 = 2.0f32.sqrt();
+    Vec2::new(r * sqrt_2, r * (sqrt_2 / 2.0))
+}
+
 pub fn apply_render_mode(render_config: &RenderConfig, position: &Vec2) -> Vec2 {
     match render_config.mode {
         RenderMode::Iso => cartesian_to_isometric(position.x, position.y),
         RenderMode::Cart => *position,
+    }
+}
+
+pub fn apply_render_mode_radius(render_config: &RenderConfig, r: f32) -> Vec2 {
+    match render_config.mode {
+        RenderMode::Iso => cartesian_to_isometric_radius(r),
+        RenderMode::Cart => Vec2::splat(r),
     }
 }
 

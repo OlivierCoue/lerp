@@ -1,5 +1,7 @@
 mod enemy;
 mod map;
+mod projectile;
+
 use std::net::SocketAddr;
 use std::time::Duration;
 
@@ -18,6 +20,10 @@ use local_ip_address::local_ip;
 
 use map::setup_map;
 use rust_common_game::character_controller::*;
+use rust_common_game::projectile::move_projectiles;
+use rust_common_game::projectile::PreviousPosition;
+use rust_common_game::projectile::Projectile;
+use rust_common_game::projectile::ProjectileData;
 use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
 use rust_common_game::shared::*;
@@ -44,9 +50,9 @@ fn start_server(mut commands: Commands) {
         MovementTargets(Vec::new()),
         RigidBody::Kinematic,
         CharacterController,
-        Collider::circle(ENTITY_SIZE / 2.0),
+        Collider::circle(PLAYER_SIZE / 2.0),
         LockedAxes::ROTATION_LOCKED,
-        MovementSpeed(250.),
+        MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
         AutoMove,
         Replicate {
             sync: SyncTarget {
@@ -80,9 +86,9 @@ fn handle_connections(
             MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
-            Collider::circle(ENTITY_SIZE / 2.0),
+            Collider::circle(PLAYER_SIZE / 2.0),
             LockedAxes::ROTATION_LOCKED,
-            MovementSpeed(250.),
+            MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::Single(client_id),
@@ -139,6 +145,61 @@ pub fn handle_move_wasd(
 ) {
     for (action, movement_speed, velocity) in query.iter_mut() {
         shared_handle_move_wasd_behavior(action, movement_speed, velocity);
+    }
+}
+
+fn handle_skill_slot(
+    tick_manager: Res<TickManager>,
+    mut commands: Commands,
+    mut query: Query<(&Player, &ActionState<PlayerActions>, &Position), With<ReplicationTarget>>,
+) {
+    for (player, action, player_position) in query.iter_mut() {
+        if action.pressed(&PlayerActions::SkillSlot1) {
+            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+                println!("cursor_position not set skipping");
+                return;
+            };
+            let direction = (cursor_position.pair - player_position.0).normalize();
+            let velocity = direction * PROJECTILE_BASE_MOVEMENT_SPEED;
+            // println!(
+            //     "projectile tick: {} count: {} cursor: {}:{} p position: {}:{}",
+            //     tick_manager.tick().0,
+            //     projectile_stats.fired_count,
+            //     cursor_position.pair.x,
+            //     cursor_position.pair.y,
+            //     player_position.x,
+            //     player_position.y
+            // );
+            commands.spawn((
+                Projectile,
+                ProjectileData {
+                    max_distance: 10. * PIXEL_METER,
+                    distance_traveled: 0.,
+                },
+                RigidBody::Kinematic,
+                Collider::circle(PROJECTILE_SIZE / 2.),
+                LockedAxes::ROTATION_LOCKED,
+                PreviousPosition(player_position.0),
+                Position::from_xy(player_position.x, player_position.y),
+                LinearVelocity(velocity),
+                PreSpawnedPlayerObject::new(tick_manager.tick().0 as u64 + 65_535 + 1),
+                Replicate {
+                    sync: SyncTarget {
+                        prediction: NetworkTarget::Single(player.client_id),
+                        interpolation: NetworkTarget::AllExceptSingle(player.client_id),
+                    },
+                    target: ReplicationTarget {
+                        target: NetworkTarget::All,
+                    },
+                    controlled_by: ControlledBy {
+                        target: NetworkTarget::None,
+                        ..default()
+                    },
+                    group: REPLICATION_GROUP,
+                    ..default()
+                },
+            ));
+        }
     }
 }
 
@@ -209,7 +270,14 @@ fn main() {
         .add_systems(FixedUpdate, aplly_auto_move)
         .add_systems(
             FixedUpdate,
-            (move_to_target, handle_move_wasd, handle_move_click).chain(),
+            (
+                move_to_target,
+                handle_move_wasd,
+                handle_move_click,
+                handle_skill_slot,
+                move_projectiles,
+            )
+                .chain(),
         )
         .add_plugins(EnemyPlugin)
         .run();

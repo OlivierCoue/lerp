@@ -1,27 +1,17 @@
-// #[derive(Component)]
-// struct Projectile {
-//     max_distance: f32,
-//     distance_traveled: f32,
-// }
+use avian2d::prelude::*;
+use bevy::prelude::*;
+use rust_common_game::projectile::*;
 
-// #[derive(Component)]
-// struct Velocity(Vec3);
-
-// fn move_projectiles(
-//     mut commands: Commands,
-//     time: Res<Time>,
-//     mut query: Query<(Entity, &mut Transform, &mut Projectile, &Velocity)>,
-// ) {
-//     for (entity, mut transform, mut projectile, velocity) in query.iter_mut() {
-//         let delta = velocity.0 * time.delta_seconds();
-//         transform.translation += delta;
-
-//         // Update distance traveled
-//         projectile.distance_traveled += delta.length();
-
-//         // Despawn if max distance is reached
-//         if projectile.distance_traveled >= projectile.max_distance {
-//             commands.entity(entity).despawn();
-//         }
-//     }
-// }
+#[derive(Bundle)]
+pub struct ProjectileServerBundle {
+    pub dto: ProjectileDTOBundle,
+    pub physics: ProjectilePhysicsBundle,
+}
+impl ProjectileServerBundle {
+    pub fn build(position: Position, linear_velocity: LinearVelocity) -> Self {
+        Self {
+            dto: ProjectileDTOBundle::build(position, linear_velocity),
+            physics: ProjectilePhysicsBundle::build(),
+        }
+    }
+}
