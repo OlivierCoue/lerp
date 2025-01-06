@@ -15,11 +15,34 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable # or 'nightly' / '1.72.0', etc.
+          profile: minimal
+          override: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+
       - name: Update and install required libraries
         run: |
           sudo apt-get update
           sudo apt-get -y install --no-install-recommends \
-            rustc \
             libasound2-dev \
             libudev-dev
 
@@ -75,5 +98,5 @@ jobs:
           REPOSITORY: game-${{ github.ref_name }}
           IMAGE_TAG: latest
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f ./rust-server-game/dist/release/Dockerfile .
+          docker build ./rust-server-game/dist/release -t $REGISTRY/$REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
