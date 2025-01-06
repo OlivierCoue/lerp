@@ -3,7 +3,7 @@ cargo build -p rust-server-game --release
 rm -rf ./rust-server-game/dist/release
 mkdir -p ./rust-server-game/dist/release
 cp ./rust-server-game/Dockerfile ./rust-server-game/dist/release
-cp ./target/debug/rust-server-game ./rust-server-game/dist/release
+cp ./target/release/rust-server-game ./rust-server-game/dist/release
 
 # docker rmi -f rust-server-game:1
 # docker build ./rust-server-game/dist/debug -t rust-server-game:1
