@@ -15,17 +15,21 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Update
-        shell: bash
-        run: sudo apt update
+      - name: Update and install required libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install --no-install-recommends \
+            rustc \
+            libasound2-dev \
+            libudev-dev
 
       - name: Copy .env
         shell: bash
         run: cp .env.pipeline .env
 
-      - name: Install Rust
-        shell: bash
-        run: sudo apt install rustc
+      # - name: Install Rust
+      #   shell: bash
+      #   run: sudo apt install rustc
 
       # - name: Install Cargo Lambda
       #   uses: jaxxstorm/action-install-gh-release@v1.11.0
