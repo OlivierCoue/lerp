@@ -20,13 +20,16 @@ use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
 use projectile::handle_new_projectile;
-use rust_common_game::projectile::move_projectiles;
+use rust_common_game::protocol::PlayerClient;
 
 #[derive(Component)]
 pub struct PlaySceneTag;
 
 #[derive(Component)]
 pub struct FpsDisplayTag;
+
+#[derive(Component)]
+pub struct PingDisplayTag;
 
 #[derive(Component)]
 pub struct RollBackHistoric(pub [bool; 100]);
@@ -55,6 +58,11 @@ pub fn play_scene_setup(mut commands: Commands) {
             parent.spawn((
                 FpsDisplayTag,
                 Text("FPS: 0".to_string()),
+                TextColor(Color::linear_rgb(0., 1., 0.)),
+            ));
+            parent.spawn((
+                PingDisplayTag,
+                Text("PING: 0".to_string()),
                 TextColor(Color::linear_rgb(0., 1., 0.)),
             ));
             parent
@@ -114,6 +122,17 @@ pub fn update_fps(
     }
 }
 
+pub fn update_ping(
+    query_client: Query<&PlayerClient, (With<Predicted>, Without<PingDisplayTag>)>,
+    mut query_text: Query<&mut Text, With<PingDisplayTag>>,
+) {
+    for mut text in &mut query_text {
+        for client in &query_client {
+            text.0 = format!("PING: {}", client.rtt.as_millis());
+        }
+    }
+}
+
 pub fn update_rollback_state(
     rollback: Res<Rollback>,
     mut query_container: Query<(&mut RollBackHistoric, &Children), Without<RollbackStateLineItem>>,
@@ -156,15 +175,15 @@ impl Plugin for PlayPlugin {
             Update,
             (
                 play_scene_logic,
+                handle_new_client,
                 handle_new_player,
                 handle_new_projectile,
                 animate_sprite,
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,
-                // draw_predicted_target,
                 debug_draw_colliders,
-                draw_elements,
                 update_fps,
+                update_ping,
             )
                 .run_if(in_state(AppState::Play)),
         );
@@ -172,19 +191,6 @@ impl Plugin for PlayPlugin {
         app.add_systems(
             FixedUpdate,
             (update_rollback_state).run_if(in_state(AppState::Play)),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            (
-                move_to_target,
-                handle_move_wasd,
-                handle_move_click,
-                handle_skill_slot,
-                move_projectiles.run_if(not(is_in_rollback)),
-            )
-                .chain()
-                .run_if(in_state(AppState::Play)),
         );
 
         app.add_systems(

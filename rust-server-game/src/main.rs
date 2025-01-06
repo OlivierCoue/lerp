@@ -11,6 +11,7 @@ use bevy::log::Level;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
+use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
 use enemy::EnemyPlugin;
 use leafwing_input_manager::prelude::ActionState;
@@ -44,9 +45,7 @@ fn start_server(mut commands: Commands) {
     println!("Starting server...");
     commands.start_server();
     let player = (
-        Player {
-            client_id: ClientId::Netcode(999999999),
-        },
+        Player,
         MovementTargets(Vec::new()),
         RigidBody::Kinematic,
         CharacterController,
@@ -81,8 +80,32 @@ fn handle_connections(
     for connection in connections.read() {
         let client_id = connection.client_id;
         info!("New client {:?}", client_id);
+        let player_client = (
+            PlayerClient {
+                client_id,
+                rtt: Duration::ZERO,
+                jitter: Duration::ZERO,
+            },
+            Replicate {
+                sync: SyncTarget {
+                    prediction: NetworkTarget::Single(client_id),
+                    interpolation: NetworkTarget::None,
+                },
+                target: ReplicationTarget {
+                    target: NetworkTarget::Single(client_id),
+                },
+                controlled_by: ControlledBy {
+                    target: NetworkTarget::Single(client_id),
+                    ..default()
+                },
+                group: REPLICATION_GROUP,
+                ..default()
+            },
+        );
+        commands.spawn(player_client);
+
         let player = (
-            Player { client_id },
+            Player,
             MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
@@ -91,8 +114,8 @@ fn handle_connections(
             MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
             Replicate {
                 sync: SyncTarget {
-                    prediction: NetworkTarget::Single(client_id),
-                    interpolation: NetworkTarget::AllExceptSingle(client_id),
+                    prediction: NetworkTarget::None,
+                    interpolation: NetworkTarget::All,
                 },
                 target: ReplicationTarget {
                     target: NetworkTarget::All,
@@ -134,42 +157,45 @@ fn handle_move_click(
 
 #[allow(clippy::type_complexity)]
 pub fn handle_move_wasd(
-    mut query: Query<
-        (
-            &ActionState<PlayerActions>,
-            &MovementSpeed,
-            &mut LinearVelocity,
-        ),
-        With<Player>,
-    >,
+    client_player_map: Res<ClientPlayerMap>,
+    client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
+    mut player_query: Query<(&mut LinearVelocity, &MovementSpeed), With<Player>>,
 ) {
-    for (action, movement_speed, velocity) in query.iter_mut() {
-        shared_handle_move_wasd_behavior(action, movement_speed, velocity);
+    for (client, action) in client_query.iter() {
+        let Ok((linear_velocity, movement_speed)) =
+            player_query.get_mut(*client_player_map.0.get(&client.client_id).unwrap())
+        else {
+            println!("[handle_move_wasd] Cannot find player entity");
+            continue;
+        };
+
+        shared_handle_move_wasd_behavior(action, movement_speed, linear_velocity);
     }
 }
 
 fn handle_skill_slot(
-    tick_manager: Res<TickManager>,
     mut commands: Commands,
-    mut query: Query<(&Player, &ActionState<PlayerActions>, &Position), With<ReplicationTarget>>,
+    client_player_map: Res<ClientPlayerMap>,
+    client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
+    player_query: Query<&Position, With<Player>>,
 ) {
-    for (player, action, player_position) in query.iter_mut() {
+    for (client, action) in client_query.iter() {
         if action.pressed(&PlayerActions::SkillSlot1) {
             let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("cursor_position not set skipping");
+                println!("[handle_skill_slot] Cursor_position not set skipping");
                 return;
             };
+
+            let Ok(player_position) =
+                player_query.get(*client_player_map.0.get(&client.client_id).unwrap())
+            else {
+                println!("[handle_skill_slot] Cannot find player entity");
+                continue;
+            };
+
             let direction = (cursor_position.pair - player_position.0).normalize();
             let velocity = direction * PROJECTILE_BASE_MOVEMENT_SPEED;
-            // println!(
-            //     "projectile tick: {} count: {} cursor: {}:{} p position: {}:{}",
-            //     tick_manager.tick().0,
-            //     projectile_stats.fired_count,
-            //     cursor_position.pair.x,
-            //     cursor_position.pair.y,
-            //     player_position.x,
-            //     player_position.y
-            // );
+
             commands.spawn((
                 Projectile,
                 ProjectileData {
@@ -182,11 +208,10 @@ fn handle_skill_slot(
                 PreviousPosition(player_position.0),
                 Position::from_xy(player_position.x, player_position.y),
                 LinearVelocity(velocity),
-                PreSpawnedPlayerObject::new(tick_manager.tick().0 as u64 + 65_535 + 1),
                 Replicate {
                     sync: SyncTarget {
-                        prediction: NetworkTarget::Single(player.client_id),
-                        interpolation: NetworkTarget::AllExceptSingle(player.client_id),
+                        prediction: NetworkTarget::None,
+                        interpolation: NetworkTarget::All,
                     },
                     target: ReplicationTarget {
                         target: NetworkTarget::All,
@@ -214,6 +239,18 @@ fn aplly_auto_move(
         config.direction = -config.direction;
         for mut targets in &mut query {
             *targets = MovementTargets(vec![Vec2::new(1000. * config.direction, 0.)])
+        }
+    }
+}
+
+fn update_player_client_metrics(
+    connection_manager: Res<ConnectionManager>,
+    mut q: Query<(Entity, &mut PlayerClient)>,
+) {
+    for (_e, mut player_client) in q.iter_mut() {
+        if let Ok(connection) = connection_manager.connection(player_client.client_id) {
+            player_client.rtt = connection.rtt();
+            player_client.jitter = connection.jitter();
         }
     }
 }
@@ -266,7 +303,13 @@ fn main() {
             direction: 1.,
         })
         .add_systems(Startup, (start_server, setup_map))
-        .add_systems(Update, handle_connections)
+        .add_systems(
+            Update,
+            (
+                handle_connections,
+                update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
+            ),
+        )
         .add_systems(FixedUpdate, aplly_auto_move)
         .add_systems(
             FixedUpdate,

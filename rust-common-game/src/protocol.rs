@@ -1,8 +1,13 @@
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use lightyear::prelude::*;
-use lightyear::{client::components::ComponentSyncMode, utils::avian2d::position};
+use lightyear::{
+    client::components::ComponentSyncMode, utils::avian2d::angular_velocity,
+    utils::avian2d::linear_velocity, utils::avian2d::position,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::projectile::Projectile;
@@ -12,9 +17,14 @@ pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 // Components
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Player {
+pub struct PlayerClient {
     pub client_id: ClientId,
+    pub rtt: Duration,
+    pub jitter: Duration,
 }
+
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Player;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Enemy;
@@ -64,37 +74,34 @@ impl Plugin for ProtocolPlugin {
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
 
         // Components
+        app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Simple);
+
         app.register_component::<Player>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once)
             .add_interpolation(ComponentSyncMode::Once);
 
         app.register_component::<Enemy>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once)
+            .add_interpolation(ComponentSyncMode::Once);
+
+        app.register_component::<Projectile>(ChannelDirection::ServerToClient)
             .add_interpolation(ComponentSyncMode::Once);
 
         app.register_component::<MovementSpeed>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once)
             .add_interpolation(ComponentSyncMode::Once);
 
         app.register_component::<MovementTargets>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full);
+            .add_interpolation(ComponentSyncMode::Once);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(velocity_should_rollback);
+            .add_interpolation(ComponentSyncMode::Full)
+            .add_interpolation_fn(linear_velocity::lerp);
 
         app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full);
+            .add_interpolation(ComponentSyncMode::Full)
+            .add_interpolation_fn(angular_velocity::lerp);
 
         app.register_component::<Position>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
             .add_interpolation(ComponentSyncMode::Full)
-            .add_interpolation_fn(position::lerp)
-            .add_correction_fn(position::lerp)
-            .add_should_rollback(position_should_rollback);
-
-        app.register_component::<Projectile>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once)
-            .add_interpolation(ComponentSyncMode::Once);
+            .add_interpolation_fn(position::lerp);
     }
 }

@@ -9,7 +9,7 @@ const CAMERA_DECAY_RATE: f32 = 20.;
 #[allow(clippy::type_complexity)]
 pub fn camera_follow(
     time: Res<Time>,
-    player_query: Query<&Transform, (With<Player>, With<Predicted>, With<Controlled>)>,
+    player_query: Query<&Transform, (With<Player>, With<Interpolated>, With<Controlled>)>,
     mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
 ) {
     if let Ok(player_transform) = player_query.get_single() {

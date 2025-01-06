@@ -2,7 +2,7 @@ use crate::common::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use lightyear::prelude::{client::*, PreSpawnedPlayerObject};
+use lightyear::prelude::client::*;
 use rust_common_game::{
     projectile::Projectile,
     protocol::*,
@@ -157,7 +157,7 @@ pub(crate) fn debug_undraw_confirmed_entities(
 }
 
 #[allow(clippy::type_complexity)]
-pub(crate) fn debug_draw_targets(
+pub(crate) fn _debug_draw_targets(
     mut gizmos: Gizmos,
     confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
     predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
@@ -195,43 +195,5 @@ pub(crate) fn debug_draw_targets(
                 Color::linear_rgb(0., 1., 1.),
             );
         }
-    }
-}
-
-#[allow(clippy::type_complexity)]
-pub(crate) fn draw_elements(
-    render_config: Res<RenderConfig>,
-    mut gizmos: Gizmos,
-    prespawned_balls: Query<
-        &Position,
-        (
-            With<PreSpawnedPlayerObject>,
-            Without<Predicted>,
-            With<Projectile>,
-        ),
-    >,
-    predicted_balls: Query<
-        &Position,
-        (
-            With<Predicted>,
-            Without<PreSpawnedPlayerObject>,
-            With<Projectile>,
-        ),
-    >,
-) {
-    for position in &prespawned_balls {
-        gizmos.circle_2d(
-            apply_render_mode(&render_config, &position.0),
-            PROJECTILE_SIZE / 2.,
-            Color::linear_rgb(0., 0., 1.),
-        );
-    }
-
-    for position in &predicted_balls {
-        gizmos.circle_2d(
-            apply_render_mode(&render_config, &position.0),
-            PROJECTILE_SIZE / 2.,
-            Color::linear_rgb(0., 1., 0.),
-        );
     }
 }

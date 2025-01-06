@@ -3,13 +3,8 @@ use avian2d::collision::Collider;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use lightyear::prelude::PreSpawnedPlayerObject;
-use lightyear::prelude::TickManager;
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::character_controller::*;
-use rust_common_game::projectile::PreviousPosition;
-use rust_common_game::projectile::Projectile;
-use rust_common_game::projectile::ProjectileData;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
@@ -24,30 +19,55 @@ pub struct AnimationConfig {
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+#[allow(clippy::type_complexity)]
+pub fn handle_new_client(
+    mut commands: Commands,
+    mut client_query: Query<
+        (Entity, &PlayerClient),
+        (Added<Predicted>, With<PlayerClient>, With<Controlled>),
+    >,
+) {
+    for (entity, player_client) in client_query.iter_mut() {
+        println!(
+            "[handle_new_client] New client with id: {}",
+            player_client.client_id
+        );
+
+        commands.entity(entity).insert((InputMap::new([
+            (PlayerActions::MoveUp, KeyCode::KeyW),
+            (PlayerActions::MoveDown, KeyCode::KeyS),
+            (PlayerActions::MoveLeft, KeyCode::KeyA),
+            (PlayerActions::MoveRight, KeyCode::KeyD),
+        ])
+        .with(PlayerActions::SkillSlot1, MouseButton::Left),));
+    }
+}
+
 // System create the player
 #[allow(clippy::type_complexity)]
 pub fn handle_new_player(
-    connection: Res<ClientConnection>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<
-        (Entity, Has<Controlled>, Has<Enemy>),
-        (Or<(Added<Predicted>, Added<Interpolated>)>, With<Player>),
-    >,
+    mut player_query: Query<(Entity, Has<Enemy>), (Added<Interpolated>, With<Player>)>,
 ) {
-    for (entity, is_controlled, is_enemy) in player_query.iter_mut() {
-        println!(
-            "[handle_new_player] New Player with id: {}",
-            connection.id()
-        );
+    for (entity, is_enemy) in player_query.iter_mut() {
+        println!("[handle_new_player] New Player");
 
         let layout = TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
 
-        let player_walk_texture: Handle<Image> = asset_server.load("assets/atlas_player_walk.png");
+        let player_walk_texture: Handle<Image> = if is_enemy {
+            asset_server.load("assets/atlas_enemy_walk.png")
+        } else {
+            asset_server.load("assets/atlas_player_walk.png")
+        };
         let player_walk_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
 
-        let player_idle_texture: Handle<Image> = asset_server.load("assets/atlas_player_idle.png");
+        let player_idle_texture: Handle<Image> = if is_enemy {
+            asset_server.load("assets/atlas_enemy_idle.png")
+        } else {
+            asset_server.load("assets/atlas_player_idle.png")
+        };
         let player_idle_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
 
         let animation_config = AnimationConfig {
@@ -70,7 +90,7 @@ pub fn handle_new_player(
                 RigidBody::Kinematic,
                 CharacterController,
                 collider,
-                LockedAxes::ROTATION_LOCKED,
+                LockedAxes::ALL_LOCKED,
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),
@@ -89,16 +109,6 @@ pub fn handle_new_player(
                     Transform::from_scale(Vec3::new(2., 2., 0.)),
                 ));
             });
-
-        if is_controlled {
-            commands.entity(entity).insert((InputMap::new([
-                (PlayerActions::MoveUp, KeyCode::KeyW),
-                (PlayerActions::MoveDown, KeyCode::KeyS),
-                (PlayerActions::MoveLeft, KeyCode::KeyA),
-                (PlayerActions::MoveRight, KeyCode::KeyD),
-            ])
-            .with(PlayerActions::SkillSlot1, MouseButton::Left),));
-        }
     }
 }
 
@@ -186,7 +196,7 @@ pub fn sync_cursor_poisition(
     render_config: Res<RenderConfig>,
     mut action_state_query: Query<
         &mut ActionState<PlayerActions>,
-        (With<Player>, With<Predicted>, With<Controlled>),
+        (With<PlayerClient>, With<Predicted>, With<Controlled>),
     >,
 ) {
     let (camera, camera_transform) = camera_query.single();
@@ -215,90 +225,4 @@ pub fn sync_cursor_poisition(
     };
 
     action_state.set_axis_pair(&PlayerActions::Cursor, actual_world_cursor_position);
-}
-
-pub fn move_to_target(
-    time: Res<Time<Physics>>,
-    mut query: Query<
-        (
-            &Position,
-            &mut MovementTargets,
-            &mut LinearVelocity,
-            &MovementSpeed,
-        ),
-        With<Predicted>,
-    >,
-) {
-    for (position, targets, velocity, movement_speed) in &mut query {
-        shared_move_to_target_behaviour(&time, position, movement_speed, velocity, targets);
-    }
-}
-
-#[allow(clippy::type_complexity)]
-pub fn handle_move_click(
-    mut query: Query<
-        (&ActionState<PlayerActions>, &mut MovementTargets),
-        (With<Player>, With<Predicted>, With<Controlled>),
-    >,
-) {
-    for (action, targets) in query.iter_mut() {
-        shared_handle_move_click_behavior(action, targets);
-    }
-}
-
-#[allow(clippy::type_complexity)]
-pub fn handle_move_wasd(
-    mut query: Query<
-        (
-            &ActionState<PlayerActions>,
-            &MovementSpeed,
-            &mut LinearVelocity,
-        ),
-        (With<Player>, With<Predicted>, With<Controlled>),
-    >,
-) {
-    for (action, movement_speed, velocity) in query.iter_mut() {
-        shared_handle_move_wasd_behavior(action, movement_speed, velocity);
-    }
-}
-
-pub fn handle_skill_slot(
-    render_config: Res<RenderConfig>,
-    rollback: Res<Rollback>,
-    tick_manager: Res<TickManager>,
-    mut commands: Commands,
-    mut query: Query<(&ActionState<PlayerActions>, &Position), With<Predicted>>,
-) {
-    for (action, player_position) in query.iter_mut() {
-        if action.pressed(&PlayerActions::SkillSlot1) {
-            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("cursor_position not set skipping");
-                return;
-            };
-            let direction = (cursor_position.pair - player_position.0).normalize();
-            let velocity = direction * PROJECTILE_BASE_MOVEMENT_SPEED;
-            let translation = apply_render_mode(&render_config, &player_position.0).extend(1.);
-            commands.spawn((
-                Projectile,
-                ProjectileData {
-                    max_distance: 10. * PIXEL_METER,
-                    distance_traveled: 0.,
-                },
-                RigidBody::Kinematic,
-                Collider::circle(PROJECTILE_SIZE / 2.),
-                LockedAxes::ROTATION_LOCKED,
-                PreviousPosition(player_position.0),
-                Position::from_xy(player_position.x, player_position.y),
-                LinearVelocity(velocity),
-                PreSpawnedPlayerObject::new(
-                    tick_manager.tick_or_rollback_tick(&rollback).0 as u64 + 65_535 + 1,
-                ),
-                // Client only
-                PlaySceneTag,
-                TransformInterpolation,
-                Transform::from_translation(translation),
-                Visibility::default(),
-            ));
-        }
-    }
 }

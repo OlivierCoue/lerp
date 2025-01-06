@@ -26,9 +26,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
     if enemy_state.timer.finished() && enemy_state.count < ENEMY_MAX_COUNT {
         enemy_state.count += 1;
         let player = (
-            Player {
-                client_id: ClientId::Netcode(999999999),
-            },
+            Player,
             Enemy,
             MovementTargets(Vec::new()),
             RigidBody::Kinematic,

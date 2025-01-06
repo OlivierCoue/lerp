@@ -5,8 +5,6 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use rust_common_game::shared::PIXEL_METER;
 
-// const SPRITE_SCALE_FACTOR: f32 = 4.;
-
 pub fn setup_map(
     mut commands: Commands,
     render_config: Res<RenderConfig>,
@@ -14,7 +12,6 @@ pub fn setup_map(
 ) {
     println!("[setup_map]");
 
-    // Load the first sprite atlas
     let texture_handle = asset_server.load("assets/iso-tileset-grass-64x32.png");
     let map_size = TilemapSize { x: 100, y: 100 };
 

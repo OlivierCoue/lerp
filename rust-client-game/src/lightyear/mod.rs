@@ -32,11 +32,7 @@ impl Plugin for LightyearPlugin {
         let mut rng = rand::thread_rng();
         let client_id = rng.gen_range(1..10001);
 
-        let link_conditioner = LinkConditionerConfig {
-            incoming_latency: Duration::from_millis(100),
-            incoming_jitter: Duration::from_millis(0),
-            incoming_loss: 0.00,
-        };
+        let link_conditioner = LinkConditionerConfig::good_condition();
 
         let server_addr = SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), 34255);
         let client_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
@@ -68,10 +64,7 @@ impl Plugin for LightyearPlugin {
                 send_interval: REPLICATION_INTERVAL,
                 ..default()
             },
-            prediction: client::PredictionConfig {
-                maximum_predicted_ticks: 26,
-                ..default()
-            },
+            prediction: client::PredictionConfig { ..default() },
             interpolation: client::InterpolationConfig {
                 delay: InterpolationDelay {
                     min_delay: Duration::from_millis(0),

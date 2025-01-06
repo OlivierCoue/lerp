@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use lightyear::prelude::client::*;
+use lightyear::prelude::client::Interpolated;
 use rust_common_game::{projectile::Projectile, shared::*};
 
 use super::{apply_render_mode, PlaySceneTag, RenderConfig};
