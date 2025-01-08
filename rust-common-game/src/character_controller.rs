@@ -43,7 +43,7 @@ pub struct CharacterController;
 #[allow(clippy::type_complexity)]
 fn kinematic_controller_collisions(
     collisions: Res<Collisions>,
-    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>), (Without<Projectile>)>,
+    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>), Without<Projectile>>,
     collider_parents: Query<&ColliderParent, Without<Sensor>>,
     mut character_controllers: Query<&mut Position, (With<RigidBody>, With<CharacterController>)>,
     time: Res<Time<Physics>>,

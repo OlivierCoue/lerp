@@ -51,7 +51,6 @@ pub enum PlayerActions {
     MoveRight,
     SkillSlot1,
     SkillSlot2,
-    Stop,
     #[actionlike(DualAxis)]
     Cursor,
 }

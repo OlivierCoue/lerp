@@ -2,11 +2,7 @@ mod enemy;
 mod map;
 mod projectile;
 
-use std::net::SocketAddr;
-use std::time::Duration;
-
 use avian2d::prelude::*;
-
 use bevy::log::Level;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
@@ -18,15 +14,14 @@ use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
-
-use map::setup_map;
 use rust_common_game::character_controller::*;
-use rust_common_game::projectile::move_projectiles;
-use rust_common_game::projectile::PreviousPosition;
-use rust_common_game::projectile::Projectile;
-use rust_common_game::projectile::ProjectileData;
 use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
+use std::net::SocketAddr;
+use std::time::Duration;
+
+use map::setup_map;
+use projectile::*;
 use rust_common_game::shared::*;
 
 #[derive(Resource, Default)]
@@ -147,7 +142,7 @@ fn move_to_target(
     }
 }
 
-fn handle_move_click(
+fn handle_input_move_click(
     mut query: Query<(&ActionState<PlayerActions>, &mut MovementTargets), With<Player>>,
 ) {
     for (action, targets) in query.iter_mut() {
@@ -156,7 +151,7 @@ fn handle_move_click(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn handle_move_wasd(
+pub fn handle_input_move_wasd(
     client_player_map: Res<ClientPlayerMap>,
     client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
     mut player_query: Query<(&mut LinearVelocity, &MovementSpeed), With<Player>>,
@@ -165,7 +160,7 @@ pub fn handle_move_wasd(
         let Ok((linear_velocity, movement_speed)) =
             player_query.get_mut(*client_player_map.0.get(&client.client_id).unwrap())
         else {
-            println!("[handle_move_wasd] Cannot find player entity");
+            println!("[handle_input_move_wasd] Cannot find player entity");
             continue;
         };
 
@@ -173,8 +168,8 @@ pub fn handle_move_wasd(
     }
 }
 
-fn handle_skill_slot(
-    mut commands: Commands,
+fn handle_input_skill_slot(
+    mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
     client_player_map: Res<ClientPlayerMap>,
     client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
     player_query: Query<&Position, With<Player>>,
@@ -182,48 +177,23 @@ fn handle_skill_slot(
     for (client, action) in client_query.iter() {
         if action.pressed(&PlayerActions::SkillSlot1) {
             let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("[handle_skill_slot] Cursor_position not set skipping");
+                println!("[handle_input_skill_slot] Cursor_position not set skipping");
                 return;
             };
 
             let Ok(player_position) =
                 player_query.get(*client_player_map.0.get(&client.client_id).unwrap())
             else {
-                println!("[handle_skill_slot] Cannot find player entity");
+                println!("[handle_input_skill_slot] Cannot find player entity");
                 continue;
             };
 
             let direction = (cursor_position.pair - player_position.0).normalize();
-            let velocity = direction * PROJECTILE_BASE_MOVEMENT_SPEED;
 
-            commands.spawn((
-                Projectile,
-                ProjectileData {
-                    max_distance: 10. * PIXEL_METER,
-                    distance_traveled: 0.,
-                },
-                RigidBody::Kinematic,
-                Collider::circle(PROJECTILE_SIZE / 2.),
-                LockedAxes::ROTATION_LOCKED,
-                PreviousPosition(player_position.0),
-                Position::from_xy(player_position.x, player_position.y),
-                LinearVelocity(velocity),
-                Replicate {
-                    sync: SyncTarget {
-                        prediction: NetworkTarget::None,
-                        interpolation: NetworkTarget::All,
-                    },
-                    target: ReplicationTarget {
-                        target: NetworkTarget::All,
-                    },
-                    controlled_by: ControlledBy {
-                        target: NetworkTarget::None,
-                        ..default()
-                    },
-                    group: REPLICATION_GROUP,
-                    ..default()
-                },
-            ));
+            spawn_projectile_events.send(SpawnProjectileEvent {
+                from_position: player_position.0,
+                direction,
+            });
         }
     }
 }
@@ -302,6 +272,7 @@ fn main() {
             timer: Timer::new(Duration::from_secs(4), TimerMode::Repeating),
             direction: 1.,
         })
+        .add_event::<SpawnProjectileEvent>()
         .add_systems(Startup, (start_server, setup_map))
         .add_systems(
             Update,
@@ -310,15 +281,18 @@ fn main() {
                 update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
             ),
         )
-        .add_systems(FixedUpdate, aplly_auto_move)
+        .add_systems(
+            FixedUpdate,
+            (aplly_auto_move, update_and_despawn_projectile),
+        )
         .add_systems(
             FixedUpdate,
             (
                 move_to_target,
-                handle_move_wasd,
-                handle_move_click,
-                handle_skill_slot,
-                move_projectiles,
+                handle_input_move_wasd,
+                handle_input_move_click,
+                handle_input_skill_slot,
+                on_spawn_projectile_event,
             )
                 .chain(),
         )

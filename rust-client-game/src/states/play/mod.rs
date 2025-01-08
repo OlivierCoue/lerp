@@ -1,5 +1,7 @@
+mod animation;
 mod camera;
 mod debug;
+mod enemy;
 mod map;
 mod player;
 mod projectile;
@@ -10,19 +12,21 @@ use crate::states::play::debug::*;
 use crate::states::play::map::*;
 use crate::states::play::player::*;
 
+use animation::animate_sprite;
 use bevy::diagnostic::DiagnosticsStore;
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 
 use bevy_transform_interpolation::TransformEasingSet;
 
+use enemy::handle_new_enemy;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
 use projectile::handle_new_projectile;
 use rust_common_game::protocol::PlayerClient;
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct PlaySceneTag;
 
 #[derive(Component)]
@@ -177,6 +181,7 @@ impl Plugin for PlayPlugin {
                 play_scene_logic,
                 handle_new_client,
                 handle_new_player,
+                handle_new_enemy,
                 handle_new_projectile,
                 animate_sprite,
                 debug_draw_confirmed_entities,

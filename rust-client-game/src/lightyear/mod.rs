@@ -34,11 +34,13 @@ impl Plugin for LightyearPlugin {
 
         let link_conditioner = LinkConditionerConfig::good_condition();
 
+        // let server_addr = SocketAddr::new(IpAddr::from_str("35.180.188.74").unwrap(), 34255);
         let server_addr = SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), 34255);
         let client_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
 
         let io = client::IoConfig::from_transport(client::ClientTransport::UdpSocket(client_addr))
             .with_conditioner(link_conditioner);
+        // let io = client::IoConfig::from_transport(client::ClientTransport::UdpSocket(client_addr));
 
         let auth = client::Authentication::Manual {
             server_addr,
