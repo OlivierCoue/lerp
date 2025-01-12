@@ -170,7 +170,6 @@ pub fn lobby_scene_logic(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn lobby_scene_button_logic(
     mut app_state: ResMut<NextState<AppState>>,
     mut debug_config: ResMut<DebugConfig>,

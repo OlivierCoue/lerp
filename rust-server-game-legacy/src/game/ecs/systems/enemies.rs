@@ -34,7 +34,6 @@ pub fn enemies_spawner(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn enemies_ai(
     mut query_enemies: Query<
         (Entity, &mut Enemie, &Position, &Team),

@@ -37,7 +37,6 @@ impl AnimationConfig {
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn animate_sprite(
     time: Res<Time>,
     render_config: Res<RenderConfig>,
@@ -45,13 +44,14 @@ pub fn animate_sprite(
     mut query_child: Query<(&mut Sprite, &mut AnimationConfig, &Parent), With<AnimationConfig>>,
 ) {
     for (mut sprite, mut animation_config, parent) in &mut query_child {
-        let Ok((velocity, _)) = query_parent.get(parent.get()) else {
-            continue;
-        };
-
         animation_config.timer.tick(time.delta());
 
         if animation_config.timer.just_finished() {
+            let Ok((velocity, _)) = query_parent.get(parent.get()) else {
+                println!("[animate_sprite] Cannot find parent enity");
+                continue;
+            };
+
             let mut direction_index = None;
             let renderered_velocity = apply_render_mode(&render_config, &velocity.0);
 

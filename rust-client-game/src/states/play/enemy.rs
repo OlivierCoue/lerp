@@ -8,12 +8,11 @@ use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
 // System create the player
-#[allow(clippy::type_complexity)]
 pub fn handle_new_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<Entity, (Added<Interpolated>, With<Enemy>)>,
+    mut player_query: Query<Entity, (Added<Predicted>, With<EnemyDTO>)>,
 ) {
     for entity in player_query.iter_mut() {
         println!("[handle_new_enemy] New Enemy");
@@ -32,7 +31,7 @@ pub fn handle_new_enemy(
                 RigidBody::Kinematic,
                 CharacterController,
                 Collider::circle(ENEMY_SIZE / 2.),
-                LockedAxes::ALL_LOCKED,
+                LockedAxes::ROTATION_LOCKED,
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),

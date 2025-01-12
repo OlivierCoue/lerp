@@ -4,6 +4,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use rust_common_game::shared::PIXEL_METER;
+use rust_common_game::wall::Wall;
 
 pub fn setup_map(
     mut commands: Commands,
@@ -54,6 +55,7 @@ pub fn setup_map(
             if is_border || is_obstacle {
                 if !is_border {
                     commands.entity(entity).insert((
+                        Wall,
                         RigidBody::Static,
                         Collider::rectangle(PIXEL_METER, PIXEL_METER),
                     ));
@@ -127,6 +129,7 @@ pub fn setup_map(
 
     // // TOP
     commands.spawn((
+        Wall,
         PlaySceneTag,
         Visibility::default(),
         Position::from_xy(0., 1600. - PIXEL_METER / 2.),
@@ -136,6 +139,7 @@ pub fn setup_map(
     ));
     // // BOTOM
     commands.spawn((
+        Wall,
         PlaySceneTag,
         Visibility::default(),
         Position::from_xy(0., 0. - 1600. + PIXEL_METER / 2.),
@@ -145,6 +149,7 @@ pub fn setup_map(
     ));
     // // LEFT
     commands.spawn((
+        Wall,
         PlaySceneTag,
         Visibility::default(),
         Position::from_xy(-1600. + PIXEL_METER / 2., 0.),
@@ -154,6 +159,7 @@ pub fn setup_map(
     ));
     // // RIGHT
     commands.spawn((
+        Wall,
         PlaySceneTag,
         Visibility::default(),
         Position::from_xy(1600. - PIXEL_METER / 2., 0.),

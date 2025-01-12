@@ -61,7 +61,6 @@ pub fn on_spawn_projectile_event(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn update_and_despawn_projectile(
     mut commands: Commands,
     mut query: Query<

@@ -6,11 +6,10 @@ use rust_common_game::protocol::*;
 const CAMERA_DECAY_RATE: f32 = 20.;
 
 // System to make the camera follow the player
-#[allow(clippy::type_complexity)]
 pub fn camera_follow(
     time: Res<Time>,
-    player_query: Query<&Transform, (With<Player>, With<Interpolated>, With<Controlled>)>,
-    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    player_query: Query<&Transform, (With<PlayerDTO>, With<Predicted>, With<Controlled>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<PlayerDTO>)>,
 ) {
     if let Ok(player_transform) = player_query.get_single() {
         for mut camera_transform in &mut camera_query {

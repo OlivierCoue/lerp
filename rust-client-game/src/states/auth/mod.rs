@@ -187,7 +187,6 @@ fn auth_scene_logic(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn auth_scene_button_logic(
     mut app_state: ResMut<NextState<AppState>>,
     mut app_exit_events: EventWriter<AppExit>,

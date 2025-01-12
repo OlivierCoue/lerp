@@ -1,7 +1,7 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::{projectile::Projectile, protocol::Enemy};
+use crate::{projectile::Projectile, protocol::EnemyDTO};
 
 // Basic CharacterController taken from https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/kinematic_character_2d/plugin.rs
 // With a few update to addpat it for a top down game, the example was for a platformer with only x axes movement / jump / gravity...
@@ -40,10 +40,12 @@ pub struct CharacterController;
 /// by pushing them along their contact normals by the current penetration depth,
 /// and applying velocity corrections in order to snap to slopes, slide along walls,
 /// and predict collisions using speculative contacts.
-#[allow(clippy::type_complexity)]
 fn kinematic_controller_collisions(
     collisions: Res<Collisions>,
-    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>), Without<Projectile>>,
+    mut bodies: Query<
+        (&RigidBody, Option<&mut LinearVelocity>, Has<EnemyDTO>),
+        Without<Projectile>,
+    >,
     collider_parents: Query<&ColliderParent, Without<Sensor>>,
     mut character_controllers: Query<&mut Position, (With<RigidBody>, With<CharacterController>)>,
     time: Res<Time<Physics>>,
@@ -70,19 +72,8 @@ fn kinematic_controller_collisions(
         let is_controller_2 = character_controllers
             .get_mut(collider_parent2.get())
             .is_ok();
+
         let is_enemy_to_enemy = is_enemy_1 && is_enemy_2;
-
-        let linear_velocity_2 = if let Some(other_linear_velocity) = &mut linear_velocity_opt_2 {
-            other_linear_velocity.0
-        } else {
-            Vec2::ZERO
-        };
-
-        let linear_velocity_1 = if let Some(other_linear_velocity) = &mut linear_velocity_opt_1 {
-            other_linear_velocity.0
-        } else {
-            Vec2::ZERO
-        };
 
         if let Ok(position) = character_controllers.get_mut(collider_parent1.get()) {
             let is_first = true;
@@ -97,7 +88,6 @@ fn kinematic_controller_collisions(
                 is_first,
                 position,
                 linear_velocity,
-                linear_velocity_2,
                 time.delta_secs(),
                 is_controller_2,
                 is_enemy_to_enemy,
@@ -118,7 +108,6 @@ fn kinematic_controller_collisions(
                 is_first,
                 position,
                 linear_velocity,
-                linear_velocity_1,
                 time.delta_secs(),
                 is_controller_1,
                 is_enemy_to_enemy,
@@ -135,7 +124,6 @@ fn handle_kinematic_controller_collision(
     is_first: bool,
     mut position: Mut<'_, Position>,
     linear_velocity: &mut Mut<'_, LinearVelocity>,
-    other_linear_velocity: Vec2,
     delta_seconds: f32,
     is_other_controller: bool,
     is_enemy_to_enemy: bool,
@@ -159,25 +147,21 @@ fn handle_kinematic_controller_collision(
 
         // Solve each penetrating contact in the manifold.
         for contact in manifold.contacts.iter() {
-            if contact.penetration > 0.0 {
+            let penetration = ((contact.penetration * 1000.0).round() as i32) as f32 / 1000.0;
+            if penetration > 0.0 {
                 // Any to wall (apply full correction to entity)
                 if !is_other_controller {
-                    position.0 += normal * contact.penetration;
+                    position.0 += normal * penetration;
                     // Enemy to Enemy (aplly full correction if entity is moving and other is not, else apply only half, as the other will also get it position corrected by half)
                 } else if is_enemy_to_enemy {
                     let resolution_factor = 0.5;
-                    if linear_velocity.0 != Vec2::ZERO && other_linear_velocity == Vec2::ZERO {
-                        position.0 += normal * contact.penetration * resolution_factor;
-                    } else if linear_velocity.0 != Vec2::ZERO && other_linear_velocity != Vec2::ZERO
-                    {
-                        position.0 += (normal * contact.penetration * resolution_factor) / 2.;
-                    }
-                // Enemy to Player (apply full correction, non enemy controller will never get their position corrected by non wall entities)
+                    position.0 += (normal * penetration * resolution_factor) / 2.;
+                    // Enemy to Player (apply full correction, non enemy controller will never get their position corrected by non wall entities)
                 } else if is_enemy && is_other_controller {
-                    position.0 += normal * contact.penetration;
+                    position.0 += normal * penetration;
                 }
             }
-            deepest_penetration = deepest_penetration.max(contact.penetration);
+            deepest_penetration = deepest_penetration.max(penetration);
         }
 
         if deepest_penetration > 0.0 {

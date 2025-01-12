@@ -11,10 +11,13 @@ use rust_common_game::{
 
 use super::PlaySceneTag;
 
+#[derive(Component)]
+pub struct DebugCollider;
+
 pub fn debug_draw_colliders(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
-    query: Query<(Entity, &Collider), Added<Collider>>,
+    query: Query<(Entity, &Collider), (Without<DebugCollider>, With<Visibility>)>,
     render_config: Res<RenderConfig>,
 ) {
     if !debug_config.show_colliders {
@@ -22,6 +25,7 @@ pub fn debug_draw_colliders(
     }
 
     for (entity, collider) in query.iter() {
+        commands.entity(entity).insert(DebugCollider);
         if let Some(ball) = collider.shape().as_ball() {
             let shape = shapes::Ellipse {
                 radii: apply_render_mode_radius(&render_config, ball.radius),
@@ -76,7 +80,6 @@ pub struct DebugConfirmedEntity;
 #[derive(Component)]
 pub struct DebugConfirmedEntityRef(pub Entity);
 
-#[allow(clippy::type_complexity)]
 pub(crate) fn debug_draw_confirmed_entities(
     debug_config: Res<DebugConfig>,
     render_config: Res<RenderConfig>,
@@ -85,7 +88,7 @@ pub(crate) fn debug_draw_confirmed_entities(
         (
             Entity,
             &Position,
-            Has<Enemy>,
+            Has<EnemyDTO>,
             Has<Projectile>,
             Option<&DebugConfirmedEntityRef>,
         ),
@@ -138,7 +141,6 @@ pub(crate) fn debug_draw_confirmed_entities(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub(crate) fn debug_undraw_confirmed_entities(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
@@ -156,12 +158,11 @@ pub(crate) fn debug_undraw_confirmed_entities(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub(crate) fn _debug_draw_targets(
     mut gizmos: Gizmos,
-    confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
-    predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
-    interpolated_q: Query<&MovementTargets, (With<Player>, With<Interpolated>)>,
+    confirmed_q: Query<&MovementTargets, (With<PlayerDTO>, With<Confirmed>)>,
+    predicted_q: Query<&MovementTargets, (With<PlayerDTO>, With<Predicted>)>,
+    interpolated_q: Query<&MovementTargets, (With<PlayerDTO>, With<Interpolated>)>,
     render_config: Res<RenderConfig>,
 ) {
     // Predicted

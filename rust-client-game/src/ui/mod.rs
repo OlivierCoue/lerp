@@ -7,7 +7,6 @@ pub const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 pub const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 pub const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
-#[allow(clippy::type_complexity)]
 pub fn ui_button_default(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &mut BorderColor),
@@ -40,7 +39,6 @@ pub struct Checkbox {
     pub checked: bool,
 }
 
-#[allow(clippy::type_complexity)]
 fn ui_checkbox_default(
     mut query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<Checkbox>)>,
 ) {
@@ -57,7 +55,6 @@ fn ui_checkbox_default(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn ui_checkbox_checked(mut query: Query<(&mut BackgroundColor, &Checkbox), Changed<Checkbox>>) {
     for (mut background_color, checkbox) in query.iter_mut() {
         *background_color = if checkbox.checked {

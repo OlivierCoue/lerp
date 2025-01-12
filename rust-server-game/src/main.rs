@@ -10,7 +10,6 @@ use bevy::state::app::StatesPlugin;
 use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
 use enemy::EnemyPlugin;
-use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
@@ -21,50 +20,15 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use map::setup_map;
-use projectile::*;
+
 use rust_common_game::shared::*;
 
 #[derive(Resource, Default)]
 pub struct ClientPlayerMap(HashMap<ClientId, Entity>);
 
-#[derive(Component)]
-pub struct AutoMove;
-
-#[derive(Resource)]
-pub struct AutoMoveConfig {
-    pub timer: Timer,
-    pub direction: f32,
-}
-
 fn start_server(mut commands: Commands) {
     println!("Starting server...");
     commands.start_server();
-    let player = (
-        Player,
-        MovementTargets(Vec::new()),
-        RigidBody::Kinematic,
-        CharacterController,
-        Collider::circle(PLAYER_SIZE / 2.0),
-        LockedAxes::ROTATION_LOCKED,
-        MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
-        AutoMove,
-        Replicate {
-            sync: SyncTarget {
-                prediction: NetworkTarget::None,
-                interpolation: NetworkTarget::All,
-            },
-            target: ReplicationTarget {
-                target: NetworkTarget::All,
-            },
-            controlled_by: ControlledBy {
-                target: NetworkTarget::None,
-                ..default()
-            },
-            group: REPLICATION_GROUP,
-            ..default()
-        },
-    );
-    commands.spawn(player);
 }
 
 fn handle_connections(
@@ -75,11 +39,39 @@ fn handle_connections(
     for connection in connections.read() {
         let client_id = connection.client_id;
         info!("New client {:?}", client_id);
+
+        let player = (
+            PlayerDTO(client_id),
+            MovementTargets(Vec::new()),
+            RigidBody::Kinematic,
+            CharacterController,
+            Collider::circle(PLAYER_SIZE / 2.0),
+            LockedAxes::ROTATION_LOCKED,
+            MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
+            Replicate {
+                sync: SyncTarget {
+                    prediction: NetworkTarget::All,
+                    interpolation: NetworkTarget::None,
+                },
+                target: ReplicationTarget {
+                    target: NetworkTarget::All,
+                },
+                controlled_by: ControlledBy {
+                    target: NetworkTarget::Single(client_id),
+                    ..default()
+                },
+                group: REPLICATION_GROUP,
+                ..default()
+            },
+        );
+        let player = commands.spawn(player).id();
+
         let player_client = (
-            PlayerClient {
+            PlayerClientDTO {
                 client_id,
                 rtt: Duration::ZERO,
                 jitter: Duration::ZERO,
+                player_ref: player,
             },
             Replicate {
                 sync: SyncTarget {
@@ -99,123 +91,33 @@ fn handle_connections(
         );
         commands.spawn(player_client);
 
-        let player = (
-            Player,
-            MovementTargets(Vec::new()),
-            RigidBody::Kinematic,
-            CharacterController,
-            Collider::circle(PLAYER_SIZE / 2.0),
-            LockedAxes::ROTATION_LOCKED,
-            MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
-            Replicate {
-                sync: SyncTarget {
-                    prediction: NetworkTarget::None,
-                    interpolation: NetworkTarget::All,
-                },
-                target: ReplicationTarget {
-                    target: NetworkTarget::All,
-                },
-                controlled_by: ControlledBy {
-                    target: NetworkTarget::Single(client_id),
-                    ..default()
-                },
-                group: REPLICATION_GROUP,
-                ..default()
-            },
-        );
-        let player = commands.spawn(player);
-        client_player_map.0.insert(client_id, player.id());
+        client_player_map.0.insert(client_id, player);
     }
 }
 
-fn move_to_target(
-    time: Res<Time<Physics>>,
-    mut query: Query<(
-        &Position,
-        &mut MovementTargets,
-        &mut LinearVelocity,
-        &MovementSpeed,
-    )>,
+fn replicate_inputs(
+    mut connection: ResMut<ConnectionManager>,
+    mut input_events: ResMut<Events<MessageEvent<InputMessage<PlayerActions>>>>,
 ) {
-    for (position, targets, velocity, movement_speed) in &mut query {
-        shared_move_to_target_behaviour(&time, position, movement_speed, velocity, targets);
-    }
-}
+    for mut event in input_events.drain() {
+        let client_id = *event.context();
 
-fn handle_input_move_click(
-    mut query: Query<(&ActionState<PlayerActions>, &mut MovementTargets), With<Player>>,
-) {
-    for (action, targets) in query.iter_mut() {
-        shared_handle_move_click_behavior(action, targets);
-    }
-}
+        // Optional: do some validation on the inputs to check that there's no cheating
+        // Inputs for a specific tick should be write *once*. Don't let players change old inputs.
 
-#[allow(clippy::type_complexity)]
-pub fn handle_input_move_wasd(
-    client_player_map: Res<ClientPlayerMap>,
-    client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
-    mut player_query: Query<(&mut LinearVelocity, &MovementSpeed), With<Player>>,
-) {
-    for (client, action) in client_query.iter() {
-        let Ok((linear_velocity, movement_speed)) =
-            player_query.get_mut(*client_player_map.0.get(&client.client_id).unwrap())
-        else {
-            println!("[handle_input_move_wasd] Cannot find player entity");
-            continue;
-        };
-
-        shared_handle_move_wasd_behavior(action, movement_speed, linear_velocity);
-    }
-}
-
-fn handle_input_skill_slot(
-    mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
-    client_player_map: Res<ClientPlayerMap>,
-    client_query: Query<(&PlayerClient, &ActionState<PlayerActions>)>,
-    player_query: Query<&Position, With<Player>>,
-) {
-    for (client, action) in client_query.iter() {
-        if action.pressed(&PlayerActions::SkillSlot1) {
-            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("[handle_input_skill_slot] Cursor_position not set skipping");
-                return;
-            };
-
-            let Ok(player_position) =
-                player_query.get(*client_player_map.0.get(&client.client_id).unwrap())
-            else {
-                println!("[handle_input_skill_slot] Cannot find player entity");
-                continue;
-            };
-
-            let direction = (cursor_position.pair - player_position.0).normalize();
-
-            spawn_projectile_events.send(SpawnProjectileEvent {
-                from_position: player_position.0,
-                direction,
-            });
-        }
-    }
-}
-
-fn aplly_auto_move(
-    mut query: Query<&mut MovementTargets, With<AutoMove>>,
-    time: Res<Time>,
-    mut config: ResMut<AutoMoveConfig>,
-) {
-    config.timer.tick(time.delta());
-
-    if config.timer.finished() {
-        config.direction = -config.direction;
-        for mut targets in &mut query {
-            *targets = MovementTargets(vec![Vec2::new(1000. * config.direction, 0.)])
-        }
+        // rebroadcast the input to other clients
+        connection
+            .send_message_to_target::<InputChannel, _>(
+                &mut event.message,
+                NetworkTarget::AllExceptSingle(client_id),
+            )
+            .unwrap()
     }
 }
 
 fn update_player_client_metrics(
     connection_manager: Res<ConnectionManager>,
-    mut q: Query<(Entity, &mut PlayerClient)>,
+    mut q: Query<(Entity, &mut PlayerClientDTO)>,
 ) {
     for (_e, mut player_client) in q.iter_mut() {
         if let Ok(connection) = connection_manager.connection(player_client.client_id) {
@@ -233,12 +135,6 @@ fn main() {
         0, 0,
     ]);
 
-    // let link_conditioner = LinkConditionerConfig {
-    //     incoming_latency: Duration::from_millis(100),
-    //     incoming_jitter: Duration::from_millis(0),
-    //     incoming_loss: 0.00,
-    // };
-
     let net_config = NetConfig::Netcode {
         config: netcode_config,
         io: IoConfig {
@@ -254,6 +150,7 @@ fn main() {
             send_interval: REPLICATION_INTERVAL,
             ..default()
         },
+
         ..default()
     };
     let server_plugin = server::ServerPlugins::new(server_config);
@@ -267,13 +164,15 @@ fn main() {
         })
         .add_plugins(server_plugin.build())
         .add_plugins(SharedPlugin)
+        .add_plugins(EnemyPlugin)
         .init_resource::<ClientPlayerMap>()
-        .insert_resource(AutoMoveConfig {
-            timer: Timer::new(Duration::from_secs(4), TimerMode::Repeating),
-            direction: 1.,
-        })
-        .add_event::<SpawnProjectileEvent>()
         .add_systems(Startup, (start_server, setup_map))
+        .add_systems(
+            PreUpdate,
+            // this system will replicate the inputs of a client to other clients
+            // so that a client can predict other clients
+            replicate_inputs.after(MainSet::EmitEvents),
+        )
         .add_systems(
             Update,
             (
@@ -281,21 +180,5 @@ fn main() {
                 update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
             ),
         )
-        .add_systems(
-            FixedUpdate,
-            (aplly_auto_move, update_and_despawn_projectile),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                move_to_target,
-                handle_input_move_wasd,
-                handle_input_move_click,
-                handle_input_skill_slot,
-                on_spawn_projectile_event,
-            )
-                .chain(),
-        )
-        .add_plugins(EnemyPlugin)
         .run();
 }

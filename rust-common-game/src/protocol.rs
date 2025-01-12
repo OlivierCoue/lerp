@@ -3,11 +3,8 @@ use std::time::Duration;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use lightyear::client::components::ComponentSyncMode;
 use lightyear::prelude::*;
-use lightyear::{
-    client::components::ComponentSyncMode, utils::avian2d::angular_velocity,
-    utils::avian2d::linear_velocity, utils::avian2d::position,
-};
 use serde::{Deserialize, Serialize};
 
 use crate::projectile::Projectile;
@@ -17,17 +14,18 @@ pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 // Components
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct PlayerClient {
+pub struct PlayerClientDTO {
     pub client_id: ClientId,
     pub rtt: Duration,
     pub jitter: Duration,
+    pub player_ref: Entity,
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Player;
+pub struct PlayerDTO(pub ClientId);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Enemy;
+pub struct EnemyDTO;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MovementTargets(pub Vec<Vec2>);
@@ -56,13 +54,31 @@ pub enum PlayerActions {
 }
 
 pub fn position_should_rollback(this: &Position, that: &Position) -> bool {
-    let distance = this.distance(that.0);
-    distance > 1.
+    if this.ne(that) {
+        println!("rollback: position");
+        return true;
+    }
+    false
 }
 
-pub fn velocity_should_rollback(this: &LinearVelocity, that: &LinearVelocity) -> bool {
-    let distance = this.distance(that.0);
-    distance > 500.
+pub fn linear_velocity_should_rollback(this: &LinearVelocity, that: &LinearVelocity) -> bool {
+    if this.ne(that) {
+        println!("rollback: linear velocity");
+        return true;
+    }
+    false
+}
+
+pub fn linear_velocity_correction(
+    _: &LinearVelocity,
+    other: &LinearVelocity,
+    _: f32,
+) -> LinearVelocity {
+    *other
+}
+
+pub fn position_correction(_: &Position, other: &Position, _: f32) -> Position {
+    *other
 }
 
 pub struct ProtocolPlugin;
@@ -73,34 +89,33 @@ impl Plugin for ProtocolPlugin {
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
 
         // Components
-        app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
+        app.register_component::<PlayerClientDTO>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Simple);
 
-        app.register_component::<Player>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Once);
+        app.register_component::<PlayerDTO>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once);
 
-        app.register_component::<Enemy>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Once);
+        app.register_component::<EnemyDTO>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Projectile>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<MovementSpeed>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<MovementTargets>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Full)
-            .add_interpolation_fn(linear_velocity::lerp);
+            .add_prediction(ComponentSyncMode::Full)
+            .add_should_rollback(linear_velocity_should_rollback);
 
         app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Full)
-            .add_interpolation_fn(angular_velocity::lerp);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Position>(ChannelDirection::ServerToClient)
-            .add_interpolation(ComponentSyncMode::Full)
-            .add_interpolation_fn(position::lerp);
+            .add_prediction(ComponentSyncMode::Full)
+            .add_should_rollback(position_should_rollback);
     }
 }

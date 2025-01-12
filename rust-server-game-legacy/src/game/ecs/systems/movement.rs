@@ -58,7 +58,6 @@ pub fn update_pathfinder_state(
     }
 }
 
-#[allow(clippy::type_complexity)]
 #[allow(unused_mut)] // mut is actually used on query_entities_to_move with get_component_unchecked_mut
 pub fn movement(
     mut commands: Commands,
@@ -173,7 +172,6 @@ pub fn movement(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn despawn_if_velocity_at_target(
     mut query: Query<
         (&mut GameEntity, &Position, &Velocity),
@@ -194,7 +192,6 @@ pub fn despawn_if_velocity_at_target(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn inc_revision_updated_component(
     mut query: Query<
         (
@@ -237,7 +234,6 @@ pub fn inc_revision_updated_component(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn inc_revision_removed_component(
     mut cast_removed: RemovedComponents<Cast>,
     mut query: Query<&mut GameEntity>,

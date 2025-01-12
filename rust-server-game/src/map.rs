@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::shared::PIXEL_METER;
+use rust_common_game::{shared::PIXEL_METER, wall::Wall};
 
 pub fn setup_map(mut commands: Commands) {
     println!("[setup_map]");
@@ -19,6 +19,7 @@ pub fn setup_map(mut commands: Commands) {
 
             if is_obstacle && !is_border {
                 commands.spawn((
+                    Wall,
                     Position::from_xy(cart_coord.x, cart_coord.y),
                     RigidBody::Static,
                     Collider::rectangle(PIXEL_METER, PIXEL_METER),
@@ -29,24 +30,28 @@ pub fn setup_map(mut commands: Commands) {
 
     // // TOP
     commands.spawn((
+        Wall,
         Position::from_xy(0., 1600. - PIXEL_METER / 2.),
         RigidBody::Static,
         Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // BOTOM
     commands.spawn((
+        Wall,
         Position::from_xy(0., 0. - 1600. + PIXEL_METER / 2.),
         RigidBody::Static,
         Collider::rectangle(100. * PIXEL_METER, PIXEL_METER),
     ));
     // // LEFT
     commands.spawn((
+        Wall,
         Position::from_xy(-1600. + PIXEL_METER / 2., 0.),
         RigidBody::Static,
         Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),
     ));
     // // RIGHT
     commands.spawn((
+        Wall,
         Position::from_xy(1600. - PIXEL_METER / 2., 0.),
         RigidBody::Static,
         Collider::rectangle(PIXEL_METER, 100. * PIXEL_METER),

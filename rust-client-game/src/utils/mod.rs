@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::common::*;
 
-#[allow(clippy::type_complexity, unused_mut)]
+#[allow(unused_mut)]
 pub fn sync_position_to_transform(
     mut query: Query<(&Position, &mut Transform), Or<(Added<Position>, Changed<Position>)>>,
     render_config: Res<RenderConfig>,

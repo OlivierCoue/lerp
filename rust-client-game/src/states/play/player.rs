@@ -9,12 +9,11 @@ use rust_common_game::character_controller::*;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
-#[allow(clippy::type_complexity)]
 pub fn handle_new_client(
     mut commands: Commands,
     mut client_query: Query<
-        (Entity, &PlayerClient),
-        (Added<Predicted>, With<PlayerClient>, With<Controlled>),
+        (Entity, &PlayerClientDTO),
+        (Added<Predicted>, With<PlayerClientDTO>, With<Controlled>),
     >,
 ) {
     for (entity, player_client) in client_query.iter_mut() {
@@ -22,25 +21,16 @@ pub fn handle_new_client(
             "[handle_new_client] New client with id: {}",
             player_client.client_id
         );
-
-        commands.entity(entity).insert((InputMap::new([
-            (PlayerActions::MoveUp, KeyCode::KeyW),
-            (PlayerActions::MoveDown, KeyCode::KeyS),
-            (PlayerActions::MoveLeft, KeyCode::KeyA),
-            (PlayerActions::MoveRight, KeyCode::KeyD),
-        ])
-        .with(PlayerActions::SkillSlot1, MouseButton::Left),));
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn handle_new_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<Entity, (Added<Interpolated>, With<Player>)>,
+    mut player_query: Query<(Entity, Has<Controlled>), (Added<Predicted>, With<PlayerDTO>)>,
 ) {
-    for entity in player_query.iter_mut() {
+    for (entity, controlled) in player_query.iter_mut() {
         println!("[handle_new_player] New Player");
 
         let animation_config = AnimationConfig::build(
@@ -57,7 +47,7 @@ pub fn handle_new_player(
                 RigidBody::Kinematic,
                 CharacterController,
                 Collider::circle(PLAYER_SIZE / 2.),
-                LockedAxes::ALL_LOCKED,
+                LockedAxes::ROTATION_LOCKED,
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),
@@ -75,17 +65,26 @@ pub fn handle_new_player(
                     Transform::from_scale(Vec3::new(2., 2., 0.)),
                 ));
             });
+
+        if controlled {
+            commands.entity(entity).insert((InputMap::new([
+                (PlayerActions::MoveUp, KeyCode::KeyW),
+                (PlayerActions::MoveDown, KeyCode::KeyS),
+                (PlayerActions::MoveLeft, KeyCode::KeyA),
+                (PlayerActions::MoveRight, KeyCode::KeyD),
+            ])
+            .with(PlayerActions::SkillSlot1, MouseButton::Left),));
+        }
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn sync_cursor_poisition(
     camera_query: Query<(&Camera, &GlobalTransform)>,
     windows: Query<&Window>,
     render_config: Res<RenderConfig>,
     mut action_state_query: Query<
         &mut ActionState<PlayerActions>,
-        (With<PlayerClient>, With<Predicted>, With<Controlled>),
+        (With<PlayerDTO>, With<Predicted>, With<Controlled>),
     >,
 ) {
     let (camera, camera_transform) = camera_query.single();
