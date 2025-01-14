@@ -24,7 +24,8 @@ use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
 use projectile::handle_new_projectile;
-use rust_common_game::protocol::PlayerClientDTO;
+use projectile::handle_removed_projectile;
+use rust_common_game::protocol::PlayerClient;
 
 #[derive(Component, Default)]
 pub struct PlaySceneTag;
@@ -127,7 +128,7 @@ pub fn update_fps(
 }
 
 pub fn update_ping(
-    query_client: Query<&PlayerClientDTO, (With<Predicted>, Without<PingDisplayTag>)>,
+    query_client: Query<&PlayerClient, (With<Predicted>, Without<PingDisplayTag>)>,
     mut query_text: Query<&mut Text, With<PingDisplayTag>>,
 ) {
     for mut text in &mut query_text {
@@ -183,6 +184,7 @@ impl Plugin for PlayPlugin {
                 handle_new_player,
                 handle_new_enemy,
                 handle_new_projectile,
+                handle_removed_projectile,
                 animate_sprite,
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,

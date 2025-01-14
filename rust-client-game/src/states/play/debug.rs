@@ -88,7 +88,7 @@ pub(crate) fn debug_draw_confirmed_entities(
         (
             Entity,
             &Position,
-            Has<EnemyDTO>,
+            Has<Enemy>,
             Has<Projectile>,
             Option<&DebugConfirmedEntityRef>,
         ),
@@ -160,9 +160,9 @@ pub(crate) fn debug_undraw_confirmed_entities(
 
 pub(crate) fn _debug_draw_targets(
     mut gizmos: Gizmos,
-    confirmed_q: Query<&MovementTargets, (With<PlayerDTO>, With<Confirmed>)>,
-    predicted_q: Query<&MovementTargets, (With<PlayerDTO>, With<Predicted>)>,
-    interpolated_q: Query<&MovementTargets, (With<PlayerDTO>, With<Interpolated>)>,
+    confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
+    predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
+    interpolated_q: Query<&MovementTargets, (With<Player>, With<Interpolated>)>,
     render_config: Res<RenderConfig>,
 ) {
     // Predicted

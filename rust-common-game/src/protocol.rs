@@ -14,7 +14,7 @@ pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 // Components
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct PlayerClientDTO {
+pub struct PlayerClient {
     pub client_id: ClientId,
     pub rtt: Duration,
     pub jitter: Duration,
@@ -22,10 +22,10 @@ pub struct PlayerClientDTO {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct PlayerDTO(pub ClientId);
+pub struct Player(pub ClientId);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct EnemyDTO;
+pub struct Enemy;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MovementTargets(pub Vec<Vec2>);
@@ -89,13 +89,13 @@ impl Plugin for ProtocolPlugin {
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
 
         // Components
-        app.register_component::<PlayerClientDTO>(ChannelDirection::ServerToClient)
+        app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Simple);
 
-        app.register_component::<PlayerDTO>(ChannelDirection::ServerToClient)
+        app.register_component::<Player>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once);
 
-        app.register_component::<EnemyDTO>(ChannelDirection::ServerToClient)
+        app.register_component::<Enemy>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Projectile>(ChannelDirection::ServerToClient)

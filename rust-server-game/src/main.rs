@@ -1,6 +1,5 @@
 mod enemy;
 mod map;
-mod projectile;
 
 use avian2d::prelude::*;
 use bevy::log::Level;
@@ -41,7 +40,7 @@ fn handle_connections(
         info!("New client {:?}", client_id);
 
         let player = (
-            PlayerDTO(client_id),
+            Player(client_id),
             MovementTargets(Vec::new()),
             RigidBody::Kinematic,
             CharacterController,
@@ -67,7 +66,7 @@ fn handle_connections(
         let player = commands.spawn(player).id();
 
         let player_client = (
-            PlayerClientDTO {
+            PlayerClient {
                 client_id,
                 rtt: Duration::ZERO,
                 jitter: Duration::ZERO,
@@ -99,8 +98,8 @@ fn replicate_inputs(
     mut connection: ResMut<ConnectionManager>,
     mut input_events: ResMut<Events<MessageEvent<InputMessage<PlayerActions>>>>,
 ) {
-    for mut event in input_events.drain() {
-        let client_id = *event.context();
+    for event in input_events.drain() {
+        let client_id = event.from();
 
         // Optional: do some validation on the inputs to check that there's no cheating
         // Inputs for a specific tick should be write *once*. Don't let players change old inputs.
@@ -108,7 +107,7 @@ fn replicate_inputs(
         // rebroadcast the input to other clients
         connection
             .send_message_to_target::<InputChannel, _>(
-                &mut event.message,
+                &event.message,
                 NetworkTarget::AllExceptSingle(client_id),
             )
             .unwrap()
@@ -117,7 +116,7 @@ fn replicate_inputs(
 
 fn update_player_client_metrics(
     connection_manager: Res<ConnectionManager>,
-    mut q: Query<(Entity, &mut PlayerClientDTO)>,
+    mut q: Query<(Entity, &mut PlayerClient)>,
 ) {
     for (_e, mut player_client) in q.iter_mut() {
         if let Ok(connection) = connection_manager.connection(player_client.client_id) {

@@ -10,13 +10,12 @@ use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
 pub fn handle_new_client(
-    mut commands: Commands,
     mut client_query: Query<
-        (Entity, &PlayerClientDTO),
-        (Added<Predicted>, With<PlayerClientDTO>, With<Controlled>),
+        (Entity, &PlayerClient),
+        (Added<Predicted>, With<PlayerClient>, With<Controlled>),
     >,
 ) {
-    for (entity, player_client) in client_query.iter_mut() {
+    for (_, player_client) in client_query.iter_mut() {
         println!(
             "[handle_new_client] New client with id: {}",
             player_client.client_id
@@ -28,7 +27,7 @@ pub fn handle_new_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<(Entity, Has<Controlled>), (Added<Predicted>, With<PlayerDTO>)>,
+    mut player_query: Query<(Entity, Has<Controlled>), (Added<Predicted>, With<Player>)>,
 ) {
     for (entity, controlled) in player_query.iter_mut() {
         println!("[handle_new_player] New Player");
@@ -84,7 +83,7 @@ pub fn sync_cursor_poisition(
     render_config: Res<RenderConfig>,
     mut action_state_query: Query<
         &mut ActionState<PlayerActions>,
-        (With<PlayerDTO>, With<Predicted>, With<Controlled>),
+        (With<Player>, With<Predicted>, With<Controlled>),
     >,
 ) {
     let (camera, camera_transform) = camera_query.single();

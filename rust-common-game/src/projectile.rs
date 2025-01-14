@@ -1,12 +1,12 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use client::{Predicted, Rollback};
+use client::{Predicted, PredictionDespawnCommandsExt};
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    protocol::{EnemyDTO, PlayerDTO, REPLICATION_GROUP},
+    protocol::{Enemy, REPLICATION_GROUP},
     shared::{PIXEL_METER, PROJECTILE_BASE_MOVEMENT_SPEED, PROJECTILE_SIZE},
     wall::Wall,
 };
@@ -30,31 +30,61 @@ pub struct ProjectileData {
 #[derive(Component)]
 pub struct PreviousPosition(pub Vec2);
 
+#[derive(Component)]
+pub struct EntityPhysics;
+
+#[derive(Bundle)]
+pub struct PhysicsBundle {
+    pub marker: EntityPhysics,
+    pub rigid_body: RigidBody,
+    pub collider: Collider,
+}
+
+#[derive(Bundle)]
+pub struct ProjectileBundle {
+    marker: Projectile,
+    data: ProjectileData,
+    physics: PhysicsBundle,
+    position: Position,
+    previous_position: PreviousPosition,
+    linear_velocity: LinearVelocity,
+}
+impl ProjectileBundle {
+    pub fn new(position: &Vec2, linear_velocity: &Vec2) -> Self {
+        Self {
+            marker: Projectile,
+            data: ProjectileData {
+                max_distance: 10. * PIXEL_METER,
+                distance_traveled: 0.,
+            },
+            physics: Self::physics(),
+            position: Position::from_xy(position.x, position.y),
+            previous_position: PreviousPosition(*position),
+            linear_velocity: LinearVelocity(*linear_velocity),
+        }
+    }
+    pub fn physics() -> PhysicsBundle {
+        PhysicsBundle {
+            marker: EntityPhysics,
+            rigid_body: RigidBody::Kinematic,
+            collider: Collider::circle(PROJECTILE_SIZE / 2.),
+        }
+    }
+}
+
 pub fn on_spawn_projectile_event(
     identity: NetworkIdentity,
-    tick_manager: Res<TickManager>,
-    rollback: Option<Res<Rollback>>,
     mut commands: Commands,
     mut spawn_projectile_events: EventReader<SpawnProjectileEvent>,
 ) {
     for event in spawn_projectile_events.read() {
-        let velocity = event.direction * PROJECTILE_BASE_MOVEMENT_SPEED;
+        let linear_velocity = event.direction * PROJECTILE_BASE_MOVEMENT_SPEED;
 
         let projectile_entity = commands
             .spawn((
-                Position::from_xy(event.from_position.x, event.from_position.y),
-                Projectile,
-                ProjectileData {
-                    max_distance: 10. * PIXEL_METER,
-                    distance_traveled: 0.,
-                },
-                RigidBody::Kinematic,
-                Collider::circle(PROJECTILE_SIZE / 2.),
-                LockedAxes::ROTATION_LOCKED,
-                PreviousPosition(event.from_position),
-                LinearVelocity(velocity),
+                ProjectileBundle::new(&event.from_position, &linear_velocity),
                 PreSpawnedPlayerObject::default_with_salt(
-                    event.client_id.map_or(0, |c| c.to_bits()) as u64,
+                    event.client_id.map_or(0, |c| c.to_bits()),
                 ),
             ))
             .id();
@@ -79,7 +109,7 @@ pub fn on_spawn_projectile_event(
     }
 }
 
-pub fn update_and_despawn_projectile(
+pub fn process_projectile_distance(
     identity: NetworkIdentity,
     mut commands: Commands,
     mut query: Query<
@@ -105,12 +135,9 @@ pub fn update_and_despawn_projectile(
 
         if projectile_data.distance_traveled >= projectile_data.max_distance {
             if identity.is_server() {
-                commands
-                    .entity(entity)
-                    .remove::<server::Replicate>()
-                    .despawn();
+                commands.entity(entity).despawn();
             } else {
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).prediction_despawn();
             }
         } else {
             previous_position.0 = current_position.0;
@@ -120,8 +147,8 @@ pub fn update_and_despawn_projectile(
 
 pub fn process_projectile_collisions(
     mut collision_event_reader: EventReader<Collision>,
-    enemy_q: Query<&EnemyDTO>,
-    projectile_q: Query<&Projectile>,
+    enemy_q: Query<&Enemy>,
+    projectile_q: Query<(&Projectile, &ProjectileData)>,
     wall_q: Query<&Wall>,
     mut commands: Commands,
     identity: NetworkIdentity,
@@ -131,59 +158,48 @@ pub fn process_projectile_collisions(
     // * B collides with A
     // which is why logic is duplicated twice here
     for Collision(contacts) in collision_event_reader.read() {
-        if let Ok(_) = projectile_q.get(contacts.entity1) {
+        if projectile_q.get(contacts.entity1).is_ok() {
             let collide_with_wall = wall_q.get(contacts.entity2).is_ok();
             let collide_with_enemy = enemy_q.get(contacts.entity2).is_ok();
 
             // despawn the projectile if it hit a wall
             if collide_with_wall || collide_with_enemy {
                 if identity.is_server() {
-                    commands
-                        .entity(contacts.entity1)
-                        .remove::<server::Replicate>()
-                        .despawn();
+                    commands.entity(contacts.entity1).despawn();
                 } else {
-                    commands.entity(contacts.entity1).despawn_recursive();
+                    commands.entity(contacts.entity1).prediction_despawn();
                 }
             }
 
             // despawn the enemy if it get hit
             if collide_with_enemy {
                 if identity.is_server() {
-                    commands
-                        .entity(contacts.entity2)
-                        .remove::<server::Replicate>()
-                        .despawn();
+                    commands.entity(contacts.entity2).despawn();
                 } else {
-                    commands.entity(contacts.entity2).despawn_recursive();
+                    commands.entity(contacts.entity2).prediction_despawn();
                 }
             }
         }
-        if let Ok(_) = projectile_q.get(contacts.entity2) {
+
+        if projectile_q.get(contacts.entity2).is_ok() {
             let collide_with_wall = wall_q.get(contacts.entity1).is_ok();
             let collide_with_enemy = enemy_q.get(contacts.entity1).is_ok();
 
             // despawn the projectile if it hit a wall
             if collide_with_wall || collide_with_enemy {
                 if identity.is_server() {
-                    commands
-                        .entity(contacts.entity2)
-                        .remove::<server::Replicate>()
-                        .despawn();
+                    commands.entity(contacts.entity2).despawn();
                 } else {
-                    commands.entity(contacts.entity2).despawn_recursive();
+                    commands.entity(contacts.entity2).prediction_despawn();
                 }
             }
 
             // despawn the enemy if it get hit
             if collide_with_enemy {
                 if identity.is_server() {
-                    commands
-                        .entity(contacts.entity1)
-                        .remove::<server::Replicate>()
-                        .despawn();
+                    commands.entity(contacts.entity1).despawn();
                 } else {
-                    commands.entity(contacts.entity1).despawn_recursive();
+                    commands.entity(contacts.entity1).prediction_despawn();
                 }
             }
         }

@@ -12,9 +12,11 @@ bevy_prototype_lyon = "0.13"
 bevy_simple_text_input = "0.10"
 bevy_transform_interpolation = "0.1"
 leafwing-input-manager = "0.16"
-lightyear = { version = "0.18", features = ["avian2d", "leafwing"] }
+lightyear = { git = "https://github.com/cBournhonesque/lightyear.git", rev = "eeb885d", features = ["avian2d", "leafwing"] }
 rand = "0.8"
 rust-common-game = { path = "../rust-common-game" }
 serde = { version = "1.0.215", features = ["derive"] }
 
+[lints.clippy]
+type_complexity = "allow"
  

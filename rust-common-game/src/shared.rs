@@ -8,7 +8,7 @@ use crate::character_controller::CharacterControllerPlugin;
 use crate::enemy::enemy_movement_behavior;
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::projectile::{
-    on_spawn_projectile_event, process_projectile_collisions, update_and_despawn_projectile,
+    on_spawn_projectile_event, process_projectile_collisions, process_projectile_distance,
     SpawnProjectileEvent,
 };
 use crate::protocol::*;
@@ -56,12 +56,18 @@ impl Plugin for SharedPlugin {
             (
                 handle_input_move_wasd,
                 handle_input_skill_slot,
-                on_spawn_projectile_event,
                 enemy_movement_behavior,
-                update_and_despawn_projectile,
+                process_projectile_distance,
                 process_projectile_collisions,
             )
                 .chain(),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            on_spawn_projectile_event
+                .run_if(on_event::<SpawnProjectileEvent>)
+                .after(handle_input_skill_slot),
         );
     }
 }

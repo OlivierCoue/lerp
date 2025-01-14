@@ -1,7 +1,7 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::{projectile::Projectile, protocol::EnemyDTO};
+use crate::{projectile::Projectile, protocol::Enemy};
 
 // Basic CharacterController taken from https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/kinematic_character_2d/plugin.rs
 // With a few update to addpat it for a top down game, the example was for a platformer with only x axes movement / jump / gravity...
@@ -43,7 +43,7 @@ pub struct CharacterController;
 fn kinematic_controller_collisions(
     collisions: Res<Collisions>,
     mut bodies: Query<
-        (&RigidBody, Option<&mut LinearVelocity>, Has<EnemyDTO>),
+        (&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>),
         Without<Projectile>,
     >,
     collider_parents: Query<&ColliderParent, Without<Sensor>>,

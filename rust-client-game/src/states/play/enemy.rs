@@ -12,7 +12,7 @@ pub fn handle_new_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<Entity, (Added<Predicted>, With<EnemyDTO>)>,
+    mut player_query: Query<Entity, (Added<Predicted>, With<Enemy>)>,
 ) {
     for entity in player_query.iter_mut() {
         println!("[handle_new_enemy] New Enemy");

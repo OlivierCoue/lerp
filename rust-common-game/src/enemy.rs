@@ -9,16 +9,13 @@ use crate::{protocol::*, shared::PIXEL_METER};
 pub fn enemy_movement_behavior(
     mut query_enemies: Query<
         (&Position, &mut LinearVelocity, &MovementSpeed),
-        (
-            With<EnemyDTO>,
-            Or<(With<Predicted>, With<ReplicationTarget>)>,
-        ),
+        (With<Enemy>, Or<(With<Predicted>, With<ReplicationTarget>)>),
     >,
     query_players: Query<
         &mut Position,
         (
-            With<PlayerDTO>,
-            Without<EnemyDTO>,
+            With<Player>,
+            Without<Enemy>,
             Or<(With<Predicted>, With<ReplicationTarget>)>,
         ),
     >,
@@ -75,29 +72,28 @@ pub fn enemy_movement_behavior(
             let desired_velocity = (target_pos - enemy_position.0).normalize() * movement_speed.0;
 
             // Arrive behavior
-            // let distance = (target_pos - enemy_position.0).length();
-            // let slowing_radius = PIXEL_METER;
-            // let adjusted_speed = if distance < slowing_radius {
-            //     movement_speed.0 * (distance / slowing_radius)
-            // } else {
-            //     movement_speed.0
-            // };
-            // let arrived_velocity = desired_velocity.clamp_length(0.0, adjusted_speed);
-            let arrived_velocity = desired_velocity;
+            let distance = (target_pos - enemy_position.0).length();
+            let slowing_radius = PIXEL_METER;
+            let adjusted_speed = if distance < slowing_radius {
+                movement_speed.0 * (distance / slowing_radius)
+            } else {
+                movement_speed.0
+            };
+            let arrived_velocity = desired_velocity.clamp_length(0.0, adjusted_speed);
 
             // Separation behavior
             let mut separation_force = Vec2::ZERO;
-            // let separation_distance = 1.0 * PIXEL_METER;
-            // for other_position in &enemies_position {
-            //     if other_position != &enemy_position {
-            //         let diff = enemy_position.0 - other_position.0;
-            //         let dist_sq = diff.length_squared();
-            //         if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
-            //             let strength = PIXEL_METER;
-            //             separation_force += (diff / dist_sq.sqrt()) * strength;
-            //         }
-            //     }
-            // }
+            let separation_distance = 1.0 * PIXEL_METER;
+            for other_position in &enemies_position {
+                if other_position != &enemy_position {
+                    let diff = enemy_position.0 - other_position.0;
+                    let dist_sq = diff.length_squared();
+                    if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
+                        let strength = PIXEL_METER;
+                        separation_force += (diff / dist_sq.sqrt()) * strength;
+                    }
+                }
+            }
 
             // Combine behaviors
             let steering = (arrived_velocity - enemy_velocity.0) + separation_force;

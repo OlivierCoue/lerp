@@ -8,5 +8,8 @@ edition = "2021"
 avian2d = { version = "0.2.0", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize" ] }
 bevy = { version = "0.15", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
 leafwing-input-manager = "0.16"
-lightyear = { version = "0.18", features = ["avian2d", "leafwing"] }
+lightyear = { git = "https://github.com/cBournhonesque/lightyear.git", rev = "eeb885d", features = ["avian2d", "leafwing"] }
 serde = { version = "1.0.215", features = ["derive"] }
+
+[lints.clippy]
+type_complexity = "allow"

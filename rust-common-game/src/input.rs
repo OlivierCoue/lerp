@@ -6,7 +6,7 @@ use lightyear::{
     prelude::{
         client::{Predicted, Rollback},
         server::ReplicationTarget,
-        NetworkIdentity, TickManager,
+        TickManager,
     },
 };
 
@@ -30,7 +30,6 @@ pub fn shared_handle_move_click_behavior(
 }
 
 pub fn handle_input_move_wasd(
-    identity: NetworkIdentity,
     tick_manager: Res<TickManager>,
     rollback: Option<Res<Rollback>>,
     mut player_query: Query<
@@ -40,10 +39,7 @@ pub fn handle_input_move_wasd(
             &mut LinearVelocity,
             &MovementSpeed,
         ),
-        (
-            With<PlayerDTO>,
-            Or<(With<Predicted>, With<ReplicationTarget>)>,
-        ),
+        (With<Player>, Or<(With<Predicted>, With<ReplicationTarget>)>),
     >,
 ) {
     let tick = rollback
@@ -90,7 +86,7 @@ pub fn handle_input_move_wasd(
 pub fn handle_input_skill_slot(
     mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
     player_query: Query<
-        (&PlayerDTO, &ActionState<PlayerActions>, &Position),
+        (&Player, &ActionState<PlayerActions>, &Position),
         (Or<(With<Predicted>, With<ReplicationTarget>)>,),
     >,
 ) {

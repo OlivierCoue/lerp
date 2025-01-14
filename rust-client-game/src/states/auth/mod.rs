@@ -28,7 +28,7 @@ struct TextInputPassword;
 fn auth_scene_setup(mut commands: Commands) {
     println!("[auth_scene_setup]");
 
-    commands.spawn((AuthSceneTag, Camera2d::default()));
+    commands.spawn((AuthSceneTag, Camera2d));
     commands.spawn((AuthSceneTag, Text("Authentication Scene".to_string())));
     commands
         .spawn((
@@ -46,8 +46,8 @@ fn auth_scene_setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 TextInputUsername,
-                BorderColor(BORDER_COLOR_ACTIVE.into()),
-                BackgroundColor(BACKGROUND_COLOR.into()),
+                BorderColor(BORDER_COLOR_ACTIVE),
+                BackgroundColor(BACKGROUND_COLOR),
                 FocusPolicy::Block,
                 Node {
                     width: Val::Px(200.0),
@@ -80,8 +80,8 @@ fn auth_scene_setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 TextInputPassword,
-                BorderColor(BORDER_COLOR_ACTIVE.into()),
-                BackgroundColor(BACKGROUND_COLOR.into()),
+                BorderColor(BORDER_COLOR_ACTIVE),
+                BackgroundColor(BACKGROUND_COLOR),
                 FocusPolicy::Block,
                 Node {
                     width: Val::Px(200.0),
@@ -118,7 +118,7 @@ fn auth_scene_setup(mut commands: Commands) {
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Node {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
@@ -141,7 +141,7 @@ fn auth_scene_setup(mut commands: Commands) {
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Node {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
