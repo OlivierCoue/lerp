@@ -11,6 +11,18 @@ use crate::projectile::Projectile;
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 
+// Channels
+
+// Channels
+
+#[derive(Channel)]
+pub struct Channel1;
+
+// Messages
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct SpawnEnemies;
+
 // Components
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -87,7 +99,8 @@ impl Plugin for ProtocolPlugin {
     fn build(&self, app: &mut App) {
         // Inputs
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
-
+        // Messages
+        app.register_message::<SpawnEnemies>(ChannelDirection::ClientToServer);
         // Components
         app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Simple);
@@ -117,5 +130,10 @@ impl Plugin for ProtocolPlugin {
         app.register_component::<Position>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full)
             .add_should_rollback(position_should_rollback);
+        // Channels
+        app.add_channel::<Channel1>(ChannelSettings {
+            mode: ChannelMode::OrderedReliable(ReliableSettings::default()),
+            ..default()
+        });
     }
 }

@@ -1,11 +1,9 @@
 use crate::states::play::*;
 use animation::AnimationConfig;
-use avian2d::collision::Collider;
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::character_controller::*;
+use rust_common_game::enemy::EnemyBundle;
 use rust_common_game::protocol::*;
-use rust_common_game::shared::*;
 
 // System create the player
 pub fn handle_new_enemy(
@@ -26,12 +24,10 @@ pub fn handle_new_enemy(
 
         commands
             .entity(entity)
+            .insert_if_new(EnemyBundle::from_protocol())
             .insert((
                 PlaySceneTag,
                 RigidBody::Kinematic,
-                CharacterController,
-                Collider::circle(ENEMY_SIZE / 2.),
-                LockedAxes::ROTATION_LOCKED,
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),

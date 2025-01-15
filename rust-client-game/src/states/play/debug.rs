@@ -14,62 +14,112 @@ use super::PlaySceneTag;
 #[derive(Component)]
 pub struct DebugCollider;
 
-pub fn debug_draw_colliders(
+#[derive(Component)]
+pub struct DebugColliderEntityRef(pub Entity);
+
+pub(crate) fn debug_draw_colliders(
     debug_config: Res<DebugConfig>,
-    mut commands: Commands,
-    query: Query<(Entity, &Collider), (Without<DebugCollider>, With<Visibility>)>,
     render_config: Res<RenderConfig>,
+    mut commands: Commands,
+    collider_q: Query<
+        (
+            Entity,
+            &Position,
+            &Collider,
+            Option<&DebugColliderEntityRef>,
+        ),
+        Without<DebugCollider>,
+    >,
+    mut collider_debug_q: Query<&mut Transform, With<DebugCollider>>,
 ) {
     if !debug_config.show_colliders {
         return;
     }
 
-    for (entity, collider) in query.iter() {
-        commands.entity(entity).insert(DebugCollider);
-        if let Some(ball) = collider.shape().as_ball() {
-            let shape = shapes::Ellipse {
-                radii: apply_render_mode_radius(&render_config, ball.radius),
-                center: Vec2::ZERO,
-            };
+    for (entity, position, collider, debug_entity_ref) in collider_q.iter() {
+        if let Some(debug_entity_ref) = debug_entity_ref {
+            if let Ok(mut transform) = collider_debug_q.get_mut(debug_entity_ref.0) {
+                transform.translation = apply_render_mode(&render_config, position).extend(3.);
+            }
+        } else {
+            if let Some(ball) = collider.shape().as_ball() {
+                let shape = shapes::Ellipse {
+                    radii: apply_render_mode_radius(&render_config, ball.radius),
+                    center: Vec2::ZERO,
+                };
 
-            commands.entity(entity).with_children(|parent| {
-                parent.spawn((
-                    ShapeBundle {
-                        path: GeometryBuilder::build_as(&shape),
-                        transform: Transform::from_translation(Vec2::ZERO.extend(3.)),
-                        ..default()
-                    },
-                    Stroke::new(Color::linear_rgb(0., 1., 0.), 2.0),
-                ));
-            });
+                let debug_entity = commands
+                    .spawn((
+                        PlaySceneTag,
+                        DebugCollider,
+                        ShapeBundle {
+                            path: GeometryBuilder::build_as(&shape),
+                            transform: Transform::from_translation(
+                                apply_render_mode(&render_config, position).extend(3.),
+                            ),
+                            ..default()
+                        },
+                        Stroke::new(Color::linear_rgb(0., 1., 0.), 2.0),
+                        DebugColliderEntityRef(entity),
+                    ))
+                    .id();
+                commands
+                    .entity(entity)
+                    .insert(DebugColliderEntityRef(debug_entity));
+            }
+
+            if let Some(cuboid) = collider.shape().as_cuboid() {
+                let top_left = Vec2::new(-cuboid.half_extents.x, cuboid.half_extents.y);
+                let top_right = Vec2::new(cuboid.half_extents.x, cuboid.half_extents.y);
+                let bottom_right = Vec2::new(cuboid.half_extents.x, -cuboid.half_extents.y);
+                let bottom_left = Vec2::new(-cuboid.half_extents.x, -cuboid.half_extents.y);
+
+                let shape = shapes::Polygon {
+                    points: vec![
+                        apply_render_mode(&render_config, &top_left),
+                        apply_render_mode(&render_config, &top_right),
+                        apply_render_mode(&render_config, &bottom_right),
+                        apply_render_mode(&render_config, &bottom_left),
+                    ],
+                    closed: true,
+                };
+
+                let debug_entity = commands
+                    .spawn((
+                        PlaySceneTag,
+                        DebugCollider,
+                        ShapeBundle {
+                            path: GeometryBuilder::build_as(&shape),
+                            transform: Transform::from_translation(
+                                apply_render_mode(&render_config, position).extend(3.),
+                            ),
+                            ..default()
+                        },
+                        Stroke::new(Color::linear_rgb(0., 1., 0.), 2.0),
+                        DebugColliderEntityRef(entity),
+                    ))
+                    .id();
+                commands
+                    .entity(entity)
+                    .insert(DebugColliderEntityRef(debug_entity));
+            }
         }
+    }
+}
 
-        if let Some(cuboid) = collider.shape().as_cuboid() {
-            let top_left = Vec2::new(-cuboid.half_extents.x, cuboid.half_extents.y);
-            let top_right = Vec2::new(cuboid.half_extents.x, cuboid.half_extents.y);
-            let bottom_right = Vec2::new(cuboid.half_extents.x, -cuboid.half_extents.y);
-            let bottom_left = Vec2::new(-cuboid.half_extents.x, -cuboid.half_extents.y);
+pub(crate) fn debug_undraw_colliders(
+    debug_config: Res<DebugConfig>,
+    mut commands: Commands,
+    collider_q: Query<Entity, (With<Collider>, Without<DebugCollider>)>,
+    collider_debug_q: Query<(Entity, &DebugColliderEntityRef), With<DebugCollider>>,
+) {
+    if !debug_config.show_colliders {
+        return;
+    }
 
-            let shape = shapes::Polygon {
-                points: vec![
-                    apply_render_mode(&render_config, &top_left),
-                    apply_render_mode(&render_config, &top_right),
-                    apply_render_mode(&render_config, &bottom_right),
-                    apply_render_mode(&render_config, &bottom_left),
-                ],
-                closed: true,
-            };
-
-            commands.entity(entity).with_children(|parent| {
-                parent.spawn((
-                    ShapeBundle {
-                        path: GeometryBuilder::build_as(&shape),
-                        transform: Transform::from_translation(Vec2::ZERO.extend(3.)),
-                        ..default()
-                    },
-                    Stroke::new(Color::linear_rgb(0., 1., 0.), 2.0),
-                ));
-            });
+    for (debug_confirmed_entity, confirmed_entity_ref) in collider_debug_q.iter() {
+        if collider_q.get(confirmed_entity_ref.0).is_err() {
+            commands.entity(debug_confirmed_entity).despawn();
         }
     }
 }
@@ -103,7 +153,7 @@ pub(crate) fn debug_draw_confirmed_entities(
     for (entity, position, is_enemy, is_projectile, debug_entity_ref) in confirmed_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = confirmed_debug_q.get_mut(debug_entity_ref.0) {
-                transform.translation = apply_render_mode(&render_config, position).extend(3.);
+                transform.translation = apply_render_mode(&render_config, position).extend(4.);
             }
         } else {
             let radius = if is_enemy {

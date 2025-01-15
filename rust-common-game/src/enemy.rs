@@ -4,7 +4,49 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
 
-use crate::{protocol::*, shared::PIXEL_METER};
+use crate::{
+    character_controller::CharacterController,
+    physics::PhysicsBundle,
+    protocol::*,
+    shared::{ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
+};
+
+#[derive(Bundle)]
+pub struct EnemyBundle {
+    marker: Enemy,
+    physics: PhysicsBundle,
+    position: Position,
+    character_controller: CharacterController,
+    movement_speed: MovementSpeed,
+}
+impl Default for EnemyBundle {
+    fn default() -> Self {
+        Self {
+            marker: Enemy,
+            physics: Self::physics(),
+            position: Position::default(),
+            character_controller: CharacterController,
+            movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
+        }
+    }
+}
+impl EnemyBundle {
+    pub fn new(position: &Vec2) -> Self {
+        Self {
+            position: Position(*position),
+            ..default()
+        }
+    }
+    pub fn from_protocol() -> Self {
+        Self { ..default() }
+    }
+    pub fn physics() -> PhysicsBundle {
+        PhysicsBundle {
+            rigid_body: RigidBody::Kinematic,
+            collider: Collider::circle(ENEMY_SIZE / 2.),
+        }
+    }
+}
 
 pub fn enemy_movement_behavior(
     mut query_enemies: Query<

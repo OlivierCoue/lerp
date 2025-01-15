@@ -1,7 +1,6 @@
 mod enemy;
 mod map;
 
-use avian2d::prelude::*;
 use bevy::log::Level;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
@@ -12,7 +11,7 @@ use enemy::EnemyPlugin;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
-use rust_common_game::character_controller::*;
+use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
 use std::net::SocketAddr;
@@ -40,13 +39,7 @@ fn handle_connections(
         info!("New client {:?}", client_id);
 
         let player = (
-            Player(client_id),
-            MovementTargets(Vec::new()),
-            RigidBody::Kinematic,
-            CharacterController,
-            Collider::circle(PLAYER_SIZE / 2.0),
-            LockedAxes::ROTATION_LOCKED,
-            MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
+            PlayerBundle::new(client_id, &Vec2::new(0., 0.)),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::All,

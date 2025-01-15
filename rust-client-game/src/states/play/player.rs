@@ -1,11 +1,10 @@
 use crate::states::play::*;
 use animation::AnimationConfig;
-use avian2d::collision::Collider;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use lightyear::shared::replication::components::Controlled;
-use rust_common_game::character_controller::*;
+use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 
@@ -41,12 +40,9 @@ pub fn handle_new_player(
 
         commands
             .entity(entity)
+            .insert_if_new(PlayerBundle::from_protocol())
             .insert((
                 PlaySceneTag,
-                RigidBody::Kinematic,
-                CharacterController,
-                Collider::circle(PLAYER_SIZE / 2.),
-                LockedAxes::ROTATION_LOCKED,
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),
@@ -103,7 +99,10 @@ pub fn sync_cursor_poisition(
     };
 
     let actual_world_cursor_position = match render_config.mode {
-        RenderMode::Iso => isometric_to_cartesian(world_cursor_position.x, world_cursor_position.y),
+        RenderMode::Iso => isometric_to_cartesian(
+            world_cursor_position.x,
+            world_cursor_position.y - 1. * PIXEL_METER,
+        ),
         RenderMode::Cart => world_cursor_position,
     };
 

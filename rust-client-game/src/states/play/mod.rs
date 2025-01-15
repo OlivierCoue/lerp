@@ -11,6 +11,7 @@ use crate::states::play::camera::*;
 use crate::states::play::debug::*;
 use crate::states::play::map::*;
 use crate::states::play::player::*;
+use crate::NORMAL_BUTTON;
 
 use animation::animate_sprite;
 use bevy::diagnostic::DiagnosticsStore;
@@ -25,7 +26,9 @@ use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
+use rust_common_game::protocol::Channel1;
 use rust_common_game::protocol::PlayerClient;
+use rust_common_game::protocol::SpawnEnemies;
 
 #[derive(Component, Default)]
 pub struct PlaySceneTag;
@@ -41,6 +44,11 @@ pub struct RollBackHistoric(pub [bool; 100]);
 
 #[derive(Component)]
 pub struct RollbackStateLineItem;
+
+#[derive(Component)]
+enum ButtonAction {
+    SpawnEnemies,
+}
 
 pub fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
@@ -94,6 +102,38 @@ pub fn play_scene_setup(mut commands: Commands) {
                     }
                 });
         });
+
+    commands
+        .spawn((
+            PlaySceneTag,
+            Node {
+                width: Val::Percent(100.),
+                align_items: AlignItems::End,
+                justify_content: JustifyContent::End,
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+        ))
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonAction::SpawnEnemies,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON),
+                    Node {
+                        width: Val::Px(100.0),
+                        height: Val::Px(30.0),
+                        border: UiRect::all(Val::Px(2.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                ))
+                .with_children(|parent| {
+                    parent.spawn((Text("Enemies".to_string()), TextFont::from_font_size(12.)));
+                });
+        });
 }
 
 pub fn play_scene_logic(
@@ -102,6 +142,26 @@ pub fn play_scene_logic(
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         app_state.set(AppState::Lobby);
+    }
+}
+
+fn play_scene_button_logic(
+    mut connection_manager: ResMut<ConnectionManager>,
+    mut interaction_query: Query<
+        (&Interaction, &ButtonAction),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, action) in &mut interaction_query {
+        match *interaction {
+            Interaction::Pressed => match action {
+                ButtonAction::SpawnEnemies => {
+                    let _ = connection_manager.send_message::<Channel1, _>(&SpawnEnemies);
+                }
+            },
+            Interaction::Hovered => {}
+            Interaction::None => {}
+        }
     }
 }
 
@@ -180,6 +240,7 @@ impl Plugin for PlayPlugin {
             Update,
             (
                 play_scene_logic,
+                play_scene_button_logic,
                 handle_new_client,
                 handle_new_player,
                 handle_new_enemy,
@@ -189,6 +250,7 @@ impl Plugin for PlayPlugin {
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,
                 debug_draw_colliders,
+                debug_undraw_colliders,
                 update_fps,
                 update_ping,
             )

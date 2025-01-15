@@ -18,14 +18,7 @@ pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            // Run collision handling after collision detection.
-            //
-            // NOTE: The collision implementation here is very basic and a bit buggy.
-            //       A collide-and-slide algorithm would likely work better.
-            PostProcessCollisions,
-            kinematic_controller_collisions,
-        );
+        app.add_systems(PostProcessCollisions, kinematic_controller_collisions);
     }
 }
 
@@ -33,19 +26,9 @@ impl Plugin for CharacterControllerPlugin {
 #[derive(Component)]
 pub struct CharacterController;
 
-/// Kinematic bodies do not get pushed by collisions by default,
-/// so it needs to be done manually.
-///
-/// This system handles collision response for kinematic character controllers
-/// by pushing them along their contact normals by the current penetration depth,
-/// and applying velocity corrections in order to snap to slopes, slide along walls,
-/// and predict collisions using speculative contacts.
 fn kinematic_controller_collisions(
     collisions: Res<Collisions>,
-    mut bodies: Query<
-        (&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>),
-        Without<Projectile>,
-    >,
+    mut bodies: Query<(&RigidBody, Option<&mut LinearVelocity>, Has<Enemy>), Without<Projectile>>,
     collider_parents: Query<&ColliderParent, Without<Sensor>>,
     mut character_controllers: Query<&mut Position, (With<RigidBody>, With<CharacterController>)>,
     time: Res<Time<Physics>>,

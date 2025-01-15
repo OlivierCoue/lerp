@@ -6,6 +6,7 @@ use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    physics::PhysicsBundle,
     protocol::{Enemy, REPLICATION_GROUP},
     shared::{PIXEL_METER, PROJECTILE_BASE_MOVEMENT_SPEED, PROJECTILE_SIZE},
     wall::Wall,
@@ -21,24 +22,14 @@ pub struct SpawnProjectileEvent {
     pub direction: Vec2,
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct ProjectileData {
     pub max_distance: f32,
     pub distance_traveled: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct PreviousPosition(pub Vec2);
-
-#[derive(Component)]
-pub struct EntityPhysics;
-
-#[derive(Bundle)]
-pub struct PhysicsBundle {
-    pub marker: EntityPhysics,
-    pub rigid_body: RigidBody,
-    pub collider: Collider,
-}
 
 #[derive(Bundle)]
 pub struct ProjectileBundle {
@@ -49,10 +40,21 @@ pub struct ProjectileBundle {
     previous_position: PreviousPosition,
     linear_velocity: LinearVelocity,
 }
+impl Default for ProjectileBundle {
+    fn default() -> Self {
+        Self {
+            marker: Projectile,
+            data: ProjectileData::default(),
+            physics: Self::physics(),
+            position: Position::default(),
+            previous_position: PreviousPosition::default(),
+            linear_velocity: LinearVelocity::default(),
+        }
+    }
+}
 impl ProjectileBundle {
     pub fn new(position: &Vec2, linear_velocity: &Vec2) -> Self {
         Self {
-            marker: Projectile,
             data: ProjectileData {
                 max_distance: 10. * PIXEL_METER,
                 distance_traveled: 0.,
@@ -61,11 +63,14 @@ impl ProjectileBundle {
             position: Position::from_xy(position.x, position.y),
             previous_position: PreviousPosition(*position),
             linear_velocity: LinearVelocity(*linear_velocity),
+            ..default()
         }
+    }
+    pub fn from_protocol() -> Self {
+        Self { ..default() }
     }
     pub fn physics() -> PhysicsBundle {
         PhysicsBundle {
-            marker: EntityPhysics,
             rigid_body: RigidBody::Kinematic,
             collider: Collider::circle(PROJECTILE_SIZE / 2.),
         }
