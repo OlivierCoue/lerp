@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::{prelude::ActionState, Actionlike};
 use lightyear::{
     inputs::leafwing::input_buffer::InputBuffer,
     prelude::{
@@ -9,8 +9,28 @@ use lightyear::{
         TickManager,
     },
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{projectile::SpawnProjectileEvent, protocol::*};
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct InputVec2 {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect, Actionlike)]
+pub enum PlayerActions {
+    Move,
+    MoveUp,
+    MoveDown,
+    MoveLeft,
+    MoveRight,
+    SkillSlot1,
+    SkillSlot2,
+    #[actionlike(DualAxis)]
+    Cursor,
+}
 
 pub fn shared_handle_move_click_behavior(
     action: &ActionState<PlayerActions>,

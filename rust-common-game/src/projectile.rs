@@ -6,8 +6,10 @@ use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    enemy::Enemy,
+    hit::HitEvent,
     physics::PhysicsBundle,
-    protocol::{Enemy, REPLICATION_GROUP},
+    protocol::REPLICATION_GROUP,
     shared::{PIXEL_METER, PROJECTILE_BASE_MOVEMENT_SPEED, PROJECTILE_SIZE},
     wall::Wall,
 };
@@ -152,6 +154,7 @@ pub fn process_projectile_distance(
 
 pub fn process_projectile_collisions(
     mut collision_event_reader: EventReader<Collision>,
+    mut hit_events: EventWriter<HitEvent>,
     enemy_q: Query<&Enemy>,
     projectile_q: Query<(&Projectile, &ProjectileData)>,
     wall_q: Query<&Wall>,
@@ -163,6 +166,10 @@ pub fn process_projectile_collisions(
     // * B collides with A
     // which is why logic is duplicated twice here
     for Collision(contacts) in collision_event_reader.read() {
+        if !contacts.collision_started() {
+            continue;
+        }
+
         if projectile_q.get(contacts.entity1).is_ok() {
             let collide_with_wall = wall_q.get(contacts.entity2).is_ok();
             let collide_with_enemy = enemy_q.get(contacts.entity2).is_ok();
@@ -178,11 +185,16 @@ pub fn process_projectile_collisions(
 
             // despawn the enemy if it get hit
             if collide_with_enemy {
-                if identity.is_server() {
-                    commands.entity(contacts.entity2).despawn();
-                } else {
-                    commands.entity(contacts.entity2).prediction_despawn();
-                }
+                // if identity.is_server() {
+                //     commands.entity(contacts.entity2).despawn();
+                // } else {
+                //     commands.entity(contacts.entity2).prediction_despawn();
+                // }
+
+                hit_events.send(HitEvent {
+                    hit_source: contacts.entity1,
+                    hit_target: contacts.entity2,
+                });
             }
         }
 
@@ -201,11 +213,16 @@ pub fn process_projectile_collisions(
 
             // despawn the enemy if it get hit
             if collide_with_enemy {
-                if identity.is_server() {
-                    commands.entity(contacts.entity1).despawn();
-                } else {
-                    commands.entity(contacts.entity1).prediction_despawn();
-                }
+                // if identity.is_server() {
+                //     commands.entity(contacts.entity1).despawn();
+                // } else {
+                //     commands.entity(contacts.entity1).prediction_despawn();
+                // }
+
+                hit_events.send(HitEvent {
+                    hit_source: contacts.entity2,
+                    hit_target: contacts.entity1,
+                });
             }
         }
     }

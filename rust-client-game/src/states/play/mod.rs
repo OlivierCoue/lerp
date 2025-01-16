@@ -2,6 +2,7 @@ mod animation;
 mod camera;
 mod debug;
 mod enemy;
+mod health_bar;
 mod map;
 mod player;
 mod projectile;
@@ -21,6 +22,8 @@ use bevy::prelude::*;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use enemy::handle_new_enemy;
+use health_bar::handle_new_health_bar;
+use health_bar::update_health_bar;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
@@ -246,6 +249,8 @@ impl Plugin for PlayPlugin {
                 handle_new_enemy,
                 handle_new_projectile,
                 handle_removed_projectile,
+                handle_new_health_bar,
+                update_health_bar,
                 animate_sprite,
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,

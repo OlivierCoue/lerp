@@ -3,13 +3,18 @@ use core::f32;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     character_controller::CharacterController,
+    health::Health,
     physics::PhysicsBundle,
     protocol::*,
-    shared::{ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
+    shared::{ENEMY_BASE_HEALTH, ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
 };
+
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Enemy;
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
@@ -18,6 +23,7 @@ pub struct EnemyBundle {
     position: Position,
     character_controller: CharacterController,
     movement_speed: MovementSpeed,
+    health: Health,
 }
 impl Default for EnemyBundle {
     fn default() -> Self {
@@ -27,6 +33,7 @@ impl Default for EnemyBundle {
             position: Position::default(),
             character_controller: CharacterController,
             movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
+            health: Health::new(ENEMY_BASE_HEALTH),
         }
     }
 }

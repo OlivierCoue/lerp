@@ -1,4 +1,5 @@
 mod enemy;
+mod hit;
 mod map;
 
 use bevy::log::Level;
@@ -8,9 +9,12 @@ use bevy::state::app::StatesPlugin;
 use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
 use enemy::EnemyPlugin;
+use hit::on_hit_event;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
+use rust_common_game::hit::HitEvent;
+use rust_common_game::input::PlayerActions;
 use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
@@ -172,5 +176,6 @@ fn main() {
                 update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
             ),
         )
+        .add_systems(Update, on_hit_event.run_if(on_event::<HitEvent>))
         .run();
 }

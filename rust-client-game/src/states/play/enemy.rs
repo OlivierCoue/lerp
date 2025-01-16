@@ -2,8 +2,7 @@ use crate::states::play::*;
 use animation::AnimationConfig;
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::enemy::EnemyBundle;
-use rust_common_game::protocol::*;
+use rust_common_game::enemy::*;
 
 // System create the player
 pub fn handle_new_enemy(

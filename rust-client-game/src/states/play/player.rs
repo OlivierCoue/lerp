@@ -4,6 +4,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use lightyear::shared::replication::components::Controlled;
+use rust_common_game::input::PlayerActions;
 use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;

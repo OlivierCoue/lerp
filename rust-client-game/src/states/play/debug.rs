@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use lightyear::prelude::client::*;
 use rust_common_game::{
+    enemy::Enemy,
     projectile::Projectile,
     protocol::*,
     shared::{ENEMY_SIZE, PLAYER_SIZE, PROJECTILE_SIZE},

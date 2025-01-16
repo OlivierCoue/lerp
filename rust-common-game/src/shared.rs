@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use crate::character_controller::CharacterControllerPlugin;
 
 use crate::enemy::enemy_movement_behavior;
+use crate::hit::HitEvent;
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::projectile::{
     on_spawn_projectile_event, process_projectile_collisions, process_projectile_distance,
@@ -26,6 +27,9 @@ pub const PROJECTILE_SIZE: f32 = 8.;
 pub const PLAYER_BASE_MOVEMENT_SPEED: f32 = 8. * PIXEL_METER;
 pub const ENEMY_BASE_MOVEMENT_SPEED: f32 = 5. * PIXEL_METER;
 pub const PROJECTILE_BASE_MOVEMENT_SPEED: f32 = 30. * PIXEL_METER;
+
+pub const PLAYER_BASE_HEALTH: f32 = 100.;
+pub const ENEMY_BASE_HEALTH: f32 = 20.;
 
 #[derive(Clone)]
 pub struct SharedPlugin;
@@ -50,6 +54,7 @@ impl Plugin for SharedPlugin {
         app.insert_resource(Gravity(Vec2::ZERO));
 
         app.add_event::<SpawnProjectileEvent>();
+        app.add_event::<HitEvent>();
 
         app.add_systems(
             FixedUpdate,

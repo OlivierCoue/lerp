@@ -1,5 +1,7 @@
 pub mod character_controller;
 pub mod enemy;
+pub mod health;
+pub mod hit;
 pub mod input;
 pub mod physics;
 pub mod player;

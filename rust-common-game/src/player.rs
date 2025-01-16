@@ -4,9 +4,10 @@ use lightyear::prelude::*;
 
 use crate::{
     character_controller::CharacterController,
+    health::Health,
     physics::PhysicsBundle,
     protocol::*,
-    shared::{PLAYER_BASE_MOVEMENT_SPEED, PLAYER_SIZE},
+    shared::{PLAYER_BASE_HEALTH, PLAYER_BASE_MOVEMENT_SPEED, PLAYER_SIZE},
 };
 
 #[derive(Bundle)]
@@ -16,6 +17,7 @@ pub struct PlayerBundle {
     position: Position,
     character_controller: CharacterController,
     movement_speed: MovementSpeed,
+    health: Health,
 }
 impl Default for PlayerBundle {
     fn default() -> Self {
@@ -25,6 +27,7 @@ impl Default for PlayerBundle {
             position: Position::default(),
             character_controller: CharacterController,
             movement_speed: MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
+            health: Health::new(PLAYER_BASE_HEALTH),
         }
     }
 }
