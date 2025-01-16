@@ -183,14 +183,7 @@ pub fn process_projectile_collisions(
                 }
             }
 
-            // despawn the enemy if it get hit
             if collide_with_enemy {
-                // if identity.is_server() {
-                //     commands.entity(contacts.entity2).despawn();
-                // } else {
-                //     commands.entity(contacts.entity2).prediction_despawn();
-                // }
-
                 hit_events.send(HitEvent {
                     hit_source: contacts.entity1,
                     hit_target: contacts.entity2,
@@ -213,12 +206,6 @@ pub fn process_projectile_collisions(
 
             // despawn the enemy if it get hit
             if collide_with_enemy {
-                // if identity.is_server() {
-                //     commands.entity(contacts.entity1).despawn();
-                // } else {
-                //     commands.entity(contacts.entity1).prediction_despawn();
-                // }
-
                 hit_events.send(HitEvent {
                     hit_source: contacts.entity2,
                     hit_target: contacts.entity1,

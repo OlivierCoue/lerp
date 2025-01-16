@@ -63,13 +63,16 @@ pub fn handle_new_player(
             });
 
         if controlled {
-            commands.entity(entity).insert((InputMap::new([
-                (PlayerActions::MoveUp, KeyCode::KeyW),
-                (PlayerActions::MoveDown, KeyCode::KeyS),
-                (PlayerActions::MoveLeft, KeyCode::KeyA),
-                (PlayerActions::MoveRight, KeyCode::KeyD),
-            ])
-            .with(PlayerActions::SkillSlot1, MouseButton::Left),));
+            commands.entity(entity).insert(
+                InputMap::new([
+                    (PlayerActions::MoveUp, KeyCode::KeyW),
+                    (PlayerActions::MoveDown, KeyCode::KeyS),
+                    (PlayerActions::MoveLeft, KeyCode::KeyA),
+                    (PlayerActions::MoveRight, KeyCode::KeyD),
+                ])
+                .with(PlayerActions::SkillSlot1, MouseButton::Left)
+                .with(PlayerActions::SkillSlot2, MouseButton::Right),
+            );
         }
     }
 }

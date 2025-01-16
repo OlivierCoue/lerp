@@ -9,4 +9,5 @@ pub mod projectile;
 pub mod protocol;
 pub mod settings;
 pub mod shared;
+pub mod skill;
 pub mod wall;

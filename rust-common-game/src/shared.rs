@@ -14,6 +14,9 @@ use crate::projectile::{
 };
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
+use crate::skill::{
+    on_skill_bow_attack, on_skill_split_attack, SkillBowAttackEvent, SkillSplitArrowEvent,
+};
 
 /// Number of pixels per one meter
 pub const PIXEL_METER: f32 = 32.;
@@ -55,6 +58,8 @@ impl Plugin for SharedPlugin {
 
         app.add_event::<SpawnProjectileEvent>();
         app.add_event::<HitEvent>();
+        app.add_event::<SkillBowAttackEvent>();
+        app.add_event::<SkillSplitArrowEvent>();
 
         app.add_systems(
             FixedUpdate,
@@ -70,9 +75,24 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
+            on_skill_bow_attack
+                .run_if(on_event::<SkillBowAttackEvent>)
+                .after(handle_input_skill_slot),
+        );
+        app.add_systems(
+            FixedUpdate,
+            on_skill_split_attack
+                .run_if(on_event::<SkillSplitArrowEvent>)
+                .after(handle_input_skill_slot),
+        );
+        app.add_systems(
+            FixedUpdate,
             on_spawn_projectile_event
                 .run_if(on_event::<SpawnProjectileEvent>)
-                .after(handle_input_skill_slot),
+                // TODO: Create a set where we handle skill behaviour (create event for projectile/aoe...)
+                // And a set where we react to those events (spawn projectile/aoe)
+                .after(on_skill_bow_attack)
+                .after(on_skill_split_attack),
         );
     }
 }

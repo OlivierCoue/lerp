@@ -7,7 +7,12 @@ use lightyear::client::components::ComponentSyncMode;
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{enemy::Enemy, health::Health, input::PlayerActions, projectile::Projectile};
+use crate::{
+    enemy::Enemy,
+    health::Health,
+    input::{PlayerActions, SkillSlotMap},
+    projectile::Projectile,
+};
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 
@@ -87,6 +92,9 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Projectile>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Once);
+
+        app.register_component::<SkillSlotMap>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<MovementSpeed>(ChannelDirection::ServerToClient)

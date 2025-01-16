@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use leafwing_input_manager::{prelude::ActionState, Actionlike};
 use lightyear::{
     inputs::leafwing::input_buffer::InputBuffer,
@@ -11,7 +11,10 @@ use lightyear::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{projectile::SpawnProjectileEvent, protocol::*};
+use crate::{
+    protocol::*,
+    skill::{Skill, SkillBowAttackEvent, SkillSplitArrowEvent},
+};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct InputVec2 {
@@ -30,6 +33,30 @@ pub enum PlayerActions {
     SkillSlot2,
     #[actionlike(DualAxis)]
     Cursor,
+}
+impl PlayerActions {
+    /// You could use the `strum` crate to derive this automatically!
+    pub fn variants() -> impl Iterator<Item = PlayerActions> {
+        use PlayerActions::*;
+        [SkillSlot1, SkillSlot2].iter().copied()
+    }
+}
+
+#[derive(
+    Component,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    Clone,
+    Reflect,
+    Deref,
+    DerefMut,
+)]
+pub struct SkillSlotMap {
+    map: HashMap<PlayerActions, Skill>,
 }
 
 pub fn shared_handle_move_click_behavior(
@@ -104,26 +131,38 @@ pub fn handle_input_move_wasd(
 }
 
 pub fn handle_input_skill_slot(
-    mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
+    mut skill_bow_attack_event: EventWriter<SkillBowAttackEvent>,
+    mut skill_split_arrow_event: EventWriter<SkillSplitArrowEvent>,
     player_query: Query<
-        (&Player, &ActionState<PlayerActions>, &Position),
+        (Entity, &ActionState<PlayerActions>, &SkillSlotMap),
         (Or<(With<Predicted>, With<ReplicationTarget>)>,),
     >,
 ) {
-    for (player, action, player_position) in player_query.iter() {
-        if action.pressed(&PlayerActions::SkillSlot1) {
-            let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-                println!("[handle_input_skill_slot] Cursor_position not set skipping");
-                return;
-            };
+    for (entity, action, skill_slot_map) in player_query.iter() {
+        let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
+            return;
+        };
 
-            let direction = (cursor_position.pair - player_position.0).normalize();
-
-            spawn_projectile_events.send(SpawnProjectileEvent {
-                client_id: Some(player.0),
-                from_position: player_position.0,
-                direction,
-            });
+        for player_action in PlayerActions::variants() {
+            if !action.pressed(&player_action) {
+                continue;
+            }
+            if let Some(skill) = skill_slot_map.get(&player_action) {
+                match skill {
+                    Skill::BowAttack => {
+                        skill_bow_attack_event.send(SkillBowAttackEvent {
+                            initiator: entity,
+                            target: cursor_position.pair,
+                        });
+                    }
+                    Skill::SplitArrow => {
+                        skill_split_arrow_event.send(SkillSplitArrowEvent {
+                            initiator: entity,
+                            target: cursor_position.pair,
+                        });
+                    }
+                }
+            }
         }
     }
 }
