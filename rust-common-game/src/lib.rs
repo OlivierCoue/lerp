@@ -3,6 +3,7 @@ pub mod enemy;
 pub mod health;
 pub mod hit;
 pub mod input;
+pub mod mana;
 pub mod physics;
 pub mod player;
 pub mod projectile;

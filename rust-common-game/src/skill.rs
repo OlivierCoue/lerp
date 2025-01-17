@@ -2,10 +2,10 @@ use avian2d::prelude::Position;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{projectile::SpawnProjectileEvent, protocol::Player};
+use crate::{mana::Mana, projectile::SpawnProjectileEvent, protocol::Player};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Debug, Copy, Reflect)]
-pub enum Skill {
+pub enum SkillName {
     BowAttack,
     SplitArrow,
 }
@@ -19,10 +19,18 @@ pub struct SkillBowAttackEvent {
 pub fn on_skill_bow_attack(
     mut skill_bow_attack_event: EventReader<SkillBowAttackEvent>,
     mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
-    initiator_q: Query<(&Position, Option<&Player>)>,
+    mut initiator_q: Query<(&Position, &mut Mana, Option<&Player>)>,
 ) {
     for event in skill_bow_attack_event.read() {
-        if let Ok((initiator_position, initiator_player)) = initiator_q.get(event.initiator) {
+        if let Ok((initiator_position, mut initiator_mana, initiator_player)) =
+            initiator_q.get_mut(event.initiator)
+        {
+            let mana_after_use = initiator_mana.current - 2.;
+            if mana_after_use < 0. {
+                continue;
+            }
+
+            initiator_mana.current = mana_after_use;
             let direction = (event.target - initiator_position.0).normalize();
 
             spawn_projectile_events.send(SpawnProjectileEvent {

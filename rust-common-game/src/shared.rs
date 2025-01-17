@@ -6,8 +6,9 @@ use bevy::prelude::*;
 use crate::character_controller::CharacterControllerPlugin;
 
 use crate::enemy::enemy_movement_behavior;
-use crate::hit::HitEvent;
+use crate::hit::{on_hit_event, HitEvent};
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
+use crate::mana::mana_regeneration;
 use crate::projectile::{
     on_spawn_projectile_event, process_projectile_collisions, process_projectile_distance,
     SpawnProjectileEvent,
@@ -33,6 +34,8 @@ pub const PROJECTILE_BASE_MOVEMENT_SPEED: f32 = 30. * PIXEL_METER;
 
 pub const PLAYER_BASE_HEALTH: f32 = 100.;
 pub const ENEMY_BASE_HEALTH: f32 = 20.;
+
+pub const PLAYER_BASE_MANA: f32 = 100.;
 
 #[derive(Clone)]
 pub struct SharedPlugin;
@@ -64,6 +67,7 @@ impl Plugin for SharedPlugin {
         app.add_systems(
             FixedUpdate,
             (
+                mana_regeneration,
                 handle_input_move_wasd,
                 handle_input_skill_slot,
                 enemy_movement_behavior,
@@ -93,6 +97,12 @@ impl Plugin for SharedPlugin {
                 // And a set where we react to those events (spawn projectile/aoe)
                 .after(on_skill_bow_attack)
                 .after(on_skill_split_attack),
+        );
+        app.add_systems(
+            FixedUpdate,
+            on_hit_event
+                .run_if(on_event::<HitEvent>)
+                .after(process_projectile_collisions),
         );
     }
 }

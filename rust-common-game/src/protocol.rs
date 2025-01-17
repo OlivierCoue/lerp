@@ -11,6 +11,7 @@ use crate::{
     enemy::Enemy,
     health::Health,
     input::{PlayerActions, SkillSlotMap},
+    mana::Mana,
     projectile::Projectile,
 };
 
@@ -102,6 +103,9 @@ impl Plugin for ProtocolPlugin {
 
         app.register_component::<Health>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Simple);
+
+        app.register_component::<Mana>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<MovementTargets>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once);

@@ -48,7 +48,6 @@ pub fn animate_sprite(
 
         if animation_config.timer.just_finished() {
             let Ok((velocity, _)) = query_parent.get(parent.get()) else {
-                println!("[animate_sprite] Cannot find parent enity");
                 continue;
             };
 

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     protocol::*,
-    skill::{Skill, SkillBowAttackEvent, SkillSplitArrowEvent},
+    skill::{SkillBowAttackEvent, SkillName, SkillSplitArrowEvent},
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -56,7 +56,7 @@ impl PlayerActions {
     DerefMut,
 )]
 pub struct SkillSlotMap {
-    map: HashMap<PlayerActions, Skill>,
+    map: HashMap<PlayerActions, SkillName>,
 }
 
 pub fn shared_handle_move_click_behavior(
@@ -149,13 +149,13 @@ pub fn handle_input_skill_slot(
             }
             if let Some(skill) = skill_slot_map.get(&player_action) {
                 match skill {
-                    Skill::BowAttack => {
+                    SkillName::BowAttack => {
                         skill_bow_attack_event.send(SkillBowAttackEvent {
                             initiator: entity,
                             target: cursor_position.pair,
                         });
                     }
-                    Skill::SplitArrow => {
+                    SkillName::SplitArrow => {
                         skill_split_arrow_event.send(SkillSplitArrowEvent {
                             initiator: entity,
                             target: cursor_position.pair,
