@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     protocol::*,
-    skill::{SkillBowAttackEvent, SkillName, SkillSplitArrowEvent},
+    skill::{SkillName, SkillsAvailable, TriggerSkillEvent},
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -131,38 +131,44 @@ pub fn handle_input_move_wasd(
 }
 
 pub fn handle_input_skill_slot(
-    mut skill_bow_attack_event: EventWriter<SkillBowAttackEvent>,
-    mut skill_split_arrow_event: EventWriter<SkillSplitArrowEvent>,
+    mut skill_trigger_ev: EventWriter<TriggerSkillEvent>,
     player_query: Query<
-        (Entity, &ActionState<PlayerActions>, &SkillSlotMap),
+        (
+            Entity,
+            &ActionState<PlayerActions>,
+            &SkillSlotMap,
+            &SkillsAvailable,
+        ),
         (Or<(With<Predicted>, With<ReplicationTarget>)>,),
     >,
 ) {
-    for (entity, action, skill_slot_map) in player_query.iter() {
+    for (entity, action, skill_slot_map, skills_available) in player_query.iter() {
         let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-            return;
+            continue;
         };
 
         for player_action in PlayerActions::variants() {
             if !action.pressed(&player_action) {
                 continue;
             }
-            if let Some(skill) = skill_slot_map.get(&player_action) {
-                match skill {
-                    SkillName::BowAttack => {
-                        skill_bow_attack_event.send(SkillBowAttackEvent {
-                            initiator: entity,
-                            target: cursor_position.pair,
-                        });
-                    }
-                    SkillName::SplitArrow => {
-                        skill_split_arrow_event.send(SkillSplitArrowEvent {
-                            initiator: entity,
-                            target: cursor_position.pair,
-                        });
-                    }
-                }
-            }
+            let Some(skill_name) = skill_slot_map.get(&player_action) else {
+                println!("[handle_input_skill_slot] Action is not bound to any skill");
+                continue;
+            };
+            let Some(skill_entity) = skills_available.get(skill_name) else {
+                error!(
+                    "[handle_input_skill_slot] Skill {:?} is not attach to this player",
+                    skill_name
+                );
+                continue;
+            };
+
+            skill_trigger_ev.send(TriggerSkillEvent {
+                initiator: entity,
+                skill: *skill_entity,
+                target: cursor_position.pair,
+            });
+            break;
         }
     }
 }

@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use avian2d::sync::SyncPlugin;
 use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
+use lightyear::prelude::client::is_in_rollback;
 
 use crate::character_controller::CharacterControllerPlugin;
 
@@ -15,9 +16,7 @@ use crate::projectile::{
 };
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
-use crate::skill::{
-    on_skill_bow_attack, on_skill_split_attack, SkillBowAttackEvent, SkillSplitArrowEvent,
-};
+use crate::skill::*;
 
 /// Number of pixels per one meter
 pub const PIXEL_METER: f32 = 32.;
@@ -36,6 +35,18 @@ pub const PLAYER_BASE_HEALTH: f32 = 100.;
 pub const ENEMY_BASE_HEALTH: f32 = 20.;
 
 pub const PLAYER_BASE_MANA: f32 = 100.;
+
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+pub enum GameSimulationSet {
+    ApplyPassiveEffects,
+    RegisterSkills,
+    TriggerSkills,
+    ExcecuteSkills,
+    SpawnSkills,
+    RegisterHitEvents,
+    ConsumeHitEvents,
+    Others,
+}
 
 #[derive(Clone)]
 pub struct SharedPlugin;
@@ -58,51 +69,78 @@ impl Plugin for SharedPlugin {
         });
         app.insert_resource(Time::<Fixed>::from_hz(FIXED_TIMESTEP_HZ));
         app.insert_resource(Gravity(Vec2::ZERO));
+        app.insert_resource(SkillDb::default());
 
         app.add_event::<SpawnProjectileEvent>();
         app.add_event::<HitEvent>();
-        app.add_event::<SkillBowAttackEvent>();
-        app.add_event::<SkillSplitArrowEvent>();
+        app.add_event::<TriggerSkillEvent>();
+        app.add_event::<ExcecuteSkillEvent>();
 
-        app.add_systems(
+        app.configure_sets(
             FixedUpdate,
             (
-                mana_regeneration,
-                handle_input_move_wasd,
-                handle_input_skill_slot,
-                enemy_movement_behavior,
-                process_projectile_distance,
-                process_projectile_collisions,
+                GameSimulationSet::Others,
+                GameSimulationSet::ApplyPassiveEffects,
+                GameSimulationSet::RegisterSkills,
+                GameSimulationSet::TriggerSkills,
+                GameSimulationSet::ExcecuteSkills,
+                GameSimulationSet::RegisterHitEvents,
+                GameSimulationSet::ConsumeHitEvents,
             )
                 .chain(),
         );
 
         app.add_systems(
             FixedUpdate,
-            on_skill_bow_attack
-                .run_if(on_event::<SkillBowAttackEvent>)
-                .after(handle_input_skill_slot),
+            (
+                mana_regeneration,
+                progress_skill_cooldown_timers.run_if(not(is_in_rollback)),
+            )
+                .in_set(GameSimulationSet::ApplyPassiveEffects),
         );
+
         app.add_systems(
             FixedUpdate,
-            on_skill_split_attack
-                .run_if(on_event::<SkillSplitArrowEvent>)
-                .after(handle_input_skill_slot),
+            (handle_input_move_wasd, handle_input_skill_slot)
+                .in_set(GameSimulationSet::RegisterSkills),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            on_trigger_skill_event
+                .run_if(on_event::<TriggerSkillEvent>)
+                .in_set(GameSimulationSet::TriggerSkills),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            on_execute_skill_projectile_event
+                .run_if(on_event::<ExcecuteSkillEvent>)
+                .in_set(GameSimulationSet::ExcecuteSkills),
         );
         app.add_systems(
             FixedUpdate,
             on_spawn_projectile_event
                 .run_if(on_event::<SpawnProjectileEvent>)
-                // TODO: Create a set where we handle skill behaviour (create event for projectile/aoe...)
-                // And a set where we react to those events (spawn projectile/aoe)
-                .after(on_skill_bow_attack)
-                .after(on_skill_split_attack),
+                .in_set(GameSimulationSet::SpawnSkills),
         );
+
+        app.add_systems(
+            FixedUpdate,
+            (process_projectile_collisions).in_set(GameSimulationSet::RegisterHitEvents),
+        );
+
         app.add_systems(
             FixedUpdate,
             on_hit_event
                 .run_if(on_event::<HitEvent>)
-                .after(process_projectile_collisions),
+                .in_set(GameSimulationSet::ConsumeHitEvents),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            (enemy_movement_behavior, process_projectile_distance)
+                .in_set(GameSimulationSet::Others),
         );
     }
 }

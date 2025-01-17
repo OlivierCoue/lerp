@@ -10,7 +10,7 @@ use crate::{
     physics::PhysicsBundle,
     protocol::*,
     shared::{PLAYER_BASE_HEALTH, PLAYER_BASE_MANA, PLAYER_BASE_MOVEMENT_SPEED, PLAYER_SIZE},
-    skill::SkillName,
+    skill::{SkillName, SkillsAvailable},
 };
 
 #[derive(Bundle)]
@@ -23,6 +23,7 @@ pub struct PlayerBundle {
     health: Health,
     mana: Mana,
     skill_slot_map: SkillSlotMap,
+    pub skills_available: SkillsAvailable,
 }
 impl Default for PlayerBundle {
     fn default() -> Self {
@@ -38,6 +39,7 @@ impl Default for PlayerBundle {
             health: Health::new(PLAYER_BASE_HEALTH),
             mana: Mana::new(PLAYER_BASE_MANA),
             skill_slot_map,
+            skills_available: SkillsAvailable::default(),
         }
     }
 }

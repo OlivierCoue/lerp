@@ -18,7 +18,7 @@ pub fn mana_regeneration(
     mut mana_q: Query<&mut Mana, (Or<(With<Predicted>, With<ReplicationTarget>)>,)>,
 ) {
     for mut mana in mana_q.iter_mut() {
-        let regen_amount = 50. * time.delta_secs();
+        let regen_amount = 20. * time.delta_secs();
 
         mana.current = (mana.current + regen_amount).min(mana.max).max(0.);
     }

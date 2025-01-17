@@ -109,7 +109,7 @@ pub fn update_mana_bar(
         if let Ok(mana) = mana_q.get(parent.get()) {
             let mana_bar_width = get_resource_bar_width(mana.current, mana.max);
             let mana_bar_translation_x = get_resource_bar_translation_x(mana_bar_width);
-            sprite.custom_size = Some(Vec2::new(mana_bar_width, HEALTH_BAR_HEIGHT));
+            sprite.custom_size = Some(Vec2::new(mana_bar_width, MANA_BAR_HEIGHT));
             transform.translation.x = mana_bar_translation_x;
         }
     }

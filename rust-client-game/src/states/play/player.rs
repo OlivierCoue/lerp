@@ -8,6 +8,7 @@ use rust_common_game::input::PlayerActions;
 use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
+use rust_common_game::skill::*;
 
 pub fn handle_new_client(
     mut client_query: Query<
@@ -28,6 +29,7 @@ pub fn handle_new_player(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut player_query: Query<(Entity, Has<Controlled>), (Added<Predicted>, With<Player>)>,
+    skill_db: Res<SkillDb>,
 ) {
     for (entity, controlled) in player_query.iter_mut() {
         println!("[handle_new_player] New Player");
@@ -39,9 +41,16 @@ pub fn handle_new_player(
             "assets/atlas_player_idle.png",
         );
 
+        let mut player_bundle = PlayerBundle::from_protocol();
+        attach_all_skills(
+            &mut commands,
+            entity,
+            &mut player_bundle.skills_available,
+            &skill_db,
+        );
         commands
             .entity(entity)
-            .insert_if_new(PlayerBundle::from_protocol())
+            .insert_if_new(player_bundle)
             .insert((
                 PlaySceneTag,
                 TransformInterpolation,

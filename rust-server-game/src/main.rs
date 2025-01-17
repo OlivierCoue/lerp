@@ -11,11 +11,12 @@ use enemy::EnemyPlugin;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
-use rust_common_game::hit::HitEvent;
 use rust_common_game::input::PlayerActions;
 use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::settings::*;
+use rust_common_game::skill::*;
+
 use std::net::SocketAddr;
 use std::time::Duration;
 
@@ -35,13 +36,22 @@ fn handle_connections(
     mut connections: EventReader<ConnectEvent>,
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
+    skill_db: Res<SkillDb>,
 ) {
     for connection in connections.read() {
         let client_id = connection.client_id;
         info!("New client {:?}", client_id);
 
-        let player = (
-            PlayerBundle::new(client_id, &Vec2::new(0., 0.)),
+        let player_id = commands.spawn_empty().id();
+        let mut player_bundle = PlayerBundle::new(client_id, &Vec2::new(0., 0.));
+        attach_all_skills(
+            &mut commands,
+            player_id,
+            &mut player_bundle.skills_available,
+            &skill_db,
+        );
+        commands.entity(player_id).insert((
+            player_bundle,
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::All,
@@ -57,15 +67,14 @@ fn handle_connections(
                 group: REPLICATION_GROUP,
                 ..default()
             },
-        );
-        let player = commands.spawn(player).id();
+        ));
 
         let player_client = (
             PlayerClient {
                 client_id,
                 rtt: Duration::ZERO,
                 jitter: Duration::ZERO,
-                player_ref: player,
+                player_ref: player_id,
             },
             Replicate {
                 sync: SyncTarget {
@@ -85,7 +94,7 @@ fn handle_connections(
         );
         commands.spawn(player_client);
 
-        client_player_map.0.insert(client_id, player);
+        client_player_map.0.insert(client_id, player_id);
     }
 }
 

@@ -20,12 +20,14 @@ pub struct Projectile;
 #[derive(Event)]
 pub struct SpawnProjectileEvent {
     pub client_id: Option<ClientId>,
+    pub skill_source: Entity,
     pub from_position: Vec2,
     pub direction: Vec2,
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct ProjectileData {
+    pub skill_source: Entity,
     pub max_distance: f32,
     pub distance_traveled: f32,
 }
@@ -46,7 +48,11 @@ impl Default for ProjectileBundle {
     fn default() -> Self {
         Self {
             marker: Projectile,
-            data: ProjectileData::default(),
+            data: ProjectileData {
+                skill_source: Entity::PLACEHOLDER,
+                max_distance: 0.,
+                distance_traveled: 0.,
+            },
             physics: Self::physics(),
             position: Position::default(),
             previous_position: PreviousPosition::default(),
@@ -55,9 +61,10 @@ impl Default for ProjectileBundle {
     }
 }
 impl ProjectileBundle {
-    pub fn new(position: &Vec2, linear_velocity: &Vec2) -> Self {
+    pub fn new(position: &Vec2, linear_velocity: &Vec2, skill_source: Entity) -> Self {
         Self {
             data: ProjectileData {
+                skill_source,
                 max_distance: 10. * PIXEL_METER,
                 distance_traveled: 0.,
             },
@@ -89,7 +96,7 @@ pub fn on_spawn_projectile_event(
 
         let projectile_entity = commands
             .spawn((
-                ProjectileBundle::new(&event.from_position, &linear_velocity),
+                ProjectileBundle::new(&event.from_position, &linear_velocity, event.skill_source),
                 PreSpawnedPlayerObject::default_with_salt(
                     event.client_id.map_or(0, |c| c.to_bits()),
                 ),
@@ -170,7 +177,7 @@ pub fn process_projectile_collisions(
             continue;
         }
 
-        if projectile_q.get(contacts.entity1).is_ok() {
+        if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity1) {
             let collide_with_wall = wall_q.get(contacts.entity2).is_ok();
             let collide_with_enemy = enemy_q.get(contacts.entity2).is_ok();
 
@@ -186,12 +193,13 @@ pub fn process_projectile_collisions(
             if collide_with_enemy {
                 hit_events.send(HitEvent {
                     hit_source: contacts.entity1,
+                    hit_skill_source: projectile_data.skill_source,
                     hit_target: contacts.entity2,
                 });
             }
         }
 
-        if projectile_q.get(contacts.entity2).is_ok() {
+        if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity2) {
             let collide_with_wall = wall_q.get(contacts.entity1).is_ok();
             let collide_with_enemy = enemy_q.get(contacts.entity1).is_ok();
 
@@ -208,6 +216,7 @@ pub fn process_projectile_collisions(
             if collide_with_enemy {
                 hit_events.send(HitEvent {
                     hit_source: contacts.entity2,
+                    hit_skill_source: projectile_data.skill_source,
                     hit_target: contacts.entity1,
                 });
             }
