@@ -11,8 +11,7 @@ use crate::hit::{on_hit_event, HitEvent};
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::mana::mana_regeneration;
 use crate::projectile::{
-    on_spawn_projectile_event, process_projectile_collisions, process_projectile_distance,
-    SpawnProjectileEvent,
+    on_execute_skill_projectile_event, process_projectile_collisions, process_projectile_distance,
 };
 use crate::protocol::*;
 use crate::settings::FIXED_TIMESTEP_HZ;
@@ -71,7 +70,6 @@ impl Plugin for SharedPlugin {
         app.insert_resource(Gravity(Vec2::ZERO));
         app.insert_resource(SkillDb::default());
 
-        app.add_event::<SpawnProjectileEvent>();
         app.add_event::<HitEvent>();
         app.add_event::<TriggerSkillEvent>();
         app.add_event::<ExcecuteSkillEvent>();
@@ -117,12 +115,6 @@ impl Plugin for SharedPlugin {
             on_execute_skill_projectile_event
                 .run_if(on_event::<ExcecuteSkillEvent>)
                 .in_set(GameSimulationSet::ExcecuteSkills),
-        );
-        app.add_systems(
-            FixedUpdate,
-            on_spawn_projectile_event
-                .run_if(on_event::<SpawnProjectileEvent>)
-                .in_set(GameSimulationSet::SpawnSkills),
         );
 
         app.add_systems(

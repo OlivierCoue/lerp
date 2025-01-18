@@ -102,7 +102,7 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Health>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Simple);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Mana>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);

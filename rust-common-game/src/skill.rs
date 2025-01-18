@@ -1,15 +1,16 @@
 use std::time::Duration;
 
-use avian2d::prelude::Position;
+use crate::mana::Mana;
+use crate::utils::xor_u64s;
 use bevy::{prelude::*, utils::HashMap};
+use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{mana::Mana, projectile::SpawnProjectileEvent, protocol::Player};
-
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Debug, Copy, Reflect)]
+#[repr(u64)]
 pub enum SkillName {
-    BowAttack,
-    SplitArrow,
+    BowAttack = 1,
+    SplitArrow = 2,
 }
 impl SkillName {
     /// You could use the `strum` crate to derive this automatically!
@@ -31,6 +32,7 @@ pub struct ExcecuteSkillEvent {
     pub initiator: Entity,
     pub skill: Entity,
     pub target: Vec2,
+    pub skill_instance_hash: u64,
 }
 
 #[derive(Event)]
@@ -45,6 +47,9 @@ pub struct SkillData {
     pub projectile: Option<SkillProjectile>,
     pub damage_on_hit: Option<SkillDamageOnHit>,
 }
+
+#[derive(Component, Default, Deref)]
+pub struct SkillInstanceHash(pub u64);
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Skill(pub SkillName);
@@ -62,6 +67,7 @@ pub struct SkillCooldown {
 #[derive(Component, Clone, Copy)]
 pub struct SkillProjectile {
     pub count: f32,
+    pub pierce_count: u32,
 }
 
 #[derive(Component, Clone, Copy)]
@@ -81,7 +87,10 @@ impl Default for SkillDb {
             SkillData {
                 cooldown: Duration::from_millis(200),
                 cost: Some(SkillCost { mana: 6. }),
-                projectile: Some(SkillProjectile { count: 1. }),
+                projectile: Some(SkillProjectile {
+                    count: 1.,
+                    pierce_count: 0,
+                }),
                 damage_on_hit: Some(SkillDamageOnHit { value: 10. }),
             },
         );
@@ -90,7 +99,10 @@ impl Default for SkillDb {
             SkillData {
                 cooldown: Duration::from_millis(200),
                 cost: Some(SkillCost { mana: 8. }),
-                projectile: Some(SkillProjectile { count: 3. }),
+                projectile: Some(SkillProjectile {
+                    count: 3.,
+                    pierce_count: 2,
+                }),
                 damage_on_hit: Some(SkillDamageOnHit { value: 7. }),
             },
         );
@@ -101,6 +113,16 @@ impl Default for SkillDb {
 #[derive(Component, Deref, DerefMut, Default)]
 pub struct SkillsAvailable {
     pub map: HashMap<SkillName, Entity>,
+}
+
+#[derive(Component)]
+pub struct DamageOnHit {
+    pub value: f32,
+}
+
+#[derive(Component)]
+pub struct Pierce {
+    pub count: u32,
 }
 
 pub fn attach_skill(
@@ -155,13 +177,14 @@ pub fn progress_skill_cooldown_timers(
 }
 
 pub fn on_trigger_skill_event(
+    tick_manager: Res<TickManager>,
     mut trigger_skill_ev: EventReader<TriggerSkillEvent>,
     mut excecute_skill_ev: EventWriter<ExcecuteSkillEvent>,
     mut skill_q: Query<(&Skill, &mut SkillCooldown, Option<&SkillCost>), With<Skill>>,
     mut initiator_q: Query<&mut Mana, Without<Skill>>,
 ) {
     for event in trigger_skill_ev.read() {
-        let Ok((_, mut skill_cooldown, skill_cost)) = skill_q.get_mut(event.skill) else {
+        let Ok((skill, mut skill_cooldown, skill_cost)) = skill_q.get_mut(event.skill) else {
             println!("[on_trigger_skill_event] Cannot find skill entity");
             continue;
         };
@@ -185,78 +208,13 @@ pub fn on_trigger_skill_event(
             initiator_mana.current = mana_after_use;
         }
 
+        let skill_instance_hash = xor_u64s(&[skill.0 as u64, tick_manager.tick().0 as u64]);
+
         excecute_skill_ev.send(ExcecuteSkillEvent {
             initiator: event.initiator,
             skill: event.skill,
             target: event.target,
+            skill_instance_hash,
         });
     }
-}
-
-pub fn on_execute_skill_projectile_event(
-    mut excecute_skill_ev: EventReader<ExcecuteSkillEvent>,
-    mut spawn_projectile_events: EventWriter<SpawnProjectileEvent>,
-    skill_projectile_q: Query<(Entity, &SkillProjectile), With<Skill>>,
-    initiator_q: Query<(&Position, Option<&Player>), Without<Skill>>,
-) {
-    for event in excecute_skill_ev.read() {
-        let Ok((skill_entity, skill_projectile)) = skill_projectile_q.get(event.skill) else {
-            continue;
-        };
-        let Ok((initiator_position, initiator_player)) = initiator_q.get(event.initiator) else {
-            println!("[on_execute_skill_projetile_event] Cannot find initiator entity");
-            continue;
-        };
-        let directions = generate_fan_projectile_directions(
-            initiator_position.0,
-            event.target,
-            skill_projectile.count.ceil() as u32,
-            20.,
-        );
-
-        for direction in directions {
-            spawn_projectile_events.send(SpawnProjectileEvent {
-                client_id: initiator_player.map(|p| p.0),
-                skill_source: skill_entity,
-                from_position: initiator_position.0,
-                direction,
-            });
-        }
-    }
-}
-
-fn generate_fan_projectile_directions(
-    from: Vec2,
-    target: Vec2,
-    count: u32,
-    angle: f32,
-) -> Vec<Vec2> {
-    if count == 0 {
-        return Vec::new();
-    }
-
-    // Calculate the straight direction (normalized)
-    let direction = (target - from).normalize();
-
-    // Convert the angle to radians
-    let angle_rad = angle.to_radians();
-
-    // Calculate the initial rotation angle (to center the fan)
-    let total_angle = angle_rad * (count as f32 - 1.0);
-    let start_angle = -total_angle / 2.0;
-
-    // Helper to rotate a vector by a given angle
-    let rotate = |v: Vec2, angle: f32| {
-        let cos = angle.cos();
-        let sin = angle.sin();
-        Vec2::new(v.x * cos - v.y * sin, v.x * sin + v.y * cos)
-    };
-
-    // Generate directions
-    (0..count)
-        .map(|i| {
-            let current_angle = start_angle + angle_rad * i as f32;
-            rotate(direction, current_angle)
-        })
-        .collect()
 }

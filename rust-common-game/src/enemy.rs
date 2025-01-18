@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     character_controller::CharacterController,
     health::Health,
+    hit::{HitTracker, Hittable},
     physics::PhysicsBundle,
     protocol::*,
     shared::{ENEMY_BASE_HEALTH, ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
@@ -24,6 +25,8 @@ pub struct EnemyBundle {
     character_controller: CharacterController,
     movement_speed: MovementSpeed,
     health: Health,
+    hittable: Hittable,
+    hit_tracker: HitTracker,
 }
 impl Default for EnemyBundle {
     fn default() -> Self {
@@ -34,6 +37,8 @@ impl Default for EnemyBundle {
             character_controller: CharacterController,
             movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
             health: Health::new(ENEMY_BASE_HEALTH),
+            hittable: Hittable,
+            hit_tracker: HitTracker::default(),
         }
     }
 }
