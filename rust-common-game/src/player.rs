@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::*;
@@ -10,7 +12,7 @@ use crate::{
     physics::PhysicsBundle,
     protocol::*,
     shared::{PLAYER_BASE_HEALTH, PLAYER_BASE_MANA, PLAYER_BASE_MOVEMENT_SPEED, PLAYER_SIZE},
-    skill::{SkillName, SkillsAvailable},
+    skill::{SkillName, SkillSpeed, SkillsAvailable},
 };
 
 #[derive(Bundle)]
@@ -24,12 +26,14 @@ pub struct PlayerBundle {
     mana: Mana,
     skill_slot_map: SkillSlotMap,
     pub skills_available: SkillsAvailable,
+    skill_speed: SkillSpeed,
 }
 impl Default for PlayerBundle {
     fn default() -> Self {
         let mut skill_slot_map = SkillSlotMap::default();
         skill_slot_map.insert(PlayerActions::SkillSlot1, SkillName::BowAttack);
         skill_slot_map.insert(PlayerActions::SkillSlot2, SkillName::SplitArrow);
+        skill_slot_map.insert(PlayerActions::SkillSlot3, SkillName::FlowerArrow);
         Self {
             marker: Player(ClientId::Netcode(0)),
             physics: Self::physics(),
@@ -40,6 +44,9 @@ impl Default for PlayerBundle {
             mana: Mana::new(PLAYER_BASE_MANA),
             skill_slot_map,
             skills_available: SkillsAvailable::default(),
+            skill_speed: SkillSpeed {
+                value: Duration::from_millis(200),
+            },
         }
     }
 }

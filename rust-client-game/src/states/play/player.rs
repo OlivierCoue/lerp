@@ -78,6 +78,7 @@ pub fn handle_new_player(
                     (PlayerActions::MoveDown, KeyCode::KeyS),
                     (PlayerActions::MoveLeft, KeyCode::KeyA),
                     (PlayerActions::MoveRight, KeyCode::KeyD),
+                    (PlayerActions::SkillSlot3, KeyCode::KeyE),
                 ])
                 .with(PlayerActions::SkillSlot1, MouseButton::Left)
                 .with(PlayerActions::SkillSlot2, MouseButton::Right),

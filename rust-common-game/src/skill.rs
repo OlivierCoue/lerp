@@ -11,12 +11,13 @@ use serde::{Deserialize, Serialize};
 pub enum SkillName {
     BowAttack = 1,
     SplitArrow = 2,
+    FlowerArrow = 3,
 }
 impl SkillName {
     /// You could use the `strum` crate to derive this automatically!
     pub fn variants() -> impl Iterator<Item = SkillName> {
         use SkillName::*;
-        [BowAttack, SplitArrow].iter().copied()
+        [BowAttack, SplitArrow, FlowerArrow].iter().copied()
     }
 }
 
@@ -27,7 +28,7 @@ pub struct TriggerSkillEvent {
     pub target: Vec2,
 }
 
-#[derive(Event)]
+#[derive(Event, Clone, Copy)]
 pub struct ExcecuteSkillEvent {
     pub initiator: Entity,
     pub skill: Entity,
@@ -35,14 +36,8 @@ pub struct ExcecuteSkillEvent {
     pub skill_instance_hash: u64,
 }
 
-#[derive(Event)]
-pub struct AttachSkillEvent {
-    pub to: Entity,
-    pub skill_name: SkillName,
-}
-
 pub struct SkillData {
-    pub cooldown: Duration,
+    pub cooldown: Option<Duration>,
     pub cost: Option<SkillCost>,
     pub projectile: Option<SkillProjectile>,
     pub damage_on_hit: Option<SkillDamageOnHit>,
@@ -50,6 +45,18 @@ pub struct SkillData {
 
 #[derive(Component, Default, Deref)]
 pub struct SkillInstanceHash(pub u64);
+
+#[derive(Component)]
+pub struct SkillInProgress {
+    pub timer: Timer,
+    pub excecute_sent: bool,
+    pub excecute_skill_event: ExcecuteSkillEvent,
+}
+
+#[derive(Component)]
+pub struct SkillSpeed {
+    pub value: Duration,
+}
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Skill(pub SkillName);
@@ -85,7 +92,7 @@ impl Default for SkillDb {
         map.insert(
             SkillName::BowAttack,
             SkillData {
-                cooldown: Duration::from_millis(200),
+                cooldown: None,
                 cost: Some(SkillCost { mana: 6. }),
                 projectile: Some(SkillProjectile {
                     count: 1.,
@@ -97,13 +104,25 @@ impl Default for SkillDb {
         map.insert(
             SkillName::SplitArrow,
             SkillData {
-                cooldown: Duration::from_millis(200),
+                cooldown: None,
                 cost: Some(SkillCost { mana: 8. }),
                 projectile: Some(SkillProjectile {
                     count: 3.,
                     pierce_count: 2,
                 }),
                 damage_on_hit: Some(SkillDamageOnHit { value: 7. }),
+            },
+        );
+        map.insert(
+            SkillName::FlowerArrow,
+            SkillData {
+                cooldown: Some(Duration::from_millis(3000)),
+                cost: Some(SkillCost { mana: 30. }),
+                projectile: Some(SkillProjectile {
+                    count: 20.,
+                    pierce_count: 99,
+                }),
+                damage_on_hit: Some(SkillDamageOnHit { value: 100. }),
             },
         );
         Self { map }
@@ -136,9 +155,11 @@ pub fn attach_skill(
     commands.entity(to).with_children(|parent| {
         let mut skill = parent.spawn((Skill(*skill_name),));
 
-        skill.insert(SkillCooldown {
-            timer: Timer::new(skill_data.cooldown, TimerMode::Once),
-        });
+        if let Some(cooldown) = skill_data.cooldown {
+            skill.insert(SkillCooldown {
+                timer: Timer::new(cooldown, TimerMode::Once),
+            });
+        }
 
         if let Some(cost) = skill_data.cost {
             skill.insert(cost);
@@ -178,43 +199,97 @@ pub fn progress_skill_cooldown_timers(
 
 pub fn on_trigger_skill_event(
     tick_manager: Res<TickManager>,
+    mut commands: Commands,
     mut trigger_skill_ev: EventReader<TriggerSkillEvent>,
-    mut excecute_skill_ev: EventWriter<ExcecuteSkillEvent>,
-    mut skill_q: Query<(&Skill, &mut SkillCooldown, Option<&SkillCost>), With<Skill>>,
-    mut initiator_q: Query<&mut Mana, Without<Skill>>,
+    mut skill_q: Query<(&Skill, Option<&mut SkillCooldown>, Option<&SkillCost>), With<Skill>>,
+    mut initiator_q: Query<(Entity, &SkillSpeed, &mut Mana, Has<SkillInProgress>), Without<Skill>>,
 ) {
     for event in trigger_skill_ev.read() {
-        let Ok((skill, mut skill_cooldown, skill_cost)) = skill_q.get_mut(event.skill) else {
+        let Ok((skill, skill_cooldown, skill_cost)) = skill_q.get_mut(event.skill) else {
             println!("[on_trigger_skill_event] Cannot find skill entity");
             continue;
         };
 
-        if skill_cooldown.timer.finished() {
-            skill_cooldown.timer.reset();
-        } else {
-            continue;
-        }
-
-        let Ok(mut initiator_mana) = initiator_q.get_mut(event.initiator) else {
+        let Ok((
+            initiator_entity,
+            initiator_skill_speed,
+            mut initiator_mana,
+            initiator_has_skill_in_progress,
+        )) = initiator_q.get_mut(event.initiator)
+        else {
             println!("[on_trigger_skill_event] Cannot find initiator entity");
             continue;
         };
 
+        // 1. Check if the initiator can trigger the skill
+
+        // Check that no other skill is already in progress
+        if initiator_has_skill_in_progress {
+            continue;
+        }
+
+        // Check that the skill is not in cooldown
+        if let Some(skill_cooldown) = &skill_cooldown {
+            if !skill_cooldown.timer.finished() {
+                continue;
+            }
+        }
+
+        // Check that the initiator as enouth resources (and save values)
+        let mut mana_after_use = initiator_mana.current;
         if let Some(skill_cost) = skill_cost {
-            let mana_after_use = initiator_mana.current - skill_cost.mana;
+            mana_after_use = initiator_mana.current - skill_cost.mana;
             if mana_after_use < 0. {
                 continue;
             }
+        }
+
+        // 2. Actually trigger the skill
+
+        // Start cooldown
+        if let Some(mut skill_cooldown) = skill_cooldown {
+            skill_cooldown.timer.reset();
+        }
+
+        // Consume resources (from saved values)
+        if skill_cost.is_some() {
             initiator_mana.current = mana_after_use;
         }
 
         let skill_instance_hash = xor_u64s(&[skill.0 as u64, tick_manager.tick().0 as u64]);
 
-        excecute_skill_ev.send(ExcecuteSkillEvent {
-            initiator: event.initiator,
-            skill: event.skill,
-            target: event.target,
-            skill_instance_hash,
+        commands.entity(initiator_entity).insert(SkillInProgress {
+            timer: Timer::new(initiator_skill_speed.value, TimerMode::Once),
+            excecute_sent: false,
+            excecute_skill_event: ExcecuteSkillEvent {
+                initiator: event.initiator,
+                skill: event.skill,
+                target: event.target,
+                skill_instance_hash,
+            },
         });
+    }
+}
+
+pub fn progress_skill_in_progress_timers(
+    time: Res<Time<Fixed>>,
+    mut commands: Commands,
+    mut excecute_skill_ev: EventWriter<ExcecuteSkillEvent>,
+    mut skill_in_progress_q: Query<(Entity, &mut SkillInProgress)>,
+) {
+    for (entity, mut skill_in_progress) in skill_in_progress_q.iter_mut() {
+        skill_in_progress.timer.tick(time.delta());
+
+        if !skill_in_progress.excecute_sent
+            && skill_in_progress.timer.remaining_secs()
+                <= skill_in_progress.timer.duration().as_secs_f32() * 0.66
+        {
+            excecute_skill_ev.send(skill_in_progress.excecute_skill_event);
+            skill_in_progress.excecute_sent = true
+        }
+
+        if skill_in_progress.timer.finished() {
+            commands.entity(entity).remove::<SkillInProgress>();
+        }
     }
 }

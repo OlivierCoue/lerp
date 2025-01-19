@@ -105,8 +105,11 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
-            on_trigger_skill_event
-                .run_if(on_event::<TriggerSkillEvent>)
+            (
+                on_trigger_skill_event.run_if(on_event::<TriggerSkillEvent>),
+                progress_skill_in_progress_timers,
+            )
+                .chain()
                 .in_set(GameSimulationSet::TriggerSkills),
         );
 

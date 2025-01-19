@@ -2,8 +2,8 @@ mod animation;
 mod camera;
 mod debug;
 mod enemy;
-mod health_bar;
 mod map;
+mod name_plate;
 mod player;
 mod projectile;
 
@@ -22,12 +22,13 @@ use bevy::prelude::*;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use enemy::handle_new_enemy;
-use health_bar::handle_new_resource_bar;
-use health_bar::update_health_bar;
-use health_bar::update_mana_bar;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
+use name_plate::handle_new_name_plate;
+use name_plate::update_health_bar;
+use name_plate::update_mana_bar;
+use name_plate::update_skill_in_progress_bar;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
 use rust_common_game::protocol::Channel1;
@@ -250,9 +251,10 @@ impl Plugin for PlayPlugin {
                 handle_new_enemy,
                 handle_new_projectile,
                 handle_removed_projectile,
-                handle_new_resource_bar,
+                handle_new_name_plate,
                 update_health_bar,
                 update_mana_bar,
+                update_skill_in_progress_bar,
                 animate_sprite,
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,

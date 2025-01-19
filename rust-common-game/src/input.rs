@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     protocol::*,
-    skill::{SkillName, SkillsAvailable, TriggerSkillEvent},
+    skill::{SkillInProgress, SkillName, SkillsAvailable, TriggerSkillEvent},
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -31,6 +31,7 @@ pub enum PlayerActions {
     MoveRight,
     SkillSlot1,
     SkillSlot2,
+    SkillSlot3,
     #[actionlike(DualAxis)]
     Cursor,
 }
@@ -38,7 +39,7 @@ impl PlayerActions {
     /// You could use the `strum` crate to derive this automatically!
     pub fn variants() -> impl Iterator<Item = PlayerActions> {
         use PlayerActions::*;
-        [SkillSlot1, SkillSlot2].iter().copied()
+        [SkillSlot1, SkillSlot2, SkillSlot3].iter().copied()
     }
 }
 
@@ -85,6 +86,7 @@ pub fn handle_input_move_wasd(
             &InputBuffer<PlayerActions>,
             &mut LinearVelocity,
             &MovementSpeed,
+            Has<SkillInProgress>,
         ),
         (With<Player>, Or<(With<Predicted>, With<ReplicationTarget>)>),
     >,
@@ -94,7 +96,9 @@ pub fn handle_input_move_wasd(
         .map(|rb| tick_manager.tick_or_rollback_tick(rb))
         .unwrap_or(tick_manager.tick());
 
-    for (action, buffer, mut linear_velocity, movement_speed) in player_query.iter_mut() {
+    for (action, buffer, mut linear_velocity, movement_speed, has_skill_in_progress) in
+        player_query.iter_mut()
+    {
         let action = if buffer.get(tick).is_some() {
             action
         } else {
@@ -123,7 +127,8 @@ pub fn handle_input_move_wasd(
         }
 
         direction = direction.clamp_length_max(1.0);
-        let new_velocity = direction * movement_speed.0;
+        let modifier = if has_skill_in_progress { 0.6 } else { 1. };
+        let new_velocity = direction * movement_speed.0 * modifier;
         if new_velocity != linear_velocity.0 {
             linear_velocity.0 = new_velocity
         }
