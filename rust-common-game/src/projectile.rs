@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use client::{Predicted, PredictionDespawnCommandsExt};
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
@@ -255,6 +255,8 @@ pub fn process_projectile_collisions(
     mut commands: Commands,
     identity: NetworkIdentity,
 ) {
+    let mut despawned_entities = HashSet::new();
+
     // when A and B collide, it can be reported as one of:
     // * A collides with B
     // * B collides with A
@@ -269,7 +271,7 @@ pub fn process_projectile_collisions(
             let collide_with_enemy = enemy_q.get(contacts.entity2).is_ok();
 
             // despawn the projectile if it hit a wall
-            if collide_with_wall {
+            if collide_with_wall && despawned_entities.insert(contacts.entity1) {
                 if identity.is_server() {
                     commands.entity(contacts.entity1).despawn();
                 } else {
@@ -291,7 +293,7 @@ pub fn process_projectile_collisions(
             let collide_with_enemy = enemy_q.get(contacts.entity1).is_ok();
 
             // despawn the projectile if it hit a wall
-            if collide_with_wall {
+            if collide_with_wall && despawned_entities.insert(contacts.entity2) {
                 if identity.is_server() {
                     commands.entity(contacts.entity2).despawn();
                 } else {
@@ -299,7 +301,6 @@ pub fn process_projectile_collisions(
                 }
             }
 
-            // despawn the enemy if it get hit
             if collide_with_enemy {
                 hit_events.send(HitEvent {
                     source: contacts.entity2,

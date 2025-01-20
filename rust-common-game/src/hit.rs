@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{prelude::*, utils::hashbrown::HashSet};
 use lightyear::prelude::{
     client::{Predicted, PredictionDespawnCommandsExt},
     server::ReplicationTarget,
@@ -49,20 +49,26 @@ pub fn on_hit_event(
         ),
     >,
 ) {
+    let mut despawned_entities = HashSet::new();
+
     for event in hit_events.read() {
         let Ok((skill_instance_hash, damage_on_hit, pierce)) = source_q.get_mut(event.source)
         else {
-            error!("[on_hit_event] Hit source does not exist in world");
+            if !despawned_entities.contains(&event.source) {
+                error!("[on_hit_event] Hit source does not exist in world");
+            }
             continue;
         };
 
         let Ok((target_health, target_hit_tracker)) = target.get_mut(event.target) else {
-            error!("[on_hit_event] Hit target does not exist in world");
+            if !despawned_entities.contains(&event.target) {
+                error!("[on_hit_event] Hit target does not exist in world");
+            }
             continue;
         };
 
         // If the target have a HitTracker, insert the skill instance hash in it.
-        // If it was already in, then we stop and do not apply any on hit effetc.
+        // If it was already in, then we stop and do not apply any on hit effect.
         // This prevent shotguning.
         if let Some(mut target_hit_tracker) = target_hit_tracker {
             if !target_hit_tracker.insert(**skill_instance_hash) {
@@ -76,7 +82,7 @@ pub fn on_hit_event(
                 .min(target_health.max)
                 .max(0.);
 
-            if target_health.current == 0. {
+            if target_health.current == 0. && despawned_entities.insert(event.target) {
                 if identity.is_server() {
                     commands.entity(event.target).despawn();
                 } else {
@@ -93,10 +99,12 @@ pub fn on_hit_event(
             }
         }
 
-        if identity.is_server() {
-            commands.entity(event.source).despawn();
-        } else {
-            commands.entity(event.source).prediction_despawn();
+        if despawned_entities.insert(event.source) {
+            if identity.is_server() {
+                commands.entity(event.source).despawn();
+            } else {
+                commands.entity(event.source).prediction_despawn();
+            }
         }
     }
 }
