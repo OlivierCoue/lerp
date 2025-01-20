@@ -19,6 +19,7 @@ pub fn handle_new_enemy(
             &mut texture_atlas_layouts,
             "assets/atlas_enemy_walk.png",
             "assets/atlas_enemy_idle.png",
+            "assets/atlas_enemy_attack.png",
         );
 
         commands
@@ -34,9 +35,9 @@ pub fn handle_new_enemy(
             .with_children(|parent| {
                 parent.spawn((
                     Sprite::from_atlas_image(
-                        animation_config.texture_idle.clone(),
+                        animation_config.atlas_texture_idle.clone(),
                         TextureAtlas {
-                            layout: animation_config.atlas_idle.clone(),
+                            layout: animation_config.atlas_layout.clone(),
                             index: 0,
                         },
                     ),

@@ -39,6 +39,7 @@ pub fn handle_new_player(
             &mut texture_atlas_layouts,
             "assets/atlas_player_walk.png",
             "assets/atlas_player_idle.png",
+            "assets/atlas_player_attack.png",
         );
 
         let mut player_bundle = PlayerBundle::from_protocol();
@@ -60,9 +61,9 @@ pub fn handle_new_player(
             .with_children(|parent| {
                 parent.spawn((
                     Sprite::from_atlas_image(
-                        animation_config.texture_idle.clone(),
+                        animation_config.atlas_texture_idle.clone(),
                         TextureAtlas {
-                            layout: animation_config.atlas_idle.clone(),
+                            layout: animation_config.atlas_layout.clone(),
                             index: 0,
                         },
                     ),

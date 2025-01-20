@@ -1,15 +1,24 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use rust_common_game::skill::SkillInProgress;
 
-use super::{apply_render_mode, RenderConfig};
+use super::{apply_render_mode, direction::Direction, RenderConfig};
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum AnimationState {
+    Walk,
+    Idle,
+    Attack,
+}
 
 #[derive(Component)]
 pub struct AnimationConfig {
     pub timer: Timer,
-    pub atlas_walk: Handle<TextureAtlasLayout>,
-    pub texture_walk: Handle<Image>,
-    pub atlas_idle: Handle<TextureAtlasLayout>,
-    pub texture_idle: Handle<Image>,
+    pub state: AnimationState,
+    pub atlas_layout: Handle<TextureAtlasLayout>,
+    pub atlas_texture_walk: Handle<Image>,
+    pub atlas_texture_idle: Handle<Image>,
+    pub atlas_texture_attack: Handle<Image>,
 }
 
 impl AnimationConfig {
@@ -18,21 +27,27 @@ impl AnimationConfig {
         texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
         atlas_img_path_walk: &str,
         atlas_img_path_idle: &str,
+        atlas_img_path_attack: &str,
     ) -> Self {
         let layout = TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
+        let atlas_layout = texture_atlas_layouts.add(layout.clone());
 
-        let player_walk_texture: Handle<Image> = asset_server.load(atlas_img_path_walk);
-        let player_walk_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
+        let walk_texture: Handle<Image> = asset_server.load(atlas_img_path_walk);
 
-        let player_idle_texture: Handle<Image> = asset_server.load(atlas_img_path_idle);
-        let player_idle_texture_atlas_layout = texture_atlas_layouts.add(layout.clone());
+        let idle_texture: Handle<Image> = asset_server.load(atlas_img_path_idle);
+
+        let attack_texture: Handle<Image> = asset_server.load(atlas_img_path_attack);
 
         Self {
             timer: Timer::from_seconds(0.1, TimerMode::Repeating),
-            atlas_walk: player_walk_texture_atlas_layout.clone(),
-            texture_walk: player_walk_texture.clone(),
-            atlas_idle: player_idle_texture_atlas_layout,
-            texture_idle: player_idle_texture,
+            state: AnimationState::Idle,
+            atlas_layout,
+
+            atlas_texture_walk: walk_texture,
+
+            atlas_texture_idle: idle_texture,
+
+            atlas_texture_attack: attack_texture,
         }
     }
 }
@@ -40,72 +55,69 @@ impl AnimationConfig {
 pub fn animate_sprite(
     time: Res<Time>,
     render_config: Res<RenderConfig>,
-    query_parent: Query<(&LinearVelocity, &Children), Without<AnimationConfig>>,
+    query_parent: Query<
+        (
+            &LinearVelocity,
+            &Direction,
+            Option<&SkillInProgress>,
+            &Children,
+        ),
+        Without<AnimationConfig>,
+    >,
     mut query_child: Query<(&mut Sprite, &mut AnimationConfig, &Parent), With<AnimationConfig>>,
 ) {
     for (mut sprite, mut animation_config, parent) in &mut query_child {
         animation_config.timer.tick(time.delta());
 
-        if animation_config.timer.just_finished() {
-            let Ok((velocity, _)) = query_parent.get(parent.get()) else {
-                continue;
-            };
+        let Ok((velocity, direction, skill_in_progress, _)) = query_parent.get(parent.get()) else {
+            continue;
+        };
 
-            let mut direction_index = None;
-            let renderered_velocity = apply_render_mode(&render_config, &velocity.0);
+        let renderered_velocity = apply_render_mode(&render_config, &velocity.0);
+        let is_walking = renderered_velocity.length_squared() != 0.0;
 
-            if renderered_velocity.length_squared() != 0.0 {
-                // Calculate the angle in radians and normalize to [0, 2π]
-                let angle = renderered_velocity.y.atan2(renderered_velocity.x); // atan2(y, x) gives the angle relative to the X-axis
-                let mut angle_deg = angle.to_degrees(); // Convert to degrees
-                angle_deg = (angle_deg + 180.0).rem_euclid(360.0); // Normalize negative angles to [0, 360]
+        let new_state = if let Some(_skill_in_progress) = skill_in_progress {
+            AnimationState::Attack
+        } else if is_walking {
+            AnimationState::Walk
+        } else {
+            AnimationState::Idle
+        };
 
-                let adjusted_angle = 360. - ((angle_deg + 270.) % 360.0);
+        let mut state_changed = false;
+        if new_state != animation_config.state {
+            animation_config.state = new_state;
+            state_changed = true;
+        }
 
-                // Map the adjusted angle to one of 16 directions
-                let sector_size = 360.0 / 16.0; // Each direction covers 22.5 degrees
-                direction_index = Some(
-                    ((adjusted_angle + (sector_size / 2.0)) / sector_size).floor() as usize % 16,
-                );
+        if state_changed {
+            match new_state {
+                AnimationState::Attack => {
+                    sprite.image = animation_config.atlas_texture_attack.clone();
+                    let atlas = sprite.texture_atlas.as_mut().unwrap();
+                    atlas.index = 0;
+                }
+                AnimationState::Walk => {
+                    sprite.image = animation_config.atlas_texture_walk.clone();
+                }
+                AnimationState::Idle => {
+                    sprite.image = animation_config.atlas_texture_idle.clone();
+                }
             }
+        }
 
+        if animation_config.timer.just_finished() || state_changed {
             let frame_per_anim = 8;
 
-            if let Some(direction_index) = direction_index {
-                if sprite.image != animation_config.texture_walk {
-                    sprite.image = animation_config.texture_walk.clone();
-                }
+            let atlas = sprite.texture_atlas.as_mut().unwrap();
 
-                if let Some(atlas) = &mut sprite.texture_atlas {
-                    if atlas.layout != animation_config.atlas_walk {
-                        atlas.layout = animation_config.atlas_walk.clone();
-                        atlas.index = 0;
-                    }
+            let first_frame_index = direction.0 * frame_per_anim;
 
-                    let first_frame_index = direction_index * frame_per_anim;
-                    atlas.index = if atlas.index % frame_per_anim == frame_per_anim - 1 {
-                        first_frame_index
-                    } else {
-                        first_frame_index + atlas.index % frame_per_anim + 1
-                    };
-                }
+            atlas.index = if atlas.index % frame_per_anim == frame_per_anim - 1 {
+                first_frame_index
             } else {
-                if sprite.image != animation_config.texture_idle {
-                    sprite.image = animation_config.texture_idle.clone();
-                }
-
-                if let Some(atlas) = &mut sprite.texture_atlas {
-                    if atlas.layout != animation_config.atlas_idle {
-                        atlas.layout = animation_config.atlas_idle.clone();
-                    }
-
-                    if atlas.index % frame_per_anim != 0 {
-                        atlas.index = atlas.index - atlas.index % frame_per_anim
-                    } else {
-                        atlas.index += 1
-                    }
-                }
-            }
+                first_frame_index + atlas.index % frame_per_anim + 1
+            };
         }
     }
 }

@@ -1,6 +1,7 @@
 mod animation;
 mod camera;
 mod debug;
+mod direction;
 mod enemy;
 mod map;
 mod name_plate;
@@ -21,6 +22,7 @@ use bevy::prelude::*;
 
 use bevy_transform_interpolation::TransformEasingSet;
 
+use direction::update_direction;
 use enemy::handle_new_enemy;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
@@ -255,7 +257,7 @@ impl Plugin for PlayPlugin {
                 update_health_bar,
                 update_mana_bar,
                 update_skill_in_progress_bar,
-                animate_sprite,
+                (update_direction, animate_sprite).chain(),
                 debug_draw_confirmed_entities,
                 debug_undraw_confirmed_entities,
                 debug_draw_colliders,

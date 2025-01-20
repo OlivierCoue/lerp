@@ -39,7 +39,7 @@ impl Plugin for LightyearPlugin {
             incoming_loss: 0.00,
         };
 
-        // let server_addr = SocketAddr::new(IpAddr::from_str("35.180.188.74").unwrap(), 34255);
+        // let server_addr = SocketAddr::new(IpAddr::from_str("15.237.150.220").unwrap(), 34255);
         let server_addr = SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), 34255);
         let client_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
 
