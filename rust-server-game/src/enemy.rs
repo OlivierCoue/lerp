@@ -27,7 +27,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
 
     if enemy_state.timer.finished() && enemy_state.count < ENEMY_MAX_COUNT {
         enemy_state.count += 1;
-        let player = (
+        let enemy = (
             EnemyBundle::new(&Vec2::new(0., 0.)),
             Replicate {
                 sync: SyncTarget {
@@ -45,7 +45,7 @@ fn spaw_enemy(mut commands: Commands, time: Res<Time>, mut enemy_state: ResMut<E
                 ..default()
             },
         );
-        commands.spawn(player);
+        commands.spawn(enemy);
     }
 }
 
@@ -55,7 +55,7 @@ impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnemyState {
             timer: Timer::new(Duration::from_millis(10), TimerMode::Repeating),
-            count: 0,
+            count: ENEMY_MAX_COUNT,
         });
         app.add_systems(Update, on_spawn_enemies_message);
         app.add_systems(FixedUpdate, spaw_enemy);

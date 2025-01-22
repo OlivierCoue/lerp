@@ -84,6 +84,7 @@ pub fn enemy_movement_behavior(
     // Store enemy positions for separation
     let enemies_position: Vec<_> = enemies.iter().map(|(pos, _, _)| *pos).collect();
 
+    let mut i = 0;
     for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
         // Retrieve the flow field direction
         let flow_direction = flow_field.get_direction_from_world_position(&enemy_position.0);
@@ -108,13 +109,17 @@ pub fn enemy_movement_behavior(
                 }
             }
         }
+
         // Scale separation force to avoid overpowering flow field
-        separation_force = separation_force.normalize_or_zero() * movement_speed.0 * 0.5;
+        let separation_force_scale = if i % 3 == 0 { 0.5 } else { 0.25 };
+        separation_force =
+            separation_force.normalize_or_zero() * movement_speed.0 * separation_force_scale;
 
         // Combine forces
         let combined_force = flow_field_force + separation_force;
 
         // Update velocity
         enemy_velocity.0 = combined_force.clamp_length_max(movement_speed.0);
+        i += 1;
     }
 }

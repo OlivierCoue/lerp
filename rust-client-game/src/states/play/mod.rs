@@ -34,9 +34,11 @@ use name_plate::update_mana_bar;
 use name_plate::update_skill_in_progress_bar;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
+use rust_common_game::map::generate_map;
 use rust_common_game::protocol::Channel1;
 use rust_common_game::protocol::PlayerClient;
 use rust_common_game::protocol::SpawnEnemies;
+use rust_common_game::utils::CommonPlaySceneTag;
 
 #[derive(Component, Default)]
 pub struct PlaySceneTag;
@@ -173,7 +175,10 @@ fn play_scene_button_logic(
     }
 }
 
-pub fn play_scene_cleanup(mut commands: Commands, query: Query<Entity, With<PlaySceneTag>>) {
+pub fn play_scene_cleanup(
+    mut commands: Commands,
+    query: Query<Entity, Or<(With<PlaySceneTag>, With<CommonPlaySceneTag>)>>,
+) {
     println!("[play_scene_cleanup]");
     commands.disconnect_client();
     for entity in query.iter() {
@@ -233,7 +238,10 @@ pub struct PlayPlugin;
 
 impl Plugin for PlayPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Play), (play_scene_setup, setup_map));
+        app.add_systems(
+            OnEnter(AppState::Play),
+            (play_scene_setup, (generate_map, render_map).chain()),
+        );
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
         app.add_systems(
