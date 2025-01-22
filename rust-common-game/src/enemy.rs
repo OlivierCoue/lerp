@@ -1,5 +1,3 @@
-use core::f32;
-
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
@@ -7,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     character_controller::CharacterController,
+    flow_field::FlowField,
     health::Health,
     hit::{HitTracker, Hittable},
     physics::PhysicsBundle,
@@ -61,27 +60,12 @@ impl EnemyBundle {
 }
 
 pub fn enemy_movement_behavior(
+    flow_field: Res<FlowField>,
     mut query_enemies: Query<
         (&Position, &mut LinearVelocity, &MovementSpeed),
         (With<Enemy>, Or<(With<Predicted>, With<ReplicationTarget>)>),
     >,
-    query_players: Query<
-        &mut Position,
-        (
-            With<Player>,
-            Without<Enemy>,
-            Or<(With<Predicted>, With<ReplicationTarget>)>,
-        ),
-    >,
 ) {
-    // Collect and sort players deterministically
-    let mut player_positions: Vec<_> = query_players.iter().collect();
-    player_positions.sort_by(|a, b| {
-        a.x.partial_cmp(&b.x)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| a.y.partial_cmp(&b.y).unwrap_or(std::cmp::Ordering::Equal))
-    });
-
     // Collect and sort enemies deterministically
     let mut enemies: Vec<_> = query_enemies.iter_mut().collect();
     enemies.sort_by(|(pos_a, _, _), (pos_b, _, _)| {
@@ -100,60 +84,37 @@ pub fn enemy_movement_behavior(
     // Store enemy positions for separation
     let enemies_position: Vec<_> = enemies.iter().map(|(pos, _, _)| *pos).collect();
 
-    // Process each enemy
     for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
-        // Retrieve the position of the nearest player
-        let mut nearest_player_position = None;
-        let mut nearest_player_distance = f32::MAX;
-        for player_position in &player_positions {
-            let distance_to_player = enemy_position.distance(player_position.0);
-            if distance_to_player < nearest_player_distance {
-                nearest_player_distance = distance_to_player;
-                nearest_player_position = Some(player_position)
-            }
-        }
+        // Retrieve the flow field direction
+        let flow_direction = flow_field.get_direction_from_world_position(&enemy_position.0);
 
-        let Some(nearest_player_position) = nearest_player_position else {
-            continue;
-        };
+        // Scale flow field force to movement speed
+        let flow_field_force = flow_direction.map_or(Vec2::ZERO, |d| {
+            d.to_normalized_velocity() * movement_speed.0
+        });
 
-        nearest_player_distance = ((nearest_player_distance * 1000.0).round() as i32 / 1000) as f32;
-
-        if nearest_player_distance > 25. {
-            let target_pos = nearest_player_position.0;
-
-            // Seek behavior
-            let desired_velocity = (target_pos - enemy_position.0).normalize() * movement_speed.0;
-
-            // Arrive behavior
-            let distance = (target_pos - enemy_position.0).length();
-            let slowing_radius = PIXEL_METER;
-            let adjusted_speed = if distance < slowing_radius {
-                movement_speed.0 * (distance / slowing_radius)
-            } else {
-                movement_speed.0
-            };
-            let arrived_velocity = desired_velocity.clamp_length(0.0, adjusted_speed);
-
-            // Separation behavior
-            let mut separation_force = Vec2::ZERO;
-            let separation_distance = 1.0 * PIXEL_METER;
-            for other_position in &enemies_position {
-                if other_position != &enemy_position {
-                    let diff = enemy_position.0 - other_position.0;
-                    let dist_sq = diff.length_squared();
-                    if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
-                        let strength = PIXEL_METER;
-                        separation_force += (diff / dist_sq.sqrt()) * strength;
+        // Separation behavior
+        let mut separation_force = Vec2::ZERO;
+        let separation_distance = 1.0 * PIXEL_METER;
+        for other_position in &enemies_position {
+            if other_position != &enemy_position {
+                let diff = enemy_position.0 - other_position.0;
+                let dist_sq = diff.length_squared();
+                if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
+                    let force = diff / dist_sq.sqrt();
+                    if !force.is_nan() {
+                        separation_force += force;
                     }
                 }
             }
-
-            // Combine behaviors
-            let steering = (arrived_velocity - enemy_velocity.0) + separation_force;
-            enemy_velocity.0 += steering.clamp_length_max(movement_speed.0);
-        } else {
-            enemy_velocity.0 = Vec2::ZERO;
         }
+        // Scale separation force to avoid overpowering flow field
+        separation_force = separation_force.normalize_or_zero() * movement_speed.0 * 0.5;
+
+        // Combine forces
+        let combined_force = flow_field_force + separation_force;
+
+        // Update velocity
+        enemy_velocity.0 = combined_force.clamp_length_max(movement_speed.0);
     }
 }

@@ -42,7 +42,7 @@ pub fn apply_render_mode_radius(render_config: &RenderConfig, r: f32) -> Vec2 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RenderMode {
     Iso,
     Cart,
@@ -57,4 +57,5 @@ pub struct RenderConfig {
 pub struct DebugConfig {
     pub show_colliders: bool,
     pub show_confirmed_entities: bool,
+    pub show_flow_field: bool,
 }

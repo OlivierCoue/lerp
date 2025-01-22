@@ -1,21 +1,37 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::{shared::PIXEL_METER, wall::Wall};
+use rust_common_game::{
+    map::{get_obstacles, MapGrid, MapNode, MapNodePos, MAP_SIZE},
+    shared::PIXEL_METER,
+    wall::Wall,
+};
 
-pub fn setup_map(mut commands: Commands) {
+pub fn setup_map(mut commands: Commands, mut map_grid: ResMut<MapGrid>) {
     println!("[setup_map]");
 
-    for row in 0..100 {
-        for col in 0..100 {
+    map_grid.map.clear();
+    map_grid.size = MAP_SIZE;
+    let obstacles = get_obstacles();
+
+    for x in 0..MAP_SIZE.x {
+        for y in 0..MAP_SIZE.y {
             let center_offest = PIXEL_METER / 2.0;
             let cart_coord = Vec3::new(
-                col as f32 * PIXEL_METER - 1600. + center_offest,
-                row as f32 * PIXEL_METER - 1600. + center_offest,
+                x as f32 * PIXEL_METER - 1600. + center_offest,
+                y as f32 * PIXEL_METER - 1600. + center_offest,
                 0.,
             );
 
-            let is_border = (row == 0) || (row == 99) || (col == 0) || (col == 99);
-            let is_obstacle = row % 6 == 0 && col % 6 == 0;
+            let is_border = (x == 0) || (x == 99) || (y == 0) || (y == 99);
+            let is_obstacle =
+                !is_border && ((x % 6 == 0 && y % 6 == 0) || obstacles.contains(&UVec2::new(x, y)));
+
+            map_grid.map.insert(
+                MapNodePos(UVec2::new(x, y)),
+                MapNode {
+                    walkable: !is_border && !is_obstacle,
+                },
+            );
 
             if is_obstacle && !is_border {
                 commands.spawn((

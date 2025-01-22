@@ -1,3 +1,5 @@
+pub mod flow_field;
+
 use crate::common::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;

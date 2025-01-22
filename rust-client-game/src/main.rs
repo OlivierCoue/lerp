@@ -81,6 +81,7 @@ fn main() {
         .insert_resource(DebugConfig {
             show_colliders: true,
             show_confirmed_entities: true,
+            show_flow_field: false,
         })
         .run();
 }

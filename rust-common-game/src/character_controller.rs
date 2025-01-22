@@ -158,9 +158,7 @@ fn handle_kinematic_controller_collision(
             }
 
             // Slide along the surface, rejecting the velocity along the contact normal.
-            let impulse = linear_velocity
-                .reject_from_normalized(normal)
-                .clamp_length_max(linear_velocity.length());
+            let impulse = linear_velocity.reject_from_normalized(normal);
             linear_velocity.0 = impulse;
         } else {
             // The character is not yet intersecting,
@@ -179,8 +177,7 @@ fn handle_kinematic_controller_collision(
             // Compute the impulse to apply.
             let impulse_magnitude = normal_speed - deepest_penetration / delta_seconds;
             let impulse = impulse_magnitude * normal;
-            linear_velocity.0 =
-                (linear_velocity.0 - impulse).clamp_length_max(linear_velocity.length());
+            linear_velocity.0 -= impulse;
         }
     }
 }

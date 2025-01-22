@@ -11,6 +11,7 @@ enum ButtonAction {
     Logout,
     ToggleDebugShowCollider,
     ToggleDebugShowConfirmed,
+    ToggleDebugShowFlowField,
 }
 
 pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>) {
@@ -158,6 +159,39 @@ pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>)
                         },
                     ));
                 });
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(40.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text("Show flow field".to_string()),
+                        TextFont::from_font_size(12.),
+                    ));
+                    parent.spawn((
+                        ButtonAction::ToggleDebugShowFlowField,
+                        Button,
+                        BorderRadius::MAX,
+                        BackgroundColor(NORMAL_BUTTON),
+                        BorderColor(Color::BLACK),
+                        Node {
+                            width: Val::Px(30.0),
+                            height: Val::Px(30.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        Checkbox {
+                            checked: debug_config.show_flow_field,
+                        },
+                    ));
+                });
         });
 }
 
@@ -199,6 +233,12 @@ fn lobby_scene_button_logic(
                     if let Some(mut checkbox) = checkbox {
                         checkbox.checked = !checkbox.checked;
                         debug_config.show_confirmed_entities = checkbox.checked;
+                    };
+                }
+                ButtonAction::ToggleDebugShowFlowField => {
+                    if let Some(mut checkbox) = checkbox {
+                        checkbox.checked = !checkbox.checked;
+                        debug_config.show_flow_field = checkbox.checked;
                     };
                 }
             },

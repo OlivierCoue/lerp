@@ -3,7 +3,7 @@ mod camera;
 mod debug;
 mod direction;
 mod enemy;
-mod map;
+pub mod map;
 mod name_plate;
 mod player;
 mod projectile;
@@ -24,6 +24,7 @@ use bevy_transform_interpolation::TransformEasingSet;
 
 use direction::update_direction;
 use enemy::handle_new_enemy;
+use flow_field::debug_render_flow_field;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
@@ -270,7 +271,7 @@ impl Plugin for PlayPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (update_rollback_state).run_if(in_state(AppState::Play)),
+            (update_rollback_state, debug_render_flow_field).run_if(in_state(AppState::Play)),
         );
 
         app.add_systems(
