@@ -3,7 +3,7 @@ use crate::map::{TileFloor, TileMapFloor};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTextureIndex};
 use rust_common_game::flow_field::{FlowField, FlowFieldDirection};
-use rust_common_game::map::MapNodePos;
+use rust_common_game::map::NavMapPos;
 
 use super::{DebugConfig, RenderConfig, RenderMode};
 
@@ -24,7 +24,7 @@ pub fn debug_render_flow_field(
 
     for x in 0..flow_field.size.x {
         for y in 0..flow_field.size.y {
-            let map_node_pos = MapNodePos(UVec2::new(x, y));
+            let map_node_pos = NavMapPos(UVec2::new(x, y));
             let Some(flow_field_direction) = flow_field.map.get(&map_node_pos) else {
                 continue;
             };

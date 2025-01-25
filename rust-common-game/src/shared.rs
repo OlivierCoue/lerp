@@ -11,6 +11,7 @@ use crate::flow_field::{update_flow_field, FlowField};
 use crate::hit::{on_hit_event, HitEvent};
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::mana::mana_regeneration;
+
 use crate::map::MapGrid;
 use crate::projectile::{
     on_execute_skill_projectile_event, process_projectile_collisions, process_projectile_distance,
@@ -21,8 +22,13 @@ use crate::skill::*;
 
 /// Number of pixels per one meter
 pub const PIXEL_METER: f32 = 32.;
+
+pub const NAV_TILE_SIZE: f32 = PIXEL_METER / 2.;
+pub const RENDER_TO_NAV_TILE_MULTI: u32 = 5;
+pub const RENDER_TILE_SIZE: f32 = NAV_TILE_SIZE * RENDER_TO_NAV_TILE_MULTI as f32;
+
 /// Diameter of a player collider
-pub const PLAYER_SIZE: f32 = 32.;
+pub const PLAYER_SIZE: f32 = 16.;
 /// Diameter of an enemy collider
 pub const ENEMY_SIZE: f32 = 16.;
 /// Diameter of a projectile collider

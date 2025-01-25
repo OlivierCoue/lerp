@@ -1,6 +1,6 @@
 export $(grep -v '^#' .env | xargs)
 
-cargo build -p rust-client-game --target x86_64-pc-windows-gnu --features bevy/dynamic_linking
+cargo build -p rust-client-game --target x86_64-pc-windows-gnu --features "bevy/dynamic_linking"
 
 cp ./target/x86_64-pc-windows-gnu/debug/rust-client-game.exe "${LERP_GODOT_LOCATION}/export"
 

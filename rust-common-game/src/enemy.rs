@@ -84,10 +84,11 @@ pub fn enemy_movement_behavior(
     // Store enemy positions for separation
     let enemies_position: Vec<_> = enemies.iter().map(|(pos, _, _)| *pos).collect();
 
-    let mut i = 0;
+    let mut i: i32 = 0;
     for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
         // Retrieve the flow field direction
-        let flow_direction = flow_field.get_direction_from_world_position(&enemy_position.0);
+        let flow_direction =
+            flow_field.get_direction_from_world_position(&flow_field.size, &enemy_position.0);
 
         // Scale flow field force to movement speed
         let flow_field_force = flow_direction.map_or(Vec2::ZERO, |d| {

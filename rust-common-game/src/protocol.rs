@@ -111,15 +111,13 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(linear_velocity_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Position>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(position_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
         // Channels
         app.add_channel::<Channel1>(ChannelSettings {
             mode: ChannelMode::OrderedReliable(ReliableSettings::default()),

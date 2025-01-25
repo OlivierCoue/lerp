@@ -29,7 +29,8 @@ impl AnimationConfig {
         atlas_img_path_idle: &str,
         atlas_img_path_attack: &str,
     ) -> Self {
-        let layout = TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
+        let layout: TextureAtlasLayout =
+            TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
         let atlas_layout = texture_atlas_layouts.add(layout.clone());
 
         let walk_texture: Handle<Image> = asset_server.load(atlas_img_path_walk);

@@ -5,7 +5,7 @@ use bevy::{math::UVec2, prelude::*, utils::HashMap};
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
 
 use crate::{
-    map::{world_position_to_map_node_pos, MapGrid, MapNodePos},
+    map::{world_position_to_nav_map_node_pos, MapGrid, NavMapPos},
     protocol::Player,
 };
 
@@ -42,15 +42,16 @@ pub struct FlowFieldNode {
 
 #[derive(Resource, Default)]
 pub struct FlowField {
-    pub map: HashMap<MapNodePos, FlowFieldDirection>,
+    pub map: HashMap<NavMapPos, FlowFieldDirection>,
     pub size: UVec2,
 }
 impl FlowField {
     pub fn get_direction_from_world_position(
         &self,
+        nav_map_size: &UVec2,
         position: &Vec2,
     ) -> Option<&FlowFieldDirection> {
-        let map_node_pos = world_position_to_map_node_pos(position);
+        let map_node_pos = world_position_to_nav_map_node_pos(nav_map_size, position);
         self.map.get(&map_node_pos)
     }
 }
@@ -62,10 +63,10 @@ pub fn update_flow_field(
 ) {
     // Get all goal positions
     let goals: Vec<Vec2> = player_q.iter().map(|p| p.0).collect();
-    let max_search_distance = 20;
+    let max_search_distance = 40;
 
     flow_field.map.clear();
-    flow_field.size = map_grid.size;
+    flow_field.size = map_grid.nav_map_size;
 
     // Directions for neighbor traversal
     let directions = [
@@ -83,12 +84,13 @@ pub fn update_flow_field(
     let mut visited = HashMap::new();
 
     // Create a separate queue for each goal
-    let mut queues: Vec<VecDeque<(MapNodePos, u32)>> =
+    let mut queues: Vec<VecDeque<(NavMapPos, u32)>> =
         goals.iter().map(|_| VecDeque::new()).collect();
 
     // Initialize each goal's BFS queue with distance 0
     for (i, goal_position) in goals.iter().enumerate() {
-        let goal_map_node_pos = world_position_to_map_node_pos(goal_position);
+        let goal_map_node_pos =
+            world_position_to_nav_map_node_pos(&map_grid.nav_map_size, goal_position);
         queues[i].push_back((goal_map_node_pos, 0));
         visited.insert(goal_map_node_pos, None); // None indicates this is a goal
     }
@@ -111,7 +113,7 @@ pub fn update_flow_field(
                 let current_pos = current.0;
 
                 for (dx, dy, direction) in directions.iter() {
-                    let neighbor_pos = MapNodePos(UVec2::new(
+                    let neighbor_pos = NavMapPos(UVec2::new(
                         (current_pos.x as i32 + dx) as u32,
                         (current_pos.y as i32 + dy) as u32,
                     ));
@@ -122,7 +124,7 @@ pub fn update_flow_field(
                     }
 
                     // Check if the neighbor is walkable
-                    if let Some(neighbor_node) = map_grid.map.get(&neighbor_pos) {
+                    if let Some(neighbor_node) = map_grid.nav_map.get(&neighbor_pos) {
                         if neighbor_node.walkable {
                             // Mark the neighbor as visited and record its direction
                             visited.insert(neighbor_pos, Some(*direction));

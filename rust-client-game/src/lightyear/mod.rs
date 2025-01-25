@@ -34,7 +34,7 @@ impl Plugin for LightyearPlugin {
 
         // let link_conditioner = LinkConditionerConfig::good_condition();
         let link_conditioner = LinkConditionerConfig {
-            incoming_latency: Duration::from_millis(40),
+            incoming_latency: Duration::from_millis(0),
             incoming_jitter: Duration::from_millis(0),
             incoming_loss: 0.00,
         };

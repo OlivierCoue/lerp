@@ -20,6 +20,7 @@ use bevy::diagnostic::DiagnosticsStore;
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 
+use bevy::render::camera::ScalingMode;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use direction::update_direction;
@@ -64,7 +65,17 @@ pub fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
 
     commands.connect_client();
-    commands.spawn((PlaySceneTag, Camera2d));
+    commands.spawn((
+        PlaySceneTag,
+        Camera2d,
+        OrthographicProjection {
+            scaling_mode: ScalingMode::AutoMax {
+                max_width: 1280.,
+                max_height: 720.,
+            },
+            ..OrthographicProjection::default_2d()
+        },
+    ));
 
     commands
         .spawn((
