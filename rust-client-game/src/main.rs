@@ -75,6 +75,7 @@ fn main() {
             LobbyPlugin,
             PlayPlugin,
         ))
+        .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(RenderConfig {
             mode: RenderMode::Iso,
         })

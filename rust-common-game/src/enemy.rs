@@ -8,6 +8,7 @@ use crate::{
     flow_field::FlowField,
     health::Health,
     hit::{HitTracker, Hittable},
+    map::Map,
     physics::PhysicsBundle,
     protocol::*,
     shared::{ENEMY_BASE_HEALTH, ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
@@ -60,6 +61,7 @@ impl EnemyBundle {
 }
 
 pub fn enemy_movement_behavior(
+    map_grid: Res<Map>,
     flow_field: Res<FlowField>,
     mut query_enemies: Query<
         (&Position, &mut LinearVelocity, &MovementSpeed),
@@ -87,8 +89,7 @@ pub fn enemy_movement_behavior(
     let mut i: i32 = 0;
     for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
         // Retrieve the flow field direction
-        let flow_direction =
-            flow_field.get_direction_from_world_position(&flow_field.size, &enemy_position.0);
+        let flow_direction = flow_field.get_direction_from_position(&map_grid, enemy_position);
 
         // Scale flow field force to movement speed
         let flow_field_force = flow_direction.map_or(Vec2::ZERO, |d| {

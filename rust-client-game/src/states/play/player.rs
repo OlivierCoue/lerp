@@ -9,6 +9,7 @@ use rust_common_game::player::PlayerBundle;
 use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 use rust_common_game::skill::*;
+use rust_common_game::utils::isometric_to_cartesian;
 
 pub fn handle_new_client(
     mut client_query: Query<

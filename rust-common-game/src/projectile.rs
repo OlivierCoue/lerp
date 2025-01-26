@@ -106,7 +106,7 @@ pub fn on_execute_skill_projectile_event(
             continue;
         };
 
-        let Ok((initiator_position, initiator_player)) = initiator_q.get(event.initiator) else {
+        let Ok((initiator_position, _initiator_player)) = initiator_q.get(event.initiator) else {
             println!("[on_execute_skill_projectile_event] Cannot find initiator entity");
             continue;
         };

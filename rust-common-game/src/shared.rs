@@ -12,7 +12,7 @@ use crate::hit::{on_hit_event, HitEvent};
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::mana::mana_regeneration;
 
-use crate::map::MapGrid;
+use crate::map::Map;
 use crate::projectile::{
     on_execute_skill_projectile_event, process_projectile_collisions, process_projectile_distance,
 };
@@ -77,7 +77,7 @@ impl Plugin for SharedPlugin {
         app.insert_resource(Time::<Fixed>::from_hz(FIXED_TIMESTEP_HZ));
         app.insert_resource(Gravity(Vec2::ZERO));
         app.insert_resource(SkillDb::default());
-        app.insert_resource(MapGrid::default());
+        app.insert_resource(Map::default());
         app.insert_resource(FlowField::default());
 
         app.add_event::<HitEvent>();

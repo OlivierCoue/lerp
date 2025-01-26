@@ -35,7 +35,8 @@ use name_plate::update_mana_bar;
 use name_plate::update_skill_in_progress_bar;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
-use rust_common_game::map::generate_map;
+
+use rust_common_game::map::generation::generate_map;
 use rust_common_game::protocol::Channel1;
 use rust_common_game::protocol::PlayerClient;
 use rust_common_game::protocol::SpawnEnemies;

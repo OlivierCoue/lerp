@@ -3,7 +3,7 @@ use crate::states::play::*;
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_ecs_tilemap::prelude::*;
 use rand::seq::SliceRandom;
-use rust_common_game::{map::MapGrid, shared::RENDER_TILE_SIZE};
+use rust_common_game::{map::Map, shared::RENDER_TILE_SIZE, utils::cartesian_to_isometric};
 
 /// Size of a tile in the grid
 pub const MAP_TILE_GRID_SIZE: Vec2 = Vec2::new(160.0, 80.0);
@@ -24,7 +24,7 @@ pub struct TileWall;
 pub fn render_map(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    map_grid: Res<MapGrid>,
+    map_grid: Res<Map>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     println!("[render_map]");
@@ -81,9 +81,9 @@ pub fn render_map(
                 (y as f32 * RENDER_TILE_SIZE) - map_grid.map_px_size.x / 2. + RENDER_TILE_SIZE / 2.,
             );
 
-            if let Some(map_nodes) = map_grid.get_render_node_xy(x, y) {
+            if let Some(map_nodes) = map_grid.get_render_tile(UVec2::new(x, y)) {
                 for map_node in map_nodes {
-                    let z = 1. + (1. - ((iso_coord.y) / (map_grid.render_map_size.y as f32 * 80.)));
+                    let z = 1. + (1. - ((iso_coord.y) / (map_grid.map_px_size.y)));
                     commands.spawn((
                         PlaySceneTag,
                         TileWall,

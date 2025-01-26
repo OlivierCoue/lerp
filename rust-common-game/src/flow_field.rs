@@ -5,7 +5,7 @@ use bevy::{math::UVec2, prelude::*, utils::HashMap};
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
 
 use crate::{
-    map::{world_position_to_nav_map_node_pos, MapGrid, NavMapPos},
+    map::{Map, NavTileCoord},
     protocol::Player,
 };
 
@@ -42,55 +42,54 @@ pub struct FlowFieldNode {
 
 #[derive(Resource, Default)]
 pub struct FlowField {
-    pub map: HashMap<NavMapPos, FlowFieldDirection>,
+    pub map: HashMap<NavTileCoord, FlowFieldDirection>,
     pub size: UVec2,
 }
 impl FlowField {
-    pub fn get_direction_from_world_position(
+    pub fn get_direction_from_position(
         &self,
-        nav_map_size: &UVec2,
-        position: &Vec2,
+        map_grid: &Map,
+        position: &Position,
     ) -> Option<&FlowFieldDirection> {
-        let map_node_pos = world_position_to_nav_map_node_pos(nav_map_size, position);
+        let map_node_pos = map_grid.position_to_nav_map_node_coord(position);
         self.map.get(&map_node_pos)
     }
 }
 
+// Directions for neighbor traversal
+const DIRECTIONS: [(i32, i32, FlowFieldDirection); 8] = [
+    (0, 1, FlowFieldDirection::South),
+    (0, -1, FlowFieldDirection::North),
+    (-1, 0, FlowFieldDirection::East),
+    (1, 0, FlowFieldDirection::West),
+    (-1, 1, FlowFieldDirection::SouthEast),
+    (1, 1, FlowFieldDirection::SouthWest),
+    (-1, -1, FlowFieldDirection::NorthEast),
+    (1, -1, FlowFieldDirection::NorthWest),
+];
+const MAX_SEACH_DISTANCE: u32 = 40;
+
 pub fn update_flow_field(
-    map_grid: Res<MapGrid>,
+    map_grid: Res<Map>,
     mut flow_field: ResMut<FlowField>,
     player_q: Query<&Position, (With<Player>, Or<(With<Predicted>, With<ReplicationTarget>)>)>,
 ) {
     // Get all goal positions
-    let goals: Vec<Vec2> = player_q.iter().map(|p| p.0).collect();
-    let max_search_distance = 40;
+    let goals: Vec<Position> = player_q.iter().copied().collect();
 
     flow_field.map.clear();
     flow_field.size = map_grid.nav_map_size;
-
-    // Directions for neighbor traversal
-    let directions = [
-        (0, 1, FlowFieldDirection::South),
-        (0, -1, FlowFieldDirection::North),
-        (-1, 0, FlowFieldDirection::East),
-        (1, 0, FlowFieldDirection::West),
-        (-1, 1, FlowFieldDirection::SouthEast),
-        (1, 1, FlowFieldDirection::SouthWest),
-        (-1, -1, FlowFieldDirection::NorthEast),
-        (1, -1, FlowFieldDirection::NorthWest),
-    ];
 
     // Initialize the visited map
     let mut visited = HashMap::new();
 
     // Create a separate queue for each goal
-    let mut queues: Vec<VecDeque<(NavMapPos, u32)>> =
+    let mut queues: Vec<VecDeque<(NavTileCoord, u32)>> =
         goals.iter().map(|_| VecDeque::new()).collect();
 
     // Initialize each goal's BFS queue with distance 0
     for (i, goal_position) in goals.iter().enumerate() {
-        let goal_map_node_pos =
-            world_position_to_nav_map_node_pos(&map_grid.nav_map_size, goal_position);
+        let goal_map_node_pos = map_grid.position_to_nav_map_node_coord(goal_position);
         queues[i].push_back((goal_map_node_pos, 0));
         visited.insert(goal_map_node_pos, None); // None indicates this is a goal
     }
@@ -106,14 +105,14 @@ pub fn update_flow_field(
 
             if let Some((current, distance)) = queue.pop_front() {
                 // If we've exceeded the maximum search distance, stop exploring further
-                if distance >= max_search_distance {
+                if distance >= MAX_SEACH_DISTANCE {
                     continue;
                 }
 
                 let current_pos = current.0;
 
-                for (dx, dy, direction) in directions.iter() {
-                    let neighbor_pos = NavMapPos(UVec2::new(
+                for (dx, dy, direction) in DIRECTIONS.iter() {
+                    let neighbor_pos = NavTileCoord(UVec2::new(
                         (current_pos.x as i32 + dx) as u32,
                         (current_pos.y as i32 + dy) as u32,
                     ));
