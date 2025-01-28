@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 // https://d2mods.info/forum/viewtopic.php?t=65163
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum RenderTileKind {
+pub enum RenderTileWallKind {
     LeftWall,                  // 1
     RightWall,                 // 2
     SouthCornerWall,           // 7
@@ -10,10 +10,12 @@ pub enum RenderTileKind {
     RightPartOfNorthCornerWal, // 3
     RightEndWall,              // 6
     LeftEndWall,               // 5
+    LefttWallWithDoorBottom,   // 81
+    LefttWallWithDoorTop,      // 82
     RightWallWithDoorRight,    // 91
     RightWallWithDoorLeft,     // 92
 }
-impl RenderTileKind {
+impl RenderTileWallKind {
     pub fn atlas_index(&self) -> usize {
         match self {
             Self::LeftWall => 18,
@@ -23,6 +25,8 @@ impl RenderTileKind {
             Self::RightPartOfNorthCornerWal => 27,
             Self::RightEndWall => 13,
             Self::LeftEndWall => 14,
+            Self::LefttWallWithDoorBottom => 10,
+            Self::LefttWallWithDoorTop => 11,
             Self::RightWallWithDoorRight => 9,
             Self::RightWallWithDoorLeft => 8,
         }
@@ -30,15 +34,17 @@ impl RenderTileKind {
 
     pub fn y_sort_boundaries(&self) -> [[i32; 2]; 3] {
         match self {
-            RenderTileKind::LeftPartOfNorthCornerWal
-            | RenderTileKind::LeftWall
-            | RenderTileKind::LeftEndWall => [[0, -32], [80, 8], [160, 48]],
-            RenderTileKind::RightEndWall
-            | RenderTileKind::RightWall
-            | RenderTileKind::RightPartOfNorthCornerWal
-            | RenderTileKind::RightWallWithDoorLeft
-            | RenderTileKind::RightWallWithDoorRight => [[0, 48], [80, 8], [160, -32]],
-            RenderTileKind::SouthCornerWall => [[0, 48], [80, 8], [160, 48]],
+            RenderTileWallKind::LeftPartOfNorthCornerWal
+            | RenderTileWallKind::LeftWall
+            | RenderTileWallKind::LeftEndWall
+            | RenderTileWallKind::LefttWallWithDoorBottom
+            | RenderTileWallKind::LefttWallWithDoorTop => [[0, -32], [80, 8], [160, 48]],
+            RenderTileWallKind::RightEndWall
+            | RenderTileWallKind::RightWall
+            | RenderTileWallKind::RightPartOfNorthCornerWal
+            | RenderTileWallKind::RightWallWithDoorLeft
+            | RenderTileWallKind::RightWallWithDoorRight => [[0, 48], [80, 8], [160, -32]],
+            RenderTileWallKind::SouthCornerWall => [[0, 48], [80, 8], [160, 48]],
         }
     }
 
@@ -62,9 +68,10 @@ impl RenderTileKind {
 
     pub fn none_walkable_nav_tiles(&self) -> Vec<IVec2> {
         match self {
-            RenderTileKind::LeftPartOfNorthCornerWal
-            | RenderTileKind::LeftWall
-            | RenderTileKind::LeftEndWall => {
+            RenderTileWallKind::LeftPartOfNorthCornerWal
+            | RenderTileWallKind::LeftWall
+            | RenderTileWallKind::LeftEndWall
+            | RenderTileWallKind::LefttWallWithDoorBottom => {
                 vec![
                     IVec2::new(0, 0),
                     IVec2::new(0, 1),
@@ -78,10 +85,10 @@ impl RenderTileKind {
                     IVec2::new(1, 4),
                 ]
             }
-            RenderTileKind::RightPartOfNorthCornerWal
-            | RenderTileKind::RightWall
-            | RenderTileKind::RightEndWall
-            | RenderTileKind::RightWallWithDoorRight => {
+            RenderTileWallKind::RightPartOfNorthCornerWal
+            | RenderTileWallKind::RightWall
+            | RenderTileWallKind::RightEndWall
+            | RenderTileWallKind::RightWallWithDoorRight => {
                 vec![
                     IVec2::new(0, 3),
                     IVec2::new(1, 3),
@@ -95,13 +102,19 @@ impl RenderTileKind {
                     IVec2::new(4, 4),
                 ]
             }
-            RenderTileKind::RightWallWithDoorLeft => vec![
+            RenderTileWallKind::RightWallWithDoorLeft => vec![
                 IVec2::new(3, 3),
                 IVec2::new(4, 3),
                 IVec2::new(3, 4),
                 IVec2::new(4, 4),
             ],
-            RenderTileKind::SouthCornerWall => vec![
+            RenderTileWallKind::LefttWallWithDoorTop => vec![
+                IVec2::new(0, 0),
+                IVec2::new(0, 1),
+                IVec2::new(1, 0),
+                IVec2::new(1, 1),
+            ],
+            RenderTileWallKind::SouthCornerWall => vec![
                 IVec2::new(0, 3),
                 IVec2::new(0, 4),
                 IVec2::new(1, 3),
@@ -109,4 +122,9 @@ impl RenderTileKind {
             ],
         }
     }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum RenderTileFloorKind {
+    Standard,
 }

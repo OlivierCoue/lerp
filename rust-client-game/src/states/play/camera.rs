@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use lightyear::{prelude::client::*, shared::replication::components::Controlled};
 use rust_common_game::protocol::*;
 
+use super::PlayerCamera;
+
 /// How quickly should the camera snap to the desired location.
 const CAMERA_DECAY_RATE: f32 = 20.;
 
@@ -9,7 +11,7 @@ const CAMERA_DECAY_RATE: f32 = 20.;
 pub fn camera_follow(
     time: Res<Time>,
     player_query: Query<&Transform, (With<Player>, With<Predicted>, With<Controlled>)>,
-    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, With<PlayerCamera>, Without<Player>)>,
 ) {
     if let Ok(player_transform) = player_query.get_single() {
         for mut camera_transform in &mut camera_query {

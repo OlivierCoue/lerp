@@ -51,7 +51,7 @@ impl FlowField {
         map_grid: &Map,
         position: &Position,
     ) -> Option<&FlowFieldDirection> {
-        let map_node_pos = map_grid.position_to_nav_map_node_coord(position);
+        let map_node_pos = map_grid.position_to_nav_map_tile_coord(position);
         self.map.get(&map_node_pos)
     }
 }
@@ -89,7 +89,7 @@ pub fn update_flow_field(
 
     // Initialize each goal's BFS queue with distance 0
     for (i, goal_position) in goals.iter().enumerate() {
-        let goal_map_node_pos = map_grid.position_to_nav_map_node_coord(goal_position);
+        let goal_map_node_pos = map_grid.position_to_nav_map_tile_coord(goal_position);
         queues[i].push_back((goal_map_node_pos, 0));
         visited.insert(goal_map_node_pos, None); // None indicates this is a goal
     }

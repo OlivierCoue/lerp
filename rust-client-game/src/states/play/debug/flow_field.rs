@@ -1,4 +1,4 @@
-use crate::map::{TileFloor, TileMapFloor};
+use crate::map::{TileFlowField, TileMapFlowField};
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTextureIndex};
@@ -10,8 +10,8 @@ use super::{DebugConfig, RenderConfig, RenderMode};
 pub fn debug_render_flow_field(
     debug_config: Res<DebugConfig>,
     render_config: Res<RenderConfig>,
-    mut tilemap_q: Query<&TileStorage, With<TileMapFloor>>,
-    mut tile_q: Query<&mut TileTextureIndex, With<TileFloor>>,
+    mut tilemap_q: Query<&TileStorage, With<TileMapFlowField>>,
+    mut tile_q: Query<&mut TileTextureIndex, With<TileFlowField>>,
     flow_field: Res<FlowField>,
 ) {
     if !debug_config.show_flow_field || render_config.mode == RenderMode::Cart {
@@ -25,9 +25,7 @@ pub fn debug_render_flow_field(
     for x in 0..flow_field.size.x {
         for y in 0..flow_field.size.y {
             let map_node_pos = NavTileCoord(UVec2::new(x, y));
-            let Some(flow_field_direction) = flow_field.map.get(&map_node_pos) else {
-                continue;
-            };
+            let flow_field_direction = flow_field.map.get(&map_node_pos);
 
             let Some(tile_entity) = tile_storage.get(&TilePos::new(map_node_pos.x, map_node_pos.y))
             else {
@@ -47,14 +45,15 @@ pub fn debug_render_flow_field(
             };
 
             tile_texture_index.0 = match flow_field_direction {
-                FlowFieldDirection::North => 13,
-                FlowFieldDirection::South => 14,
-                FlowFieldDirection::West => 16,
-                FlowFieldDirection::East => 17,
-                FlowFieldDirection::NorthWest => 18,
-                FlowFieldDirection::SouthWest => 19,
-                FlowFieldDirection::SouthEast => 20,
-                FlowFieldDirection::NorthEast => 21,
+                Some(FlowFieldDirection::North) => 5,
+                Some(FlowFieldDirection::South) => 6,
+                Some(FlowFieldDirection::West) => 4,
+                Some(FlowFieldDirection::East) => 7,
+                Some(FlowFieldDirection::NorthWest) => 2,
+                Some(FlowFieldDirection::SouthWest) => 0,
+                Some(FlowFieldDirection::SouthEast) => 3,
+                Some(FlowFieldDirection::NorthEast) => 1,
+                None => 8,
             }
         }
     }

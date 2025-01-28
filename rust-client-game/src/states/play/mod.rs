@@ -42,6 +42,9 @@ use rust_common_game::protocol::PlayerClient;
 use rust_common_game::protocol::SpawnEnemies;
 use rust_common_game::utils::CommonPlaySceneTag;
 
+#[derive(Component)]
+pub struct PlayerCamera;
+
 #[derive(Component, Default)]
 pub struct PlaySceneTag;
 
@@ -60,6 +63,8 @@ pub struct RollbackStateLineItem;
 #[derive(Component)]
 enum ButtonAction {
     SpawnEnemies,
+    CameraZoomIn,
+    CameraZoomOut,
 }
 
 pub fn play_scene_setup(mut commands: Commands) {
@@ -68,6 +73,7 @@ pub fn play_scene_setup(mut commands: Commands) {
     commands.connect_client();
     commands.spawn((
         PlaySceneTag,
+        PlayerCamera,
         Camera2d,
         OrthographicProjection {
             scaling_mode: ScalingMode::AutoMax {
@@ -155,6 +161,42 @@ pub fn play_scene_setup(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn((Text("Enemies".to_string()), TextFont::from_font_size(12.)));
                 });
+            parent
+                .spawn((
+                    ButtonAction::CameraZoomIn,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON),
+                    Node {
+                        width: Val::Px(100.0),
+                        height: Val::Px(30.0),
+                        border: UiRect::all(Val::Px(2.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                ))
+                .with_children(|parent| {
+                    parent.spawn((Text("Zoom +".to_string()), TextFont::from_font_size(12.)));
+                });
+            parent
+                .spawn((
+                    ButtonAction::CameraZoomOut,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON),
+                    Node {
+                        width: Val::Px(100.0),
+                        height: Val::Px(30.0),
+                        border: UiRect::all(Val::Px(2.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                ))
+                .with_children(|parent| {
+                    parent.spawn((Text("Zoom -".to_string()), TextFont::from_font_size(12.)));
+                });
         });
 }
 
@@ -173,12 +215,23 @@ fn play_scene_button_logic(
         (&Interaction, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
+    mut camera_query: Query<&mut OrthographicProjection, With<PlayerCamera>>,
 ) {
     for (interaction, action) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => match action {
                 ButtonAction::SpawnEnemies => {
                     let _ = connection_manager.send_message::<Channel1, _>(&SpawnEnemies);
+                }
+                ButtonAction::CameraZoomIn => {
+                    if let Ok(mut ortho_proj) = camera_query.get_single_mut() {
+                        ortho_proj.scale = (ortho_proj.scale - 0.5).max(1.)
+                    };
+                }
+                ButtonAction::CameraZoomOut => {
+                    if let Ok(mut ortho_proj) = camera_query.get_single_mut() {
+                        ortho_proj.scale = (ortho_proj.scale + 0.5).min(5.)
+                    };
                 }
             },
             Interaction::Hovered => {}
@@ -252,7 +305,10 @@ impl Plugin for PlayPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::Play),
-            (play_scene_setup, (generate_map, render_map).chain()),
+            (
+                play_scene_setup,
+                (generate_map, render_map, render_flow_field).chain(),
+            ),
         );
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
