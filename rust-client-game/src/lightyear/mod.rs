@@ -29,8 +29,8 @@ pub struct LightyearPlugin;
 
 impl Plugin for LightyearPlugin {
     fn build(&self, app: &mut App) {
-        let mut rng = rand::thread_rng();
-        let client_id = rng.gen_range(1..10001);
+        let mut rng = rand::rng();
+        let client_id = rng.random_range(1..10001);
 
         // let link_conditioner = LinkConditionerConfig::good_condition();
         let link_conditioner = LinkConditionerConfig {
@@ -76,12 +76,6 @@ impl Plugin for LightyearPlugin {
                 maximum_input_delay_before_prediction: 6,
                 maximum_predicted_ticks: 100,
                 ..default()
-            },
-            interpolation: client::InterpolationConfig {
-                delay: InterpolationDelay {
-                    min_delay: Duration::from_millis(0),
-                    send_interval_ratio: 1.,
-                },
             },
             ..default()
         };

@@ -145,7 +145,11 @@ impl Plugin for SharedPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (update_flow_field, enemy_movement_behavior).chain(),
+                (
+                    update_flow_field.run_if(not(is_in_rollback)),
+                    enemy_movement_behavior,
+                )
+                    .chain(),
                 process_projectile_distance,
             )
                 .in_set(GameSimulationSet::Others),

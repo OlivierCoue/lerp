@@ -3,13 +3,13 @@ use bevy::prelude::*;
 use crate::shared::RENDER_TO_NAV_TILE_MULTI;
 
 use super::{
-    designer::create_map_input,
+    designer::*,
     tile_kind::{RenderTileFloorKind, RenderTileWallKind},
     Map, NavTile, NavTileCoord,
 };
 
 pub fn generate_map(mut commands: Commands, mut map_grid: ResMut<Map>) {
-    let input = create_map_input();
+    let input = create_small_map_input();
     map_grid.reset(UVec2::new(
         input.map.first().unwrap().len() as u32,
         input.map.len() as u32,

@@ -6,14 +6,14 @@ edition = "2021"
 
 [dependencies]
 avian2d = "0.2.0"
-bevy = { version = "0.15.0", default-features = true, features = ["multi_threaded", "bevy_state", "serialize"] }
+bevy = { version = "0.15", default-features = true, features = ["multi_threaded", "bevy_state", "serialize"] }
 bevy_ecs_tilemap = { version = "0.15"}
 bevy_prototype_lyon = "0.13"
 bevy_simple_text_input = "0.10"
 bevy_transform_interpolation = "0.1"
 leafwing-input-manager = "0.16"
-lightyear = { git = "https://github.com/cBournhonesque/lightyear.git", rev = "eeb885d", features = ["avian2d", "leafwing"] }
-rand = "0.8"
+lightyear = { git = "https://github.com/cBournhonesque/lightyear.git", rev = "e61e01a", features = ["avian2d", "leafwing"] }
+rand = { version = "0.9" }
 rust-common-game = { path = "../rust-common-game" }
 serde = { version = "1.0.215", features = ["derive"] }
 

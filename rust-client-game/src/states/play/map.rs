@@ -1,8 +1,8 @@
 use crate::states::play::*;
 
 use bevy::{prelude::*, sprite::Anchor};
-use bevy_ecs_tilemap::{prelude::*, FrustumCulling};
-use rand::seq::SliceRandom;
+use bevy_ecs_tilemap::prelude::*;
+use rand::prelude::*;
 use rust_common_game::{map::Map, shared::RENDER_TILE_SIZE, utils::cartesian_to_isometric};
 
 /// Size of a tile in the grid
@@ -60,7 +60,7 @@ pub fn render_map(
     let floor_tile_indexes = [
         4, 5, 6, 7, 9, 10, 11, 14, 15, 17, 17, 17, 17, 17, 17, 17, 17,
     ];
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     for x in 0..map_grid.render_map_size.x {
         for y in 0..map_grid.render_map_size.y {
@@ -138,7 +138,6 @@ pub fn render_map(
                 y: MAP_TILE_IMG_SIZE_FLOOR.y,
             },
             transform: get_tilemap_center_transform(&tile_map_size, &grid_size, &map_type, 0.0),
-            frustum_culling: FrustumCulling(true),
             ..Default::default()
         },
     ));
