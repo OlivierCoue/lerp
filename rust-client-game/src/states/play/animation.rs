@@ -2,7 +2,9 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use rust_common_game::skill::SkillInProgress;
 
-use super::{apply_render_mode, direction::Direction, RenderConfig};
+use crate::common::cartesian_to_isometric_vec2;
+
+use super::direction::Direction;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum AnimationState {
@@ -55,7 +57,6 @@ impl AnimationConfig {
 
 pub fn animate_sprite(
     time: Res<Time>,
-    render_config: Res<RenderConfig>,
     query_parent: Query<
         (
             &LinearVelocity,
@@ -74,7 +75,7 @@ pub fn animate_sprite(
             continue;
         };
 
-        let renderered_velocity = apply_render_mode(&render_config, &velocity.0);
+        let renderered_velocity = cartesian_to_isometric_vec2(&velocity.0);
         let is_walking = renderered_velocity.length_squared() != 0.0;
 
         let new_state = if let Some(_skill_in_progress) = skill_in_progress {

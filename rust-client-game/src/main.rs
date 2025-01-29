@@ -76,13 +76,11 @@ fn main() {
             PlayPlugin,
         ))
         .insert_resource(ClearColor(Color::BLACK))
-        .insert_resource(RenderConfig {
-            mode: RenderMode::Iso,
-        })
         .insert_resource(DebugConfig {
-            show_colliders: true,
-            show_confirmed_entities: true,
+            show_colliders: false,
+            show_confirmed_entities: false,
             show_flow_field: false,
+            show_y_sort_boundaries: false,
         })
         .run();
 }

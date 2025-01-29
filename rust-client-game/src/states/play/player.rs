@@ -92,7 +92,6 @@ pub fn handle_new_player(
 pub fn sync_cursor_poisition(
     camera_query: Query<(&Camera, &GlobalTransform)>,
     windows: Query<&Window>,
-    render_config: Res<RenderConfig>,
     mut action_state_query: Query<
         &mut ActionState<PlayerActions>,
         (With<Player>, With<Predicted>, With<Controlled>),
@@ -114,13 +113,10 @@ pub fn sync_cursor_poisition(
         return;
     };
 
-    let actual_world_cursor_position = match render_config.mode {
-        RenderMode::Iso => isometric_to_cartesian(
-            world_cursor_position.x,
-            world_cursor_position.y - 1. * PIXEL_METER,
-        ),
-        RenderMode::Cart => world_cursor_position,
-    };
+    let actual_world_cursor_position = isometric_to_cartesian(
+        world_cursor_position.x,
+        world_cursor_position.y - 1. * PIXEL_METER,
+    );
 
     let Ok(mut action_state) = action_state_query.get_single_mut() else {
         return;

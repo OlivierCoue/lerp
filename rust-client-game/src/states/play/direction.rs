@@ -2,21 +2,20 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, PreSpawnedPlayerObject};
 
-use super::{apply_render_mode, RenderConfig};
+use crate::common::cartesian_to_isometric_vec2;
 
 #[derive(Component)]
 pub struct Direction(pub usize);
 
 pub fn update_direction(
     mut commands: Commands,
-    render_config: Res<RenderConfig>,
     mut q: Query<
         (Entity, &LinearVelocity, Option<&mut Direction>),
         Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,
     >,
 ) {
     for (entity, linear_velocity, current_direction) in &mut q {
-        let renderered_velocity = apply_render_mode(&render_config, &linear_velocity.0);
+        let renderered_velocity = cartesian_to_isometric_vec2(&linear_velocity.0);
 
         if renderered_velocity.length_squared() != 0.0 {
             // Calculate the angle in radians and normalize to [0, 2π]

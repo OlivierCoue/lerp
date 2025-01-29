@@ -7,11 +7,12 @@ pub struct LobbySceneTag;
 
 #[derive(Component)]
 enum ButtonAction {
-    Play(RenderMode),
+    Play,
     Logout,
     ToggleDebugShowCollider,
     ToggleDebugShowConfirmed,
     ToggleDebugShowFlowField,
+    ToggleDebugShowYSortBoundaries,
 }
 
 pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>) {
@@ -34,7 +35,7 @@ pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>)
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonAction::Play(RenderMode::Iso),
+                    ButtonAction::Play,
                     Button,
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
@@ -50,27 +51,6 @@ pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>)
                 ))
                 .with_children(|parent| {
                     parent.spawn(Text("Play".to_string()));
-                });
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonAction::Play(RenderMode::Cart),
-                    Button,
-                    BorderColor(Color::BLACK),
-                    BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON),
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn(Text("Play Debug".to_string()));
                 });
         })
         .with_children(|parent| {
@@ -95,103 +75,66 @@ pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>)
                 });
         })
         .with_children(|parent| {
-            parent
-                .spawn(Node {
-                    width: Val::Px(150.0),
-                    height: Val::Px(40.0),
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    flex_direction: FlexDirection::Row,
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text("Show collider".to_string()),
-                        TextFont::from_font_size(12.),
-                    ));
-                    parent.spawn((
-                        ButtonAction::ToggleDebugShowCollider,
-                        Button,
-                        BorderRadius::MAX,
-                        BackgroundColor(NORMAL_BUTTON),
-                        BorderColor(Color::BLACK),
-                        Node {
-                            width: Val::Px(30.0),
-                            height: Val::Px(30.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            ..default()
-                        },
-                        Checkbox {
-                            checked: debug_config.show_colliders,
-                        },
-                    ));
-                });
+            add_debug_option_checkbox(
+                parent,
+                "Show collider",
+                ButtonAction::ToggleDebugShowCollider,
+                debug_config.show_colliders,
+            );
+            add_debug_option_checkbox(
+                parent,
+                "Show confirmed",
+                ButtonAction::ToggleDebugShowConfirmed,
+                debug_config.show_confirmed_entities,
+            );
+            add_debug_option_checkbox(
+                parent,
+                "Show flow field",
+                ButtonAction::ToggleDebugShowFlowField,
+                debug_config.show_flow_field,
+            );
+            add_debug_option_checkbox(
+                parent,
+                "Show Y sort boundaries",
+                ButtonAction::ToggleDebugShowYSortBoundaries,
+                debug_config.show_y_sort_boundaries,
+            );
+        });
+}
+
+fn add_debug_option_checkbox(
+    parent: &mut ChildBuilder,
+    title: &str,
+    button_action: ButtonAction,
+    default_state: bool,
+) {
+    parent
+        .spawn(Node {
+            width: Val::Px(150.0),
+            height: Val::Px(40.0),
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Row,
+            ..default()
         })
         .with_children(|parent| {
-            parent
-                .spawn(Node {
-                    width: Val::Px(150.0),
-                    height: Val::Px(40.0),
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    flex_direction: FlexDirection::Row,
+            parent.spawn((Text(title.to_string()), TextFont::from_font_size(12.)));
+            parent.spawn((
+                button_action,
+                Button,
+                BorderRadius::MAX,
+                BackgroundColor(NORMAL_BUTTON),
+                BorderColor(Color::BLACK),
+                Node {
+                    width: Val::Px(30.0),
+                    height: Val::Px(30.0),
+                    border: UiRect::all(Val::Px(5.0)),
                     ..default()
-                })
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text("Show confirmed".to_string()),
-                        TextFont::from_font_size(12.),
-                    ));
-                    parent.spawn((
-                        ButtonAction::ToggleDebugShowConfirmed,
-                        Button,
-                        BorderRadius::MAX,
-                        BackgroundColor(NORMAL_BUTTON),
-                        BorderColor(Color::BLACK),
-                        Node {
-                            width: Val::Px(30.0),
-                            height: Val::Px(30.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            ..default()
-                        },
-                        Checkbox {
-                            checked: debug_config.show_confirmed_entities,
-                        },
-                    ));
-                });
-        })
-        .with_children(|parent| {
-            parent
-                .spawn(Node {
-                    width: Val::Px(150.0),
-                    height: Val::Px(40.0),
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    flex_direction: FlexDirection::Row,
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text("Show flow field".to_string()),
-                        TextFont::from_font_size(12.),
-                    ));
-                    parent.spawn((
-                        ButtonAction::ToggleDebugShowFlowField,
-                        Button,
-                        BorderRadius::MAX,
-                        BackgroundColor(NORMAL_BUTTON),
-                        BorderColor(Color::BLACK),
-                        Node {
-                            width: Val::Px(30.0),
-                            height: Val::Px(30.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            ..default()
-                        },
-                        Checkbox {
-                            checked: debug_config.show_flow_field,
-                        },
-                    ));
-                });
+                },
+                Checkbox {
+                    checked: default_state,
+                },
+            ));
         });
 }
 
@@ -211,13 +154,11 @@ fn lobby_scene_button_logic(
         (&Interaction, &ButtonAction, Option<&mut Checkbox>),
         (Changed<Interaction>, With<Button>),
     >,
-    mut render_config: ResMut<RenderConfig>,
 ) {
     for (interaction, action, checkbox) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => match action {
-                ButtonAction::Play(render_mode) => {
-                    render_config.mode = *render_mode;
+                ButtonAction::Play => {
                     app_state.set(AppState::Play);
                 }
                 ButtonAction::Logout => {
@@ -239,6 +180,12 @@ fn lobby_scene_button_logic(
                     if let Some(mut checkbox) = checkbox {
                         checkbox.checked = !checkbox.checked;
                         debug_config.show_flow_field = checkbox.checked;
+                    };
+                }
+                ButtonAction::ToggleDebugShowYSortBoundaries => {
+                    if let Some(mut checkbox) = checkbox {
+                        checkbox.checked = !checkbox.checked;
+                        debug_config.show_y_sort_boundaries = checkbox.checked;
                     };
                 }
             },

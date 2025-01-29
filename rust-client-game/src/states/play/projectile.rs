@@ -6,9 +6,9 @@ use rust_common_game::{
     shared::PIXEL_METER,
 };
 
-use crate::IsoZ;
+use crate::{common::cartesian_to_isometric_vec2, IsoZ};
 
-use super::{apply_render_mode, PlaySceneTag, RenderConfig};
+use super::PlaySceneTag;
 
 #[derive(Bundle)]
 pub struct ProjecileDisplayBundle {
@@ -20,7 +20,6 @@ pub struct ProjecileDisplayBundle {
 }
 
 pub fn handle_new_projectile(
-    render_config: Res<RenderConfig>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut projectile_query: Query<
@@ -32,7 +31,7 @@ pub fn handle_new_projectile(
     >,
 ) {
     for (entity, position) in projectile_query.iter_mut() {
-        let mut translation = apply_render_mode(&render_config, position).extend(1.);
+        let mut translation = cartesian_to_isometric_vec2(position).extend(1.);
         translation.y += 1. * PIXEL_METER;
 
         commands.entity(entity).insert(ProjecileDisplayBundle {

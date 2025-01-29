@@ -5,16 +5,15 @@ use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTextureIndex};
 use rust_common_game::flow_field::{FlowField, FlowFieldDirection};
 use rust_common_game::map::map::NavTileCoord;
 
-use super::{DebugConfig, RenderConfig, RenderMode};
+use super::DebugConfig;
 
 pub fn debug_render_flow_field(
     debug_config: Res<DebugConfig>,
-    render_config: Res<RenderConfig>,
     mut tilemap_q: Query<&TileStorage, With<TileMapFlowField>>,
     mut tile_q: Query<&mut TileTextureIndex, With<TileFlowField>>,
     flow_field: Res<FlowField>,
 ) {
-    if !debug_config.show_flow_field || render_config.mode == RenderMode::Cart {
+    if !debug_config.show_flow_field {
         return;
     }
 

@@ -22,7 +22,6 @@ pub struct DebugColliderEntityRef(pub Entity);
 
 pub(crate) fn debug_draw_colliders(
     debug_config: Res<DebugConfig>,
-    render_config: Res<RenderConfig>,
     mut commands: Commands,
     collider_q: Query<
         (
@@ -42,12 +41,12 @@ pub(crate) fn debug_draw_colliders(
     for (entity, position, collider, debug_entity_ref) in collider_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = collider_debug_q.get_mut(debug_entity_ref.0) {
-                transform.translation = apply_render_mode(&render_config, position).extend(3.);
+                transform.translation = cartesian_to_isometric_vec2(position).extend(3.);
             }
         } else {
             if let Some(ball) = collider.shape().as_ball() {
                 let shape = shapes::Ellipse {
-                    radii: apply_render_mode_radius(&render_config, ball.radius),
+                    radii: cartesian_to_isometric_radius(ball.radius),
                     center: Vec2::ZERO,
                 };
 
@@ -58,7 +57,7 @@ pub(crate) fn debug_draw_colliders(
                         ShapeBundle {
                             path: GeometryBuilder::build_as(&shape),
                             transform: Transform::from_translation(
-                                apply_render_mode(&render_config, position).extend(3.),
+                                cartesian_to_isometric_vec2(position).extend(3.),
                             ),
                             ..default()
                         },
@@ -79,10 +78,10 @@ pub(crate) fn debug_draw_colliders(
 
                 let shape = shapes::Polygon {
                     points: vec![
-                        apply_render_mode(&render_config, &top_left),
-                        apply_render_mode(&render_config, &top_right),
-                        apply_render_mode(&render_config, &bottom_right),
-                        apply_render_mode(&render_config, &bottom_left),
+                        cartesian_to_isometric_vec2(&top_left),
+                        cartesian_to_isometric_vec2(&top_right),
+                        cartesian_to_isometric_vec2(&bottom_right),
+                        cartesian_to_isometric_vec2(&bottom_left),
                     ],
                     closed: true,
                 };
@@ -94,7 +93,7 @@ pub(crate) fn debug_draw_colliders(
                         ShapeBundle {
                             path: GeometryBuilder::build_as(&shape),
                             transform: Transform::from_translation(
-                                apply_render_mode(&render_config, position).extend(3.),
+                                cartesian_to_isometric_vec2(position).extend(3.),
                             ),
                             ..default()
                         },
@@ -135,7 +134,6 @@ pub struct DebugConfirmedEntityRef(pub Entity);
 
 pub(crate) fn debug_draw_confirmed_entities(
     debug_config: Res<DebugConfig>,
-    render_config: Res<RenderConfig>,
     mut commands: Commands,
     confirmed_q: Query<
         (
@@ -156,7 +154,7 @@ pub(crate) fn debug_draw_confirmed_entities(
     for (entity, position, is_enemy, is_projectile, debug_entity_ref) in confirmed_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = confirmed_debug_q.get_mut(debug_entity_ref.0) {
-                transform.translation = apply_render_mode(&render_config, position).extend(4.);
+                transform.translation = cartesian_to_isometric_vec2(position).extend(4.);
             }
         } else {
             let radius = if is_enemy {
@@ -168,7 +166,7 @@ pub(crate) fn debug_draw_confirmed_entities(
             };
 
             let shape = shapes::Ellipse {
-                radii: apply_render_mode_radius(&render_config, radius),
+                radii: cartesian_to_isometric_radius(radius),
                 center: Vec2::ZERO,
             };
 
@@ -179,7 +177,7 @@ pub(crate) fn debug_draw_confirmed_entities(
                     ShapeBundle {
                         path: GeometryBuilder::build_as(&shape),
                         transform: Transform::from_translation(
-                            apply_render_mode(&render_config, position).extend(3.),
+                            cartesian_to_isometric_vec2(position).extend(3.),
                         ),
                         ..default()
                     },
@@ -216,13 +214,12 @@ pub(crate) fn _debug_draw_targets(
     confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
     predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
     interpolated_q: Query<&MovementTargets, (With<Player>, With<Interpolated>)>,
-    render_config: Res<RenderConfig>,
 ) {
     // Predicted
     for targets in predicted_q.iter() {
         if let Some(target) = targets.0.first() {
             gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
+                cartesian_to_isometric_vec2(target),
                 15.,
                 Color::linear_rgb(0., 0., 1.),
             );
@@ -233,7 +230,7 @@ pub(crate) fn _debug_draw_targets(
     for targets in confirmed_q.iter() {
         if let Some(target) = targets.0.first() {
             gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
+                cartesian_to_isometric_vec2(target),
                 12.,
                 Color::linear_rgb(0., 1., 0.),
             );
@@ -244,7 +241,7 @@ pub(crate) fn _debug_draw_targets(
     for targets in interpolated_q.iter() {
         if let Some(target) = targets.0.first() {
             gizmos.circle_2d(
-                apply_render_mode(&render_config, target),
+                cartesian_to_isometric_vec2(target),
                 12.,
                 Color::linear_rgb(0., 1., 1.),
             );
