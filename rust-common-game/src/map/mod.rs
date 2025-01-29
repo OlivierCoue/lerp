@@ -96,6 +96,12 @@ pub struct Map {
 }
 impl Map {
     pub fn reset(&mut self, render_map_size: UVec2) {
+        if render_map_size.x % 10 != 0 {
+            panic!("Invalid map x size");
+        }
+        if render_map_size.y % 10 != 0 {
+            panic!("Invalid map y size");
+        }
         self.render_map.clear();
         self.render_map_size = render_map_size;
 

@@ -243,12 +243,14 @@ fn play_scene_button_logic(
 pub fn play_scene_cleanup(
     mut commands: Commands,
     query: Query<Entity, Or<(With<PlaySceneTag>, With<CommonPlaySceneTag>)>>,
+    mut chunk_manager: ResMut<ChunkManager>,
 ) {
     println!("[play_scene_cleanup]");
     commands.disconnect_client();
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+    chunk_manager.spawned_chunks.clear();
 }
 
 pub fn update_fps(
@@ -303,12 +305,10 @@ pub struct PlayPlugin;
 
 impl Plugin for PlayPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(ChunkManager::default());
         app.add_systems(
             OnEnter(AppState::Play),
-            (
-                play_scene_setup,
-                (generate_map, render_map, render_flow_field).chain(),
-            ),
+            (play_scene_setup, (generate_map, render_flow_field).chain()),
         );
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 
@@ -341,8 +341,14 @@ impl Plugin for PlayPlugin {
                 debug_undraw_colliders,
                 update_fps,
                 update_ping,
+                spawn_map_chunks_around_camera,
+                despawn_outofrange_map_chunks,
             )
                 .run_if(in_state(AppState::Play)),
+        );
+        app.add_systems(
+            Update,
+            (camera_draw_border).run_if(in_state(AppState::Play)),
         );
 
         app.add_systems(

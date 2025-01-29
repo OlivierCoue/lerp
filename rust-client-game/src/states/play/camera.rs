@@ -7,6 +7,20 @@ use super::PlayerCamera;
 /// How quickly should the camera snap to the desired location.
 const CAMERA_DECAY_RATE: f32 = 20.;
 
+pub fn camera_draw_border(
+    mut gizmos: Gizmos,
+    camera_query: Query<(&Transform, &OrthographicProjection), With<PlayerCamera>>,
+) {
+    for (transform, ortho_proj) in camera_query.iter() {
+        if ortho_proj.scale != 1. {
+            gizmos.rect_2d(
+                transform.translation.xy(),
+                Vec2::new(1280., 720.),
+                Color::linear_rgb(1., 0., 0.),
+            );
+        }
+    }
+}
 // System to make the camera follow the player
 pub fn camera_follow(
     time: Res<Time>,
