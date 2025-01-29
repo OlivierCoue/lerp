@@ -8,7 +8,7 @@ use crate::{
     flow_field::FlowField,
     health::Health,
     hit::{HitTracker, Hittable},
-    map::Map,
+    map::map::Map,
     physics::PhysicsBundle,
     protocol::*,
     shared::{ENEMY_BASE_HEALTH, ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},

@@ -12,7 +12,7 @@ use crate::hit::{on_hit_event, HitEvent};
 use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
 use crate::mana::mana_regeneration;
 
-use crate::map::Map;
+use crate::map::map::Map;
 use crate::projectile::{
     on_execute_skill_projectile_event, process_projectile_collisions, process_projectile_distance,
 };

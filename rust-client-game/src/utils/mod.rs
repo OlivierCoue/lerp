@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use rust_common_game::{
-    map::Map, protocol::Player, shared::PIXEL_METER, utils::cartesian_to_isometric,
+    map::map::Map, protocol::Player, shared::PIXEL_METER, utils::cartesian_to_isometric,
 };
 
 use crate::common::*;

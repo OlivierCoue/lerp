@@ -4,7 +4,7 @@ use bevy::{prelude::*, sprite::Anchor, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use rust_common_game::{
-    map::Map,
+    map::map::Map,
     shared::RENDER_TILE_SIZE,
     utils::{cartesian_to_isometric, isometric_to_cartesian},
 };
