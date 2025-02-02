@@ -1,4 +1,7 @@
+use crate::states::play::animation::AtlasConfigInput;
+use crate::states::play::direction::DirectionCount;
 use crate::states::play::*;
+use crate::utils::ZLayer;
 use animation::AnimationConfig;
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -10,6 +13,7 @@ use rust_common_game::protocol::*;
 use rust_common_game::shared::*;
 use rust_common_game::skill::*;
 use rust_common_game::utils::isometric_to_cartesian;
+use std::str::FromStr;
 
 pub fn handle_new_client(
     mut client_query: Query<
@@ -38,9 +42,30 @@ pub fn handle_new_player(
         let animation_config = AnimationConfig::build(
             &asset_server,
             &mut texture_atlas_layouts,
-            "assets/atlas_player_walk.png",
-            "assets/atlas_player_idle.png",
-            "assets/atlas_player_attack.png",
+            AtlasConfigInput {
+                repeated: true,
+                frame_count: 8,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                image_path: String::from_str("assets/atlas_player_walk.png").unwrap(),
+            },
+            AtlasConfigInput {
+                repeated: true,
+                frame_count: 8,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                image_path: String::from_str("assets/atlas_player_idle.png").unwrap(),
+            },
+            AtlasConfigInput {
+                repeated: true,
+                frame_count: 8,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                image_path: String::from_str("assets/atlas_player_attack.png").unwrap(),
+            },
+            AtlasConfigInput {
+                repeated: false,
+                frame_count: 8,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                image_path: String::from_str("assets/atlas_player_attack.png").unwrap(),
+            },
         );
 
         let mut player_bundle = PlayerBundle::from_protocol();
@@ -58,13 +83,15 @@ pub fn handle_new_player(
                 TransformInterpolation,
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),
+                ZLayer::Default,
+                DirectionCount(16),
             ))
             .with_children(|parent| {
                 parent.spawn((
                     Sprite::from_atlas_image(
-                        animation_config.atlas_texture_idle.clone(),
+                        animation_config.atlas_idle.image_path.clone(),
                         TextureAtlas {
-                            layout: animation_config.atlas_layout.clone(),
+                            layout: animation_config.atlas_idle.atlas_layout.clone(),
                             index: 0,
                         },
                     ),

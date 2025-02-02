@@ -1,12 +1,9 @@
-mod enemy;
-
 use bevy::log::Level;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
 use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
-use enemy::EnemyPlugin;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
@@ -166,7 +163,6 @@ fn main() {
         })
         .add_plugins(server_plugin.build())
         .add_plugins(SharedPlugin)
-        .add_plugins(EnemyPlugin)
         .init_resource::<ClientPlayerMap>()
         .add_systems(Startup, (start_server, generate_map))
         .add_systems(

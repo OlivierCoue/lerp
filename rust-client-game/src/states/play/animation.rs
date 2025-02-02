@@ -1,8 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::skill::SkillInProgress;
-
-use crate::common::cartesian_to_isometric_vec2;
+use rust_common_game::{death::Dead, skill::SkillInProgress};
 
 use super::direction::Direction;
 
@@ -11,46 +9,77 @@ pub enum AnimationState {
     Walk,
     Idle,
     Attack,
+    Dead,
 }
 
 #[derive(Component)]
 pub struct AnimationConfig {
     pub timer: Timer,
     pub state: AnimationState,
+    pub atlas_walk: AtlasConfig,
+    pub atlas_idle: AtlasConfig,
+    pub atlas_attack: AtlasConfig,
+    pub atlas_death: AtlasConfig,
+}
+
+pub struct AtlasConfigInput {
+    pub repeated: bool,
+    pub frame_count: usize,
+    pub atlas_layout: TextureAtlasLayout,
+    pub image_path: String,
+}
+
+pub struct AtlasConfig {
+    pub repeated: bool,
+    pub frame_count: usize,
     pub atlas_layout: Handle<TextureAtlasLayout>,
-    pub atlas_texture_walk: Handle<Image>,
-    pub atlas_texture_idle: Handle<Image>,
-    pub atlas_texture_attack: Handle<Image>,
+    pub image_path: Handle<Image>,
 }
 
 impl AnimationConfig {
     pub fn build(
         asset_server: &AssetServer,
         texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
-        atlas_img_path_walk: &str,
-        atlas_img_path_idle: &str,
-        atlas_img_path_attack: &str,
+        atlas_img_path_walk: AtlasConfigInput,
+        atlas_img_path_idle: AtlasConfigInput,
+        atlas_img_path_attack: AtlasConfigInput,
+        atlas_img_path_death: AtlasConfigInput,
     ) -> Self {
-        let layout: TextureAtlasLayout =
-            TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None);
-        let atlas_layout = texture_atlas_layouts.add(layout.clone());
+        let atlas_walk = AtlasConfig {
+            repeated: atlas_img_path_walk.repeated,
+            frame_count: atlas_img_path_walk.frame_count,
+            atlas_layout: texture_atlas_layouts.add(atlas_img_path_walk.atlas_layout.clone()),
+            image_path: asset_server.load(atlas_img_path_walk.image_path.as_str()),
+        };
 
-        let walk_texture: Handle<Image> = asset_server.load(atlas_img_path_walk);
+        let atlas_idle = AtlasConfig {
+            repeated: atlas_img_path_idle.repeated,
+            frame_count: atlas_img_path_idle.frame_count,
+            atlas_layout: texture_atlas_layouts.add(atlas_img_path_idle.atlas_layout.clone()),
+            image_path: asset_server.load(atlas_img_path_idle.image_path.as_str()),
+        };
 
-        let idle_texture: Handle<Image> = asset_server.load(atlas_img_path_idle);
+        let atlas_attack = AtlasConfig {
+            repeated: atlas_img_path_attack.repeated,
+            frame_count: atlas_img_path_attack.frame_count,
+            atlas_layout: texture_atlas_layouts.add(atlas_img_path_attack.atlas_layout.clone()),
+            image_path: asset_server.load(atlas_img_path_attack.image_path.as_str()),
+        };
 
-        let attack_texture: Handle<Image> = asset_server.load(atlas_img_path_attack);
+        let atlas_death = AtlasConfig {
+            repeated: atlas_img_path_death.repeated,
+            frame_count: atlas_img_path_death.frame_count,
+            atlas_layout: texture_atlas_layouts.add(atlas_img_path_death.atlas_layout.clone()),
+            image_path: asset_server.load(atlas_img_path_death.image_path.as_str()),
+        };
 
         Self {
             timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             state: AnimationState::Idle,
-            atlas_layout,
-
-            atlas_texture_walk: walk_texture,
-
-            atlas_texture_idle: idle_texture,
-
-            atlas_texture_attack: attack_texture,
+            atlas_walk,
+            atlas_idle,
+            atlas_attack,
+            atlas_death,
         }
     }
 }
@@ -59,9 +88,10 @@ pub fn animate_sprite(
     time: Res<Time>,
     query_parent: Query<
         (
-            &LinearVelocity,
+            Option<&LinearVelocity>,
             &Direction,
             Option<&SkillInProgress>,
+            Has<Dead>,
             &Children,
         ),
         Without<AnimationConfig>,
@@ -71,19 +101,38 @@ pub fn animate_sprite(
     for (mut sprite, mut animation_config, parent) in &mut query_child {
         animation_config.timer.tick(time.delta());
 
-        let Ok((velocity, direction, skill_in_progress, _)) = query_parent.get(parent.get()) else {
+        let Ok((velocity, direction, skill_in_progress, is_dead, _)) =
+            query_parent.get(parent.get())
+        else {
             continue;
         };
 
-        let renderered_velocity = cartesian_to_isometric_vec2(&velocity.0);
-        let is_walking = renderered_velocity.length_squared() != 0.0;
+        let is_walking = velocity.is_some_and(|v| v.length_squared() != 0.0);
 
-        let new_state = if let Some(_skill_in_progress) = skill_in_progress {
-            AnimationState::Attack
+        let (new_state, frame_count, repeated) = if is_dead {
+            (
+                AnimationState::Dead,
+                animation_config.atlas_death.frame_count,
+                animation_config.atlas_death.repeated,
+            )
+        } else if let Some(_skill_in_progress) = skill_in_progress {
+            (
+                AnimationState::Attack,
+                animation_config.atlas_attack.frame_count,
+                animation_config.atlas_attack.repeated,
+            )
         } else if is_walking {
-            AnimationState::Walk
+            (
+                AnimationState::Walk,
+                animation_config.atlas_walk.frame_count,
+                animation_config.atlas_walk.repeated,
+            )
         } else {
-            AnimationState::Idle
+            (
+                AnimationState::Idle,
+                animation_config.atlas_idle.frame_count,
+                animation_config.atlas_idle.repeated,
+            )
         };
 
         let mut state_changed = false;
@@ -95,30 +144,45 @@ pub fn animate_sprite(
         if state_changed {
             match new_state {
                 AnimationState::Attack => {
-                    sprite.image = animation_config.atlas_texture_attack.clone();
+                    sprite.image = animation_config.atlas_attack.image_path.clone();
                     let atlas = sprite.texture_atlas.as_mut().unwrap();
+                    atlas.layout = animation_config.atlas_attack.atlas_layout.clone();
                     atlas.index = 0;
                 }
                 AnimationState::Walk => {
-                    sprite.image = animation_config.atlas_texture_walk.clone();
+                    sprite.image = animation_config.atlas_walk.image_path.clone();
+                    let atlas = sprite.texture_atlas.as_mut().unwrap();
+                    atlas.layout = animation_config.atlas_walk.atlas_layout.clone();
                 }
                 AnimationState::Idle => {
-                    sprite.image = animation_config.atlas_texture_idle.clone();
+                    sprite.image = animation_config.atlas_idle.image_path.clone();
+                    let atlas = sprite.texture_atlas.as_mut().unwrap();
+                    atlas.layout = animation_config.atlas_idle.atlas_layout.clone();
+                }
+                AnimationState::Dead => {
+                    sprite.image = animation_config.atlas_death.image_path.clone();
+                    let atlas = sprite.texture_atlas.as_mut().unwrap();
+                    atlas.layout = animation_config.atlas_death.atlas_layout.clone();
+                    atlas.index = 0;
                 }
             }
         }
 
         if animation_config.timer.just_finished() || state_changed {
-            let frame_per_anim = 8;
-
             let atlas = sprite.texture_atlas.as_mut().unwrap();
 
-            let first_frame_index = direction.0 * frame_per_anim;
+            let first_frame_index = direction.0 * frame_count;
 
-            atlas.index = if atlas.index % frame_per_anim == frame_per_anim - 1 {
+            let is_last_frame = atlas.index % frame_count == frame_count - 1;
+
+            if is_last_frame && !repeated {
+                continue;
+            }
+
+            atlas.index = if is_last_frame {
                 first_frame_index
             } else {
-                first_frame_index + atlas.index % frame_per_anim + 1
+                first_frame_index + atlas.index % frame_count + 1
             };
         }
     }

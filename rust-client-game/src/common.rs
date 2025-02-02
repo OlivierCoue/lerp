@@ -26,3 +26,7 @@ pub struct DebugConfig {
     pub show_flow_field: bool,
     pub show_y_sort_boundaries: bool,
 }
+
+pub const Z_FLOOR: f32 = 0.;
+pub const Z_OBJECT_ON_FLOOR: f32 = 1.;
+pub const Z_DEFAULT: f32 = 4.;

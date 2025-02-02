@@ -113,7 +113,7 @@ fn spawn_map_chunk(
             // Spawn wall if any
             if let Some(map_nodes) = map_grid.get_render_tile_wall(UVec2::new(x, y)) {
                 for map_node in map_nodes {
-                    let z = 1. + (1. - ((iso_coord.y) / (map_grid.map_px_size.y)));
+                    let z = Z_DEFAULT + (1. - ((iso_coord.y) / (map_grid.map_px_size.y)));
                     let wall_entity = commands.spawn((
                         PlaySceneTag,
                         TileWall,
@@ -147,7 +147,7 @@ fn spawn_map_chunk(
         chunk_pos.y as f32 * CHUNK_SIZE as f32 * RENDER_TILE_SIZE + RENDER_TILE_SIZE / 2.,
     );
 
-    let transform = Transform::from_translation(Vec3::new(iso_coord.x, iso_coord.y, 0.0));
+    let transform = Transform::from_translation(Vec3::new(iso_coord.x, iso_coord.y, Z_FLOOR));
     let texture_handle: Handle<Image> =
         asset_server.load("assets/iso-tileset-floor-cata-160x80.png");
     commands.entity(tilemap_entity).insert((

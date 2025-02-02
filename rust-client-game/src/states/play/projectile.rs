@@ -6,7 +6,7 @@ use rust_common_game::{
     shared::PIXEL_METER,
 };
 
-use crate::{common::cartesian_to_isometric_vec2, IsoZ};
+use crate::{common::cartesian_to_isometric_vec2, utils::ZLayer, IsoZ};
 
 use super::PlaySceneTag;
 
@@ -17,6 +17,7 @@ pub struct ProjecileDisplayBundle {
     pub transform_interpolation: TransformInterpolation,
     pub sprite: Sprite,
     pub iso_z: IsoZ,
+    pub z_layer: ZLayer,
 }
 
 pub fn handle_new_projectile(
@@ -40,6 +41,7 @@ pub fn handle_new_projectile(
             transform_interpolation: TransformInterpolation,
             sprite: Sprite::from_image(asset_server.load("assets/projectile-16x8.png")),
             iso_z: IsoZ(1.),
+            z_layer: ZLayer::Default,
         });
 
         commands

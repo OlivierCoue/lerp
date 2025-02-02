@@ -5,15 +5,18 @@ use lightyear::{
     inputs::leafwing::input_buffer::InputBuffer,
     prelude::{
         client::{Predicted, Rollback},
-        server::ReplicationTarget,
-        TickManager,
+        server::{Replicate, ReplicationTarget, SyncTarget},
+        NetworkIdentity, NetworkTarget, PreSpawnedPlayerObject, TickManager,
     },
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    enemy::EnemyBaseBundle,
     protocol::*,
+    shared::ENEMY_SIZE,
     skill::{SkillInProgress, SkillName, SkillsAvailable, TriggerSkillEvent},
+    utils::xor_u64s,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -34,6 +37,7 @@ pub enum PlayerActions {
     SkillSlot3,
     #[actionlike(DualAxis)]
     Cursor,
+    SpawnEnemies,
 }
 impl PlayerActions {
     /// You could use the `strum` crate to derive this automatically!
@@ -174,6 +178,48 @@ pub fn handle_input_skill_slot(
                 target: cursor_position.pair,
             });
             break;
+        }
+    }
+}
+
+pub fn handle_input_spawn_enemies(
+    tick_manager: Res<TickManager>,
+    identity: NetworkIdentity,
+    mut commands: Commands,
+    player_query: Query<
+        &ActionState<PlayerActions>,
+        (Or<(With<Predicted>, With<ReplicationTarget>)>,),
+    >,
+) {
+    for action in player_query.iter() {
+        if !action.just_pressed(&PlayerActions::SpawnEnemies) {
+            continue;
+        }
+
+        let mut count = 0;
+        for x in 0..5 {
+            for y in 0..5 {
+                count += 1;
+                let enemy = (
+                    EnemyBaseBundle::new(&Vec2::new(x as f32 * ENEMY_SIZE, y as f32 * ENEMY_SIZE)),
+                    PreSpawnedPlayerObject::new(xor_u64s(&[tick_manager.tick().0 as u64, count])),
+                );
+                let enemy_entity = commands.spawn(enemy).id();
+
+                if identity.is_server() {
+                    commands.entity(enemy_entity).insert((Replicate {
+                        sync: SyncTarget {
+                            prediction: NetworkTarget::All,
+                            interpolation: NetworkTarget::None,
+                        },
+                        target: ReplicationTarget {
+                            target: NetworkTarget::All,
+                        },
+                        group: REPLICATION_GROUP,
+                        ..default()
+                    },));
+                }
+            }
         }
     }
 }

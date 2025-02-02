@@ -6,10 +6,11 @@ use lightyear::prelude::client::is_in_rollback;
 
 use crate::character_controller::CharacterControllerPlugin;
 
-use crate::enemy::enemy_movement_behavior;
+use crate::death::set_dead;
+use crate::enemy::{enemy_movement_behavior, enemy_set_alive, enemy_set_dead};
 use crate::flow_field::{update_flow_field, FlowField};
 use crate::hit::{on_hit_event, HitEvent};
-use crate::input::{handle_input_move_wasd, handle_input_skill_slot};
+use crate::input::{handle_input_move_wasd, handle_input_skill_slot, handle_input_spawn_enemies};
 use crate::mana::mana_regeneration;
 
 use crate::map::map::Map;
@@ -101,6 +102,23 @@ impl Plugin for SharedPlugin {
         app.add_systems(
             FixedUpdate,
             (
+                (
+                    (
+                        enemy_set_alive,
+                        enemy_set_dead,
+                        update_flow_field.run_if(not(is_in_rollback)),
+                    ),
+                    enemy_movement_behavior,
+                )
+                    .chain(),
+                process_projectile_distance,
+            )
+                .in_set(GameSimulationSet::Others),
+        );
+
+        app.add_systems(
+            FixedUpdate,
+            (
                 mana_regeneration,
                 progress_skill_cooldown_timers.run_if(not(is_in_rollback)),
             )
@@ -109,7 +127,11 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (handle_input_move_wasd, handle_input_skill_slot)
+            (
+                handle_input_move_wasd,
+                handle_input_skill_slot,
+                handle_input_spawn_enemies,
+            )
                 .in_set(GameSimulationSet::RegisterSkills),
         );
 
@@ -137,22 +159,9 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
-            on_hit_event
-                .run_if(on_event::<HitEvent>)
+            (on_hit_event.run_if(on_event::<HitEvent>), set_dead)
+                .chain()
                 .in_set(GameSimulationSet::ConsumeHitEvents),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            (
-                (
-                    update_flow_field.run_if(not(is_in_rollback)),
-                    enemy_movement_behavior,
-                )
-                    .chain(),
-                process_projectile_distance,
-            )
-                .in_set(GameSimulationSet::Others),
         );
     }
 }

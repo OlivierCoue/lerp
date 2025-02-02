@@ -1,10 +1,11 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
+use lightyear::prelude::{client::Predicted, server::ReplicationTarget, PreSpawnedPlayerObject};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     character_controller::CharacterController,
+    death::Dead,
     flow_field::FlowField,
     health::Health,
     hit::{HitTracker, Hittable},
@@ -17,40 +18,28 @@ use crate::{
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Enemy;
 
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct EnemyAlive;
+
 #[derive(Bundle)]
-pub struct EnemyBundle {
-    marker: Enemy,
+pub struct EnemyAliveBundle {
+    marker: EnemyAlive,
     physics: PhysicsBundle,
-    position: Position,
-    character_controller: CharacterController,
-    movement_speed: MovementSpeed,
-    health: Health,
     hittable: Hittable,
     hit_tracker: HitTracker,
+    character_controller: CharacterController,
+    movement_speed: MovementSpeed,
 }
-impl Default for EnemyBundle {
-    fn default() -> Self {
+impl EnemyAliveBundle {
+    pub fn init() -> Self {
         Self {
-            marker: Enemy,
+            marker: EnemyAlive,
             physics: Self::physics(),
-            position: Position::default(),
             character_controller: CharacterController,
             movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
-            health: Health::new(ENEMY_BASE_HEALTH),
             hittable: Hittable,
             hit_tracker: HitTracker::default(),
         }
-    }
-}
-impl EnemyBundle {
-    pub fn new(position: &Vec2) -> Self {
-        Self {
-            position: Position(*position),
-            ..default()
-        }
-    }
-    pub fn from_protocol() -> Self {
-        Self { ..default() }
     }
     pub fn physics() -> PhysicsBundle {
         PhysicsBundle {
@@ -60,12 +49,88 @@ impl EnemyBundle {
     }
 }
 
+#[derive(Bundle)]
+pub struct EnemyBaseBundle {
+    marker: Enemy,
+    position: Position,
+    health: Health,
+}
+impl Default for EnemyBaseBundle {
+    fn default() -> Self {
+        Self {
+            marker: Enemy,
+            position: Position::default(),
+            health: Health::new(ENEMY_BASE_HEALTH),
+        }
+    }
+}
+
+impl EnemyBaseBundle {
+    pub fn new(position: &Vec2) -> Self {
+        Self {
+            position: Position(*position),
+            ..default()
+        }
+    }
+}
+
+pub fn enemy_set_alive(
+    mut commands: Commands,
+    enemy_q: Query<
+        Entity,
+        (
+            With<Enemy>,
+            Without<EnemyAlive>,
+            Without<Dead>,
+            Or<(
+                With<Predicted>,
+                With<PreSpawnedPlayerObject>,
+                With<ReplicationTarget>,
+            )>,
+        ),
+    >,
+) {
+    for entity in enemy_q.iter() {
+        commands.entity(entity).insert(EnemyAliveBundle::init());
+    }
+}
+
+pub fn enemy_set_dead(
+    mut commands: Commands,
+    enemy_q: Query<
+        Entity,
+        (
+            With<Enemy>,
+            With<EnemyAlive>,
+            With<Dead>,
+            Or<(
+                With<Predicted>,
+                With<PreSpawnedPlayerObject>,
+                With<ReplicationTarget>,
+            )>,
+        ),
+    >,
+) {
+    for entity in enemy_q.iter() {
+        commands
+            .entity(entity)
+            .remove_with_requires::<EnemyAliveBundle>();
+    }
+}
+
 pub fn enemy_movement_behavior(
     map_grid: Res<Map>,
     flow_field: Res<FlowField>,
     mut query_enemies: Query<
         (&Position, &mut LinearVelocity, &MovementSpeed),
-        (With<Enemy>, Or<(With<Predicted>, With<ReplicationTarget>)>),
+        (
+            With<Enemy>,
+            Or<(
+                With<Predicted>,
+                With<PreSpawnedPlayerObject>,
+                With<ReplicationTarget>,
+            )>,
+        ),
     >,
 ) {
     // Collect and sort enemies deterministically
@@ -87,6 +152,7 @@ pub fn enemy_movement_behavior(
     let enemies_position: Vec<_> = enemies.iter().map(|(pos, _, _)| *pos).collect();
 
     let mut i: i32 = 0;
+    #[allow(clippy::explicit_counter_loop)]
     for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
         // Retrieve the flow field direction
         let flow_direction = flow_field.get_direction_from_position(&map_grid, enemy_position);

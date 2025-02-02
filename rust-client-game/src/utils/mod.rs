@@ -12,61 +12,85 @@ use crate::common::*;
 #[derive(Component)]
 pub struct IsoZ(pub f32);
 
+#[derive(Component)]
+pub enum ZLayer {
+    OnFloor,
+    Default,
+}
+
 #[allow(unused_mut)]
 pub fn sync_position_to_transform(
     mut query: Query<
-        (&Position, &mut Transform, Option<&IsoZ>, Has<Player>),
-        Or<(Added<Position>, Changed<Position>)>,
+        (
+            &Position,
+            &mut Transform,
+            &ZLayer,
+            Option<&IsoZ>,
+            Has<Player>,
+        ),
+        Or<(
+            Added<Position>,
+            Changed<Position>,
+            Added<ZLayer>,
+            Changed<ZLayer>,
+        )>,
     >,
     debug_config: Res<DebugConfig>,
     map: Res<Map>,
     mut gizmos: Gizmos,
 ) {
-    for (position, mut transform, opt_izo_z, is_player) in query.iter_mut() {
+    for (position, mut transform, z_layer, opt_izo_z, is_player) in query.iter_mut() {
         let mut iso_coord =
             cartesian_to_isometric(position.x, position.y).extend(transform.translation.z);
 
-        let mut y_offset = 0.;
+        iso_coord.z = match z_layer {
+            ZLayer::OnFloor => Z_OBJECT_ON_FLOOR,
+            ZLayer::Default => {
+                let mut y_offset = 0.;
+                if let Some(current_render_tiles) = map.get_render_tiles_from_position(position) {
+                    if let Some(current_render_tile) = current_render_tiles.first() {
+                        if debug_config.show_y_sort_boundaries && is_player {
+                            gizmos.line_2d(
+                                current_render_tile.y_sort_boundaries[0],
+                                current_render_tile.y_sort_boundaries[1],
+                                Color::linear_rgb(1., 0., 0.),
+                            );
+                            gizmos.line_2d(
+                                current_render_tile.y_sort_boundaries[1],
+                                current_render_tile.y_sort_boundaries[2],
+                                Color::linear_rgb(1., 0., 0.),
+                            );
+                        }
 
-        if let Some(current_render_tiles) = map.get_render_tiles_from_position(position) {
-            if let Some(current_render_tile) = current_render_tiles.first() {
-                if debug_config.show_y_sort_boundaries && is_player {
-                    gizmos.line_2d(
-                        current_render_tile.y_sort_boundaries[0],
-                        current_render_tile.y_sort_boundaries[1],
-                        Color::linear_rgb(1., 0., 0.),
-                    );
-                    gizmos.line_2d(
-                        current_render_tile.y_sort_boundaries[1],
-                        current_render_tile.y_sort_boundaries[2],
-                        Color::linear_rgb(1., 0., 0.),
-                    );
+                        let tile_y_sort_boundary_at_x =
+                            current_render_tile.get_y_sort_boundary_at_x(iso_coord.x);
+
+                        let distance_to_tile_y_coundary =
+                            (tile_y_sort_boundary_at_x - iso_coord.y).abs();
+
+                        // If the current render tile have a greater Y than the current entity
+                        // And the distance from it is less than 24
+                        if tile_y_sort_boundary_at_x > iso_coord.y
+                            && distance_to_tile_y_coundary < 24.
+                        {
+                            y_offset = -(24. - distance_to_tile_y_coundary);
+
+                            if debug_config.show_y_sort_boundaries && is_player {
+                                gizmos.line_2d(
+                                    Vec2::new(iso_coord.x, iso_coord.y),
+                                    Vec2::new(iso_coord.x, iso_coord.y + y_offset),
+                                    Color::linear_rgb(0., 0., 1.),
+                                );
+                            }
+                        };
+                    }
+                } else {
+                    y_offset = 16.
                 }
 
-                let tile_y_sort_boundary_at_x =
-                    current_render_tile.get_y_sort_boundary_at_x(iso_coord.x);
-
-                let distance_to_tile_y_coundary = (tile_y_sort_boundary_at_x - iso_coord.y).abs();
-
-                // If the current render tile have a greater Y than the current entity
-                // And the distance from it is less than 24
-                if tile_y_sort_boundary_at_x > iso_coord.y && distance_to_tile_y_coundary < 24. {
-                    y_offset = -(24. - distance_to_tile_y_coundary);
-
-                    if debug_config.show_y_sort_boundaries && is_player {
-                        gizmos.line_2d(
-                            Vec2::new(iso_coord.x, iso_coord.y),
-                            Vec2::new(iso_coord.x, iso_coord.y + y_offset),
-                            Color::linear_rgb(0., 0., 1.),
-                        );
-                    }
-                };
+                Z_DEFAULT + (1. - ((iso_coord.y + y_offset) / (map.map_px_size.y)))
             }
-        } else {
-            y_offset = 16.
-        }
-
-        iso_coord.z = 1. + (1. - ((iso_coord.y + y_offset) / (map.map_px_size.y)));
+        };
 
         // Update y based on IsoZ to make entity "fly"
         // Is important to do it after the z computation, because we want to compute z based on the initial y

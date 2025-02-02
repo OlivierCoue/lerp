@@ -6,8 +6,9 @@ use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    death::Dead,
     enemy::Enemy,
-    hit::{HitEvent, HitSource},
+    hit::{HitEvent, HitEventData, HitSource},
     physics::PhysicsBundle,
     protocol::{Player, REPLICATION_GROUP},
     shared::{PIXEL_METER, PROJECTILE_BASE_MOVEMENT_SPEED, PROJECTILE_SIZE},
@@ -247,21 +248,24 @@ pub fn process_projectile_distance(
 }
 
 pub fn process_projectile_collisions(
-    mut collision_event_reader: EventReader<Collision>,
+    // mut collision_event_reader: EventReader<Collision>,
+    collisions: Res<Collisions>,
     mut hit_events: EventWriter<HitEvent>,
-    enemy_q: Query<&Enemy>,
+    // TODO: Query hittable entities
+    enemy_q: Query<&Enemy, Without<Dead>>,
     projectile_q: Query<(&Projectile, &ProjectileData)>,
     wall_q: Query<&Wall>,
     mut commands: Commands,
     identity: NetworkIdentity,
 ) {
     let mut despawned_entities = HashSet::new();
+    let mut event_data = Vec::new();
 
     // when A and B collide, it can be reported as one of:
     // * A collides with B
     // * B collides with A
     // which is why logic is duplicated twice here
-    for Collision(contacts) in collision_event_reader.read() {
+    for contacts in collisions.iter() {
         if !contacts.collision_started() {
             continue;
         }
@@ -280,11 +284,11 @@ pub fn process_projectile_collisions(
             }
 
             if collide_with_enemy {
-                hit_events.send(HitEvent {
+                event_data.push(HitEventData {
                     source: contacts.entity1,
                     skill: projectile_data.skill_source,
                     target: contacts.entity2,
-                });
+                })
             }
         }
 
@@ -302,12 +306,16 @@ pub fn process_projectile_collisions(
             }
 
             if collide_with_enemy {
-                hit_events.send(HitEvent {
+                event_data.push(HitEventData {
                     source: contacts.entity2,
                     skill: projectile_data.skill_source,
                     target: contacts.entity1,
-                });
+                })
             }
         }
+    }
+
+    if !event_data.is_empty() {
+        hit_events.send(HitEvent(event_data));
     }
 }

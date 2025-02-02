@@ -24,22 +24,26 @@ use bevy::render::camera::ScalingMode;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use direction::update_direction;
-use enemy::handle_new_enemy;
+use enemy::on_enemy_alive;
+use enemy::on_enemy_death;
 use flow_field::debug_render_flow_field;
 use leafwing_input_manager::plugin::InputManagerSystem;
+use leafwing_input_manager::prelude::ActionState;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
-use name_plate::handle_new_name_plate;
+use lightyear::shared::replication::components::Controlled;
+use name_plate::add_name_plate;
+use name_plate::remove_name_plate;
 use name_plate::update_health_bar;
 use name_plate::update_mana_bar;
 use name_plate::update_skill_in_progress_bar;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
 
+use rust_common_game::input::PlayerActions;
 use rust_common_game::map::generate_map;
-use rust_common_game::protocol::Channel1;
+use rust_common_game::protocol::Player;
 use rust_common_game::protocol::PlayerClient;
-use rust_common_game::protocol::SpawnEnemies;
 use rust_common_game::utils::CommonPlaySceneTag;
 
 #[derive(Component)]
@@ -60,7 +64,7 @@ pub struct RollBackHistoric(pub [bool; 100]);
 #[derive(Component)]
 pub struct RollbackStateLineItem;
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Eq)]
 enum ButtonAction {
     SpawnEnemies,
     CameraZoomIn,
@@ -210,18 +214,31 @@ pub fn play_scene_logic(
 }
 
 fn play_scene_button_logic(
-    mut connection_manager: ResMut<ConnectionManager>,
     mut interaction_query: Query<
         (&Interaction, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut camera_query: Query<&mut OrthographicProjection, With<PlayerCamera>>,
+    mut action_state_query: Query<
+        &mut ActionState<PlayerActions>,
+        (With<Player>, With<Predicted>, With<Controlled>),
+    >,
 ) {
+    if let Ok(mut action_state) = action_state_query.get_single_mut() {
+        if action_state.pressed(&PlayerActions::SpawnEnemies) {
+            action_state.set_button_value(&PlayerActions::SpawnEnemies, 0.);
+        }
+    };
+
     for (interaction, action) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => match action {
                 ButtonAction::SpawnEnemies => {
-                    let _ = connection_manager.send_message::<Channel1, _>(&SpawnEnemies);
+                    let Ok(mut action_state) = action_state_query.get_single_mut() else {
+                        return;
+                    };
+
+                    action_state.set_button_value(&PlayerActions::SpawnEnemies, 1.);
                 }
                 ButtonAction::CameraZoomIn => {
                     if let Ok(mut ortho_proj) = camera_query.get_single_mut() {
@@ -314,7 +331,7 @@ impl Plugin for PlayPlugin {
 
         app.add_systems(
             FixedPreUpdate,
-            sync_cursor_poisition
+            (sync_cursor_poisition, play_scene_button_logic)
                 .before(InputSystemSet::BufferClientInputs)
                 .in_set(InputManagerSystem::ManualControl)
                 .run_if(in_state(AppState::Play)),
@@ -324,13 +341,12 @@ impl Plugin for PlayPlugin {
             Update,
             (
                 play_scene_logic,
-                play_scene_button_logic,
                 handle_new_client,
                 handle_new_player,
-                handle_new_enemy,
                 handle_new_projectile,
                 handle_removed_projectile,
-                handle_new_name_plate,
+                add_name_plate,
+                remove_name_plate,
                 update_health_bar,
                 update_mana_bar,
                 update_skill_in_progress_bar,
@@ -345,6 +361,10 @@ impl Plugin for PlayPlugin {
                 despawn_outofrange_map_chunks,
             )
                 .run_if(in_state(AppState::Play)),
+        );
+        app.add_systems(
+            Update,
+            (on_enemy_alive, on_enemy_death).run_if(in_state(AppState::Play)),
         );
         app.add_systems(
             Update,

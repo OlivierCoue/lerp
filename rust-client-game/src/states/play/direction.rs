@@ -5,16 +5,24 @@ use lightyear::prelude::{client::Predicted, PreSpawnedPlayerObject};
 use crate::common::cartesian_to_isometric_vec2;
 
 #[derive(Component)]
+pub struct DirectionCount(pub usize);
+
+#[derive(Component)]
 pub struct Direction(pub usize);
 
 pub fn update_direction(
     mut commands: Commands,
     mut q: Query<
-        (Entity, &LinearVelocity, Option<&mut Direction>),
+        (
+            Entity,
+            &LinearVelocity,
+            &DirectionCount,
+            Option<&mut Direction>,
+        ),
         Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,
     >,
 ) {
-    for (entity, linear_velocity, current_direction) in &mut q {
+    for (entity, linear_velocity, direction_count, current_direction) in &mut q {
         let renderered_velocity = cartesian_to_isometric_vec2(&linear_velocity.0);
 
         if renderered_velocity.length_squared() != 0.0 {
@@ -26,9 +34,10 @@ pub fn update_direction(
             let adjusted_angle = 360. - ((angle_deg + 270.) % 360.0);
 
             // Map the adjusted angle to one of 16 directions
-            let sector_size = 360.0 / 16.0; // Each direction covers 22.5 degrees
-            let direction_index =
-                ((adjusted_angle + (sector_size / 2.0)) / sector_size).floor() as usize % 16;
+            let sector_size = 360.0 / direction_count.0 as f32; // Each direction covers 22.5 degrees
+            let direction_index = ((adjusted_angle + (sector_size / 2.0)) / sector_size).floor()
+                as usize
+                % direction_count.0;
 
             if let Some(mut current_direction) = current_direction {
                 current_direction.0 = direction_index;

@@ -1,4 +1,5 @@
 pub mod character_controller;
+pub mod death;
 pub mod enemy;
 pub mod flow_field;
 pub mod health;
