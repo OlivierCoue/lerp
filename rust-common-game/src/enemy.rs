@@ -3,51 +3,10 @@ use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget, PreSpawnedPlayerObject};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    character_controller::CharacterController,
-    death::Dead,
-    flow_field::FlowField,
-    health::Health,
-    hit::{HitTracker, Hittable},
-    map::map::Map,
-    physics::PhysicsBundle,
-    protocol::*,
-    shared::{ENEMY_BASE_HEALTH, ENEMY_BASE_MOVEMENT_SPEED, ENEMY_SIZE, PIXEL_METER},
-};
+use crate::prelude::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Enemy;
-
-#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct EnemyAlive;
-
-#[derive(Bundle)]
-pub struct EnemyAliveBundle {
-    marker: EnemyAlive,
-    physics: PhysicsBundle,
-    hittable: Hittable,
-    hit_tracker: HitTracker,
-    character_controller: CharacterController,
-    movement_speed: MovementSpeed,
-}
-impl EnemyAliveBundle {
-    pub fn init() -> Self {
-        Self {
-            marker: EnemyAlive,
-            physics: Self::physics(),
-            character_controller: CharacterController,
-            movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
-            hittable: Hittable,
-            hit_tracker: HitTracker::default(),
-        }
-    }
-    pub fn physics() -> PhysicsBundle {
-        PhysicsBundle {
-            rigid_body: RigidBody::Kinematic,
-            collider: Collider::circle(ENEMY_SIZE / 2.),
-        }
-    }
-}
 
 #[derive(Bundle)]
 pub struct EnemyBaseBundle {
@@ -74,47 +33,31 @@ impl EnemyBaseBundle {
     }
 }
 
-pub fn enemy_set_alive(
-    mut commands: Commands,
-    enemy_q: Query<
-        Entity,
-        (
-            With<Enemy>,
-            Without<EnemyAlive>,
-            Without<Dead>,
-            Or<(
-                With<Predicted>,
-                With<PreSpawnedPlayerObject>,
-                With<ReplicationTarget>,
-            )>,
-        ),
-    >,
-) {
-    for entity in enemy_q.iter() {
-        commands.entity(entity).insert(EnemyAliveBundle::init());
-    }
+#[derive(Bundle)]
+pub struct EnemyAliveBundle {
+    marker: Alive,
+    physics: PhysicsBundle,
+    hittable: Hittable,
+    hit_tracker: HitTracker,
+    character_controller: CharacterController,
+    movement_speed: MovementSpeed,
 }
-
-pub fn enemy_set_dead(
-    mut commands: Commands,
-    enemy_q: Query<
-        Entity,
-        (
-            With<Enemy>,
-            With<EnemyAlive>,
-            With<Dead>,
-            Or<(
-                With<Predicted>,
-                With<PreSpawnedPlayerObject>,
-                With<ReplicationTarget>,
-            )>,
-        ),
-    >,
-) {
-    for entity in enemy_q.iter() {
-        commands
-            .entity(entity)
-            .remove_with_requires::<EnemyAliveBundle>();
+impl EnemyAliveBundle {
+    pub fn init() -> Self {
+        Self {
+            marker: Alive,
+            physics: Self::physics(),
+            character_controller: CharacterController,
+            movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
+            hittable: Hittable,
+            hit_tracker: HitTracker::default(),
+        }
+    }
+    pub fn physics() -> PhysicsBundle {
+        PhysicsBundle {
+            rigid_body: RigidBody::Kinematic,
+            collider: Collider::circle(ENEMY_SIZE / 2.),
+        }
     }
 }
 
@@ -125,6 +68,7 @@ pub fn enemy_movement_behavior(
         (&Position, &mut LinearVelocity, &MovementSpeed),
         (
             With<Enemy>,
+            With<Alive>,
             Or<(
                 With<Predicted>,
                 With<PreSpawnedPlayerObject>,

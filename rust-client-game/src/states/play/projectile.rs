@@ -1,10 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, PreSpawnedPlayerObject};
-use rust_common_game::{
-    projectile::{Projectile, ProjectileBundle},
-    shared::PIXEL_METER,
-};
+use rust_common_game::prelude::*;
 
 use crate::{common::cartesian_to_isometric_vec2, utils::ZLayer, IsoZ};
 

@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::{death::Dead, skill::SkillInProgress};
+use rust_common_game::prelude::*;
 
 use super::direction::Direction;
 
@@ -91,7 +91,7 @@ pub fn animate_sprite(
             Option<&LinearVelocity>,
             &Direction,
             Option<&SkillInProgress>,
-            Has<Dead>,
+            Has<Dying>,
             &Children,
         ),
         Without<AnimationConfig>,

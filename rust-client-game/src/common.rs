@@ -30,3 +30,4 @@ pub struct DebugConfig {
 pub const Z_FLOOR: f32 = 0.;
 pub const Z_OBJECT_ON_FLOOR: f32 = 1.;
 pub const Z_DEFAULT: f32 = 4.;
+pub const Z_DEBUG: f32 = 10.;

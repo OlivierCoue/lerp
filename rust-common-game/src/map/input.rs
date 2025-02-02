@@ -1,7 +1,7 @@
-pub struct InputMap {
+pub struct MapInput {
     pub map: Vec<Vec<char>>,
 }
-impl InputMap {
+impl MapInput {
     pub fn get(&self, x: u32, y: u32) -> Option<&char> {
         if y > self.map.len() as u32 - 1 {
             return None;
@@ -41,8 +41,8 @@ impl InputMap {
     }
 }
 
-pub fn create_extra_small_map_input() -> InputMap {
-    InputMap {
+pub fn create_extra_small_map_input() -> MapInput {
+    MapInput {
         map: vec![
             vec!['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', ' ', ' '],
             vec!['W', 'F', 'F', 'F', 'F', 'F', 'F', 'W', ' ', ' '],
@@ -109,8 +109,8 @@ pub fn create_extra_small_map_input() -> InputMap {
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 
-pub fn create_small_map_input() -> InputMap {
-    InputMap {
+pub fn create_small_map_input() -> MapInput {
+    MapInput {
         map: vec![
             vec![
                 ' ', ' ', ' ', ' ', ' ', ' ', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', ' ', ' ',
@@ -387,8 +387,8 @@ pub fn create_small_map_input() -> InputMap {
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 
-pub fn create_large_map_input() -> InputMap {
-    InputMap {
+pub fn create_large_map_input() -> MapInput {
+    MapInput {
         map: vec![
             vec![
                 ' ', ' ', ' ', ' ', ' ', ' ', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', ' ', ' ',
@@ -1255,8 +1255,8 @@ pub fn create_large_map_input() -> InputMap {
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 // vec![' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
 
-pub fn create_giga_map_input() -> InputMap {
-    InputMap {
+pub fn create_giga_map_input() -> MapInput {
+    MapInput {
         map: vec![
             vec![
                 ' ', ' ', ' ', ' ', ' ', ' ', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', ' ', ' ',

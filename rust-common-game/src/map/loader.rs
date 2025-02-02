@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    input::InputMap,
+    input::MapInput,
     map::*,
     tile_kind::{RenderTileFloorKind, RenderTileWallKind},
 };
@@ -26,7 +26,7 @@ struct WallKey {
 }
 
 /// Reset the given Map and load the given InputMap in it
-pub fn load_map(commands: &mut Commands, map_grid: &mut Map, input: InputMap) {
+pub fn load_map(commands: &mut Commands, map_grid: &mut Map, input: MapInput) {
     // Reset the map with the input size
     map_grid.reset(UVec2::new(
         input.map.first().unwrap().len() as u32,

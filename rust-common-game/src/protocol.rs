@@ -7,14 +7,7 @@ use lightyear::client::components::ComponentSyncMode;
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    death::Dead,
-    enemy::Enemy,
-    health::Health,
-    input::{PlayerActions, SkillSlotMap},
-    mana::Mana,
-    projectile::Projectile,
-};
+use crate::prelude::*;
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 

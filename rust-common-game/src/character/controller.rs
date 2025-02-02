@@ -7,13 +7,6 @@ use crate::{enemy::Enemy, projectile::Projectile};
 // With a few update to addpat it for a top down game, the example was for a platformer with only x axes movement / jump / gravity...
 // Also adapted it to handle CharacterController x CharacterController collisions
 
-#[derive(PhysicsLayer, Default)]
-pub enum GameLayer {
-    #[default]
-    Default, // Layer 0 - the default layer that objects are assigned to
-    Projectile, // Layer 1
-}
-
 pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {

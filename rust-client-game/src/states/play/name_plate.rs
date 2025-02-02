@@ -1,9 +1,7 @@
 use crate::states::play::*;
 use bevy::prelude::*;
 use lightyear::prelude::PreSpawnedPlayerObject;
-use rust_common_game::{
-    death::Dead, health::Health, mana::Mana, shared::PIXEL_METER, skill::SkillInProgress,
-};
+use rust_common_game::prelude::*;
 
 #[derive(Component)]
 pub struct HasNamePlate(pub Entity);
@@ -47,7 +45,7 @@ pub fn remove_name_plate(
     health_query: Query<
         (Entity, &HasNamePlate),
         (
-            With<Dead>,
+            Or<(With<Dying>, With<Dead>)>,
             Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,
         ),
     >,
@@ -64,6 +62,7 @@ pub fn add_name_plate(
         (Entity, &Health, Option<&Mana>),
         (
             Without<HasNamePlate>,
+            Without<Dying>,
             Without<Dead>,
             With<Health>,
             Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,

@@ -11,13 +11,7 @@ use lightyear::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    enemy::EnemyBaseBundle,
-    protocol::*,
-    shared::ENEMY_SIZE,
-    skill::{SkillInProgress, SkillName, SkillsAvailable, TriggerSkillEvent},
-    utils::xor_u64s,
-};
+use crate::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct InputVec2 {

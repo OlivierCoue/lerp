@@ -9,11 +9,7 @@ use lightyear::prelude::*;
 use local_ip_address::local_ip;
 use rust_common_game::input::PlayerActions;
 
-use rust_common_game::map::generate_map;
-use rust_common_game::player::PlayerBundle;
-use rust_common_game::protocol::*;
-use rust_common_game::settings::*;
-use rust_common_game::skill::*;
+use rust_common_game::prelude::*;
 
 use std::net::SocketAddr;
 use std::time::Duration;

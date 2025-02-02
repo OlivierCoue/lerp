@@ -4,10 +4,7 @@ use avian2d::prelude::Position;
 use bevy::{math::UVec2, prelude::*, utils::HashMap};
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget};
 
-use crate::{
-    map::map::{Map, NavTileCoord},
-    protocol::Player,
-};
+use crate::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum FlowFieldDirection {

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use lightyear::{prelude::client::*, shared::replication::components::Controlled};
-use rust_common_game::protocol::*;
+use rust_common_game::prelude::*;
 
 use super::PlayerCamera;
 

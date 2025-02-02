@@ -5,17 +5,7 @@ use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    death::Dead,
-    enemy::Enemy,
-    hit::{HitEvent, HitEventData, HitSource},
-    physics::PhysicsBundle,
-    protocol::{Player, REPLICATION_GROUP},
-    shared::{PIXEL_METER, PROJECTILE_BASE_MOVEMENT_SPEED, PROJECTILE_SIZE},
-    skill::*,
-    utils::xor_u64s,
-    wall::Wall,
-};
+use crate::prelude::*;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Projectile;
@@ -252,7 +242,7 @@ pub fn process_projectile_collisions(
     collisions: Res<Collisions>,
     mut hit_events: EventWriter<HitEvent>,
     // TODO: Query hittable entities
-    enemy_q: Query<&Enemy, Without<Dead>>,
+    enemy_q: Query<&Enemy, With<Alive>>,
     projectile_q: Query<(&Projectile, &ProjectileData)>,
     wall_q: Query<&Wall>,
     mut commands: Commands,

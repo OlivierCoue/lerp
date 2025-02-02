@@ -5,7 +5,7 @@ use lightyear::prelude::{
     NetworkIdentity,
 };
 
-use crate::{health::Health, skill::*};
+use crate::prelude::*;
 
 #[derive(Component, Default)]
 pub struct HitSource;

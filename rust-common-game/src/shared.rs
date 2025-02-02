@@ -4,22 +4,7 @@ use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
 use lightyear::prelude::client::is_in_rollback;
 
-use crate::character_controller::CharacterControllerPlugin;
-
-use crate::death::set_dead;
-use crate::enemy::{enemy_movement_behavior, enemy_set_alive, enemy_set_dead};
-use crate::flow_field::{update_flow_field, FlowField};
-use crate::hit::{on_hit_event, HitEvent};
-use crate::input::{handle_input_move_wasd, handle_input_skill_slot, handle_input_spawn_enemies};
-use crate::mana::mana_regeneration;
-
-use crate::map::map::Map;
-use crate::projectile::{
-    on_execute_skill_projectile_event, process_projectile_collisions, process_projectile_distance,
-};
-use crate::protocol::*;
-use crate::settings::FIXED_TIMESTEP_HZ;
-use crate::skill::*;
+use crate::prelude::*;
 
 /// Number of pixels per one meter
 pub const PIXEL_METER: f32 = 32.;
@@ -103,11 +88,7 @@ impl Plugin for SharedPlugin {
             FixedUpdate,
             (
                 (
-                    (
-                        enemy_set_alive,
-                        enemy_set_dead,
-                        update_flow_field.run_if(not(is_in_rollback)),
-                    ),
+                    (update_flow_field.run_if(not(is_in_rollback)),),
                     enemy_movement_behavior,
                 )
                     .chain(),
@@ -159,7 +140,10 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (on_hit_event.run_if(on_event::<HitEvent>), set_dead)
+            (
+                on_hit_event.run_if(on_event::<HitEvent>),
+                set_character_life_state,
+            )
                 .chain()
                 .in_set(GameSimulationSet::ConsumeHitEvents),
         );

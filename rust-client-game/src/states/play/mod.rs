@@ -24,8 +24,7 @@ use bevy::render::camera::ScalingMode;
 use bevy_transform_interpolation::TransformEasingSet;
 
 use direction::update_direction;
-use enemy::on_enemy_alive;
-use enemy::on_enemy_death;
+use enemy::*;
 use flow_field::debug_render_flow_field;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::ActionState;
@@ -40,11 +39,7 @@ use name_plate::update_skill_in_progress_bar;
 use projectile::handle_new_projectile;
 use projectile::handle_removed_projectile;
 
-use rust_common_game::input::PlayerActions;
-use rust_common_game::map::generate_map;
-use rust_common_game::protocol::Player;
-use rust_common_game::protocol::PlayerClient;
-use rust_common_game::utils::CommonPlaySceneTag;
+use rust_common_game::prelude::*;
 
 #[derive(Component)]
 pub struct PlayerCamera;
@@ -364,7 +359,7 @@ impl Plugin for PlayPlugin {
         );
         app.add_systems(
             Update,
-            (on_enemy_alive, on_enemy_death).run_if(in_state(AppState::Play)),
+            (on_enemy, update_enemy_render_state).run_if(in_state(AppState::Play)),
         );
         app.add_systems(
             Update,

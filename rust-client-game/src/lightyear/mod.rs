@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use lightyear::prelude::{client::*, *};
 use rand::Rng;
-use rust_common_game::settings::*;
-use rust_common_game::shared::*;
+use rust_common_game::prelude::*;
 use std::net::IpAddr;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
@@ -34,7 +33,7 @@ impl Plugin for LightyearPlugin {
 
         // let link_conditioner = LinkConditionerConfig::good_condition();
         let link_conditioner = LinkConditionerConfig {
-            incoming_latency: Duration::from_millis(0),
+            incoming_latency: Duration::from_millis(40),
             incoming_jitter: Duration::from_millis(0),
             incoming_loss: 0.00,
         };

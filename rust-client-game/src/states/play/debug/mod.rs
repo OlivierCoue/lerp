@@ -41,7 +41,7 @@ pub(crate) fn debug_draw_colliders(
     for (entity, position, collider, debug_entity_ref) in collider_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = collider_debug_q.get_mut(debug_entity_ref.0) {
-                transform.translation = cartesian_to_isometric_vec2(position).extend(3.);
+                transform.translation = cartesian_to_isometric_vec2(position).extend(Z_DEBUG);
             }
         } else {
             if let Some(ball) = collider.shape().as_ball() {
@@ -93,7 +93,7 @@ pub(crate) fn debug_draw_colliders(
                         ShapeBundle {
                             path: GeometryBuilder::build_as(&shape),
                             transform: Transform::from_translation(
-                                cartesian_to_isometric_vec2(position).extend(3.),
+                                cartesian_to_isometric_vec2(position).extend(Z_DEBUG),
                             ),
                             ..default()
                         },
@@ -154,7 +154,7 @@ pub(crate) fn debug_draw_confirmed_entities(
     for (entity, position, is_enemy, is_projectile, debug_entity_ref) in confirmed_q.iter() {
         if let Some(debug_entity_ref) = debug_entity_ref {
             if let Ok(mut transform) = confirmed_debug_q.get_mut(debug_entity_ref.0) {
-                transform.translation = cartesian_to_isometric_vec2(position).extend(4.);
+                transform.translation = cartesian_to_isometric_vec2(position).extend(Z_DEBUG + 1.);
             }
         } else {
             let radius = if is_enemy {
@@ -177,7 +177,7 @@ pub(crate) fn debug_draw_confirmed_entities(
                     ShapeBundle {
                         path: GeometryBuilder::build_as(&shape),
                         transform: Transform::from_translation(
-                            cartesian_to_isometric_vec2(position).extend(3.),
+                            cartesian_to_isometric_vec2(position).extend(Z_DEBUG + 1.),
                         ),
                         ..default()
                     },

@@ -4,16 +4,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::*;
 
-use crate::{
-    character_controller::CharacterController,
-    health::Health,
-    input::{PlayerActions, SkillSlotMap},
-    mana::Mana,
-    physics::PhysicsBundle,
-    protocol::*,
-    shared::{PLAYER_BASE_HEALTH, PLAYER_BASE_MANA, PLAYER_BASE_MOVEMENT_SPEED, PLAYER_SIZE},
-    skill::{SkillName, SkillSpeed, SkillsAvailable},
-};
+use crate::prelude::*;
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
