@@ -74,7 +74,7 @@ impl AnimationConfig {
         };
 
         Self {
-            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            timer: Timer::from_seconds(0.05, TimerMode::Repeating),
             state: AnimationState::Idle,
             atlas_walk,
             atlas_idle,

@@ -39,20 +39,20 @@ pub fn handle_new_player(
             &mut texture_atlas_layouts,
             AtlasConfigInput {
                 repeated: true,
-                frame_count: 8,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                frame_count: 16,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
                 image_path: String::from_str("assets/atlas_player_walk.png").unwrap(),
             },
             AtlasConfigInput {
                 repeated: true,
-                frame_count: 8,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                frame_count: 16,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
                 image_path: String::from_str("assets/atlas_player_idle.png").unwrap(),
             },
             AtlasConfigInput {
                 repeated: true,
-                frame_count: 8,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
+                frame_count: 16,
+                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
                 image_path: String::from_str("assets/atlas_player_attack.png").unwrap(),
             },
             AtlasConfigInput {
@@ -79,19 +79,21 @@ pub fn handle_new_player(
                 Transform::from_xyz(0., 0., 1.),
                 Visibility::default(),
                 ZLayer::Default,
-                DirectionCount(16),
+                DirectionCount(8),
             ))
             .with_children(|parent| {
                 parent.spawn((
-                    Sprite::from_atlas_image(
-                        animation_config.atlas_idle.image_path.clone(),
-                        TextureAtlas {
+                    Sprite {
+                        image: animation_config.atlas_idle.image_path.clone(),
+                        texture_atlas: Some(TextureAtlas {
                             layout: animation_config.atlas_idle.atlas_layout.clone(),
                             index: 0,
-                        },
-                    ),
+                        }),
+                        anchor: bevy::sprite::Anchor::Custom(Vec2::new(0., -0.33)),
+                        ..default()
+                    },
                     animation_config,
-                    Transform::from_scale(Vec3::new(2., 2., 0.)),
+                    Transform::from_scale(Vec3::new(1., 1., 0.)),
                 ));
             });
 
