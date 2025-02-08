@@ -18,6 +18,7 @@ pub struct PlayerBundle {
     skill_slot_map: SkillSlotMap,
     pub skills_available: SkillsAvailable,
     skill_speed: SkillSpeed,
+    team: Team,
 }
 impl Default for PlayerBundle {
     fn default() -> Self {
@@ -38,6 +39,7 @@ impl Default for PlayerBundle {
             skill_speed: SkillSpeed {
                 value: Duration::from_millis(200),
             },
+            team: Team::Player,
         }
     }
 }

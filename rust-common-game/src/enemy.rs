@@ -13,6 +13,7 @@ pub struct EnemyBaseBundle {
     marker: Enemy,
     position: Position,
     health: Health,
+    team: Team,
 }
 impl Default for EnemyBaseBundle {
     fn default() -> Self {
@@ -20,6 +21,7 @@ impl Default for EnemyBaseBundle {
             marker: Enemy,
             position: Position::default(),
             health: Health::new(ENEMY_BASE_HEALTH),
+            team: Team::Enemy,
         }
     }
 }

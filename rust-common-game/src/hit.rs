@@ -8,7 +8,7 @@ use lightyear::prelude::{
 use crate::prelude::*;
 
 #[derive(Component, Default)]
-pub struct HitSource;
+pub struct HitSource(pub Team);
 
 #[derive(Component, Default)]
 pub struct Hittable;
@@ -34,6 +34,7 @@ pub fn on_hit_event(
     mut hit_events: EventReader<HitEvent>,
     mut source_q: Query<
         (
+            &HitSource,
             &SkillInstanceHash,
             Option<&DamageOnHit>,
             Option<&mut Pierce>,
@@ -42,7 +43,7 @@ pub fn on_hit_event(
     >,
     _skill_q: Query<&SkillDamageOnHit, (With<Skill>, Without<HitSource>, Without<Hittable>)>,
     mut target: Query<
-        (Option<&mut Health>, Option<&mut HitTracker>),
+        (&Team, Option<&mut Health>, Option<&mut HitTracker>),
         (
             With<Hittable>,
             Without<HitSource>,
@@ -55,7 +56,7 @@ pub fn on_hit_event(
 
     for event in hit_events.read() {
         for event_data in &event.0 {
-            let Ok((skill_instance_hash, damage_on_hit, pierce)) =
+            let Ok((hit_source, skill_instance_hash, damage_on_hit, pierce)) =
                 source_q.get_mut(event_data.source)
             else {
                 if !despawned_entities.contains(&event_data.source) {
@@ -64,12 +65,19 @@ pub fn on_hit_event(
                 continue;
             };
 
-            let Ok((target_health, target_hit_tracker)) = target.get_mut(event_data.target) else {
+            let Ok((target_team, target_health, target_hit_tracker)) =
+                target.get_mut(event_data.target)
+            else {
                 if !despawned_entities.contains(&event_data.target) {
                     error!("[on_hit_event] Hit target does not exist in world");
                 }
                 continue;
             };
+
+            // If the source hit something from its own team we just ignore it
+            if hit_source.0 == *target_team {
+                continue;
+            }
 
             // If the target have a HitTracker, insert the skill instance hash in it.
             // If it was already in, then we stop and do not apply any on hit effect.

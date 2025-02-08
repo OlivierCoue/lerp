@@ -40,7 +40,7 @@ impl Default for ProjectileBundle {
                 max_distance: 0.,
                 distance_traveled: 0.,
             },
-            hit_source: HitSource,
+            hit_source: HitSource::default(),
             physics: Self::physics(),
             position: Position::default(),
             previous_position: PreviousPosition::default(),
@@ -55,6 +55,7 @@ impl ProjectileBundle {
         linear_velocity: &Vec2,
         skill_source: Entity,
         skill_instance_hash: u64,
+        from_team: Team,
     ) -> Self {
         Self {
             data: ProjectileData {
@@ -67,6 +68,7 @@ impl ProjectileBundle {
             previous_position: PreviousPosition(*position),
             linear_velocity: LinearVelocity(*linear_velocity),
             skill_instance_hash: SkillInstanceHash(skill_instance_hash),
+            hit_source: HitSource(from_team),
             ..default()
         }
     }
@@ -86,7 +88,7 @@ pub fn on_execute_skill_projectile_event(
     mut commands: Commands,
     mut excecute_skill_ev: EventReader<ExcecuteSkillEvent>,
     skill_projectile_q: Query<(Entity, &SkillProjectile, Option<&SkillDamageOnHit>), With<Skill>>,
-    initiator_q: Query<(&Position, Option<&Player>), Without<Skill>>,
+    initiator_q: Query<(&Position, &Team, Option<&Player>), Without<Skill>>,
 ) {
     for event in excecute_skill_ev.read() {
         // Try to retrieve the skill data from the query.
@@ -97,7 +99,9 @@ pub fn on_execute_skill_projectile_event(
             continue;
         };
 
-        let Ok((initiator_position, _initiator_player)) = initiator_q.get(event.initiator) else {
+        let Ok((initiator_position, initiator_team, _initiator_player)) =
+            initiator_q.get(event.initiator)
+        else {
             println!("[on_execute_skill_projectile_event] Cannot find initiator entity");
             continue;
         };
@@ -122,6 +126,7 @@ pub fn on_execute_skill_projectile_event(
                         &linear_velocity,
                         skill_entity,
                         event.skill_instance_hash,
+                        *initiator_team,
                     ),
                     PreSpawnedPlayerObject::new(xor_u64s(&[
                         event.skill_instance_hash,
@@ -242,7 +247,7 @@ pub fn process_projectile_collisions(
     collisions: Res<Collisions>,
     mut hit_events: EventWriter<HitEvent>,
     // TODO: Query hittable entities
-    enemy_q: Query<&Enemy, With<Alive>>,
+    hittable_q: Query<&Hittable, With<Alive>>,
     projectile_q: Query<(&Projectile, &ProjectileData)>,
     wall_q: Query<&Wall>,
     mut commands: Commands,
@@ -262,7 +267,7 @@ pub fn process_projectile_collisions(
 
         if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity1) {
             let collide_with_wall = wall_q.get(contacts.entity2).is_ok();
-            let collide_with_enemy = enemy_q.get(contacts.entity2).is_ok();
+            let collide_with_hittable = hittable_q.get(contacts.entity2).is_ok();
 
             // despawn the projectile if it hit a wall
             if collide_with_wall && despawned_entities.insert(contacts.entity1) {
@@ -273,7 +278,7 @@ pub fn process_projectile_collisions(
                 }
             }
 
-            if collide_with_enemy {
+            if collide_with_hittable {
                 event_data.push(HitEventData {
                     source: contacts.entity1,
                     skill: projectile_data.skill_source,
@@ -284,7 +289,7 @@ pub fn process_projectile_collisions(
 
         if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity2) {
             let collide_with_wall = wall_q.get(contacts.entity1).is_ok();
-            let collide_with_enemy = enemy_q.get(contacts.entity1).is_ok();
+            let collide_with_hittable = hittable_q.get(contacts.entity1).is_ok();
 
             // despawn the projectile if it hit a wall
             if collide_with_wall && despawned_entities.insert(contacts.entity2) {
@@ -295,7 +300,7 @@ pub fn process_projectile_collisions(
                 }
             }
 
-            if collide_with_enemy {
+            if collide_with_hittable {
                 event_data.push(HitEventData {
                     source: contacts.entity2,
                     skill: projectile_data.skill_source,

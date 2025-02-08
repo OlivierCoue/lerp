@@ -13,6 +13,7 @@ pub mod protocol;
 pub mod settings;
 pub mod shared;
 pub mod skill;
+pub mod team;
 pub mod utils;
 pub mod wall;
 
@@ -33,6 +34,7 @@ pub mod prelude {
     pub use crate::settings::*;
     pub use crate::shared::*;
     pub use crate::skill::*;
+    pub use crate::team::*;
     pub use crate::utils::*;
     pub use crate::wall::*;
 }

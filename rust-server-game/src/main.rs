@@ -14,8 +14,6 @@ use rust_common_game::prelude::*;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use rust_common_game::shared::*;
-
 #[derive(Resource, Default)]
 pub struct ClientPlayerMap(HashMap<ClientId, Entity>);
 
