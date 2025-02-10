@@ -1,8 +1,8 @@
 mod animation;
 mod camera;
+mod character;
 mod debug;
 mod direction;
-mod enemy;
 pub mod map;
 mod name_plate;
 mod player;
@@ -15,29 +15,23 @@ use crate::states::play::map::*;
 use crate::states::play::player::*;
 use crate::NORMAL_BUTTON;
 
-use animation::animate_sprite;
 use bevy::diagnostic::DiagnosticsStore;
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
-
 use bevy::render::camera::ScalingMode;
 use bevy_transform_interpolation::TransformEasingSet;
-
-use direction::update_direction;
-use enemy::*;
-use flow_field::debug_render_flow_field;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::client::input::leafwing::InputSystemSet;
 use lightyear::prelude::client::*;
 use lightyear::shared::replication::components::Controlled;
-use name_plate::add_name_plate;
-use name_plate::remove_name_plate;
-use name_plate::update_health_bar;
-use name_plate::update_mana_bar;
-use name_plate::update_skill_in_progress_bar;
-use projectile::handle_new_projectile;
-use projectile::handle_removed_projectile;
+
+use animation::animate_sprite;
+use character::*;
+use direction::update_direction;
+use flow_field::debug_render_flow_field;
+use name_plate::*;
+use projectile::*;
 
 use rust_common_game::prelude::*;
 
@@ -359,7 +353,7 @@ impl Plugin for PlayPlugin {
         );
         app.add_systems(
             Update,
-            (on_enemy, update_enemy_render_state).run_if(in_state(AppState::Play)),
+            (on_character, update_character_render_state).run_if(in_state(AppState::Play)),
         );
         app.add_systems(
             Update,

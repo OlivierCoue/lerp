@@ -11,6 +11,18 @@ def get_directions(n: int) -> list[float]:
     step = 360.0 / n
     return [i * step for i in range(n)]
 
+# Function to hide all collections
+def hide_all_collections():
+    for collection in bpy.data.collections:
+        collection.hide_render = True
+        collection.hide_viewport = True
+
+# Function to set active collection
+def set_active_collection(collection_name):
+    hide_all_collections()
+    if collection_name in bpy.data.collections:
+        bpy.data.collections[collection_name].hide_render = False
+        bpy.data.collections[collection_name].hide_viewport = False
 
 ##########
 ##  UI  ##
@@ -167,36 +179,49 @@ class LERPTOOLS_OT_render(bpy.types.Operator):
         rotatebox = bpy.data.objects["ROTATEBOX"]
         output_path = "//renders/"
         
-        # Replace 'Armature' with the name of your character's armature
-        armature_name = "Armature"
-        armature = bpy.data.objects.get(armature_name)
-        animation_to_play = "walk"  # Change this to the name of the action you want
+        characters = ["archer", "enemy"]
 
-        animations = ["walk", "idle", "attack"]
-        
-        for animation in animations:
-            bpy.data.objects["Armature"].animation_data.action = bpy.data.actions[animation]
+        for character in characters:
+            set_active_collection(character)
 
-            for direction, angle in enumerate(get_directions(8)):
-                rotatebox.rotation_euler[2] = math.radians(angle) # Convert degrees to radians
-                bpy.context.view_layer.update()  # Update scene before rendering
+            # Replace 'Armature' with the name of your character's armature
+            armature_name = "armature_" + character
+            armature = bpy.data.objects.get(armature_name)
 
-                direction_num = str( direction ).zfill(2) # Zero-padds frame number (1 -> 01)
+            animations = {
+                "walk": {"name": "walk", "start_frame": 1, "frame_count": 16},
+                "idle": {"name": "idle","start_frame": 1, "frame_count": 16},
+                "attack": {"name": "attack","start_frame": 1, "frame_count": 16},
+                "death": {"name": "death","start_frame": 1, "frame_count": 16},
+                "dead": {"name": "death","start_frame": 16, "frame_count": 16},
+            }
+            
+            for export_name, animation_data in animations.items():
+                animation_name = animation_data["name"]
+                start_frame = animation_data["start_frame"]
+                frame_count = animation_data["frame_count"]
+                armature.animation_data.action = bpy.data.actions[animation_name]
 
-                # Render animation
-                for f in range(1, 17):
-                    target_frame = f
-                    bpy.context.scene.frame_set( target_frame ) # Set frame
-                    
-                    # Output definitions
-                    
-                    frame_num = str(target_frame - 1).zfill(4) # Zero-padds frame number (5 -> 0005)
-                    frame_name = f"{animation}/{direction_num}_{frame_num}{bpy.context.scene.render.file_extension}"
-                    bpy.context.scene.render.filepath = join( output_path, frame_name )
+                for direction, angle in enumerate(get_directions(8)):
+                    rotatebox.rotation_euler[2] = math.radians(angle) # Convert degrees to radians
+                    bpy.context.view_layer.update()  # Update scene before rendering
 
-                    # Render frame
-                    bpy.ops.render.render(write_still = True)
-                    print(f"Rendered {direction} {frame_num}")
+                    direction_num = str( direction ).zfill(2) # Zero-padds frame number (1 -> 01)
+
+                    # Render animation
+                    for f in range(start_frame, frame_count + 1):
+                        target_frame = f
+                        bpy.context.scene.frame_set( target_frame ) # Set frame
+                        
+                        # Output definitions
+                        
+                        frame_num = str(target_frame - 1).zfill(4) # Zero-padds frame number (5 -> 0005)
+                        frame_name = f"{character}/{export_name}/{direction_num}_{frame_num}{bpy.context.scene.render.file_extension}"
+                        bpy.context.scene.render.filepath = join( output_path, frame_name )
+
+                        # Render frame
+                        bpy.ops.render.render(write_still = True)
+                        print(f"Rendered {direction} {frame_num}")
             
         return {'FINISHED'}
 

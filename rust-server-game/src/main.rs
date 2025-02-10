@@ -26,22 +26,14 @@ fn handle_connections(
     mut connections: EventReader<ConnectEvent>,
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
-    skill_db: Res<SkillDb>,
 ) {
     for connection in connections.read() {
         let client_id = connection.client_id;
         info!("New client {:?}", client_id);
 
         let player_id = commands.spawn_empty().id();
-        let mut player_bundle = PlayerBundle::new(client_id, &Vec2::new(0., 0.));
-        attach_all_skills(
-            &mut commands,
-            player_id,
-            &mut player_bundle.skills_available,
-            &skill_db,
-        );
         commands.entity(player_id).insert((
-            player_bundle,
+            PlayerBundle::new(&Vec2::new(0., 0.)),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::All,

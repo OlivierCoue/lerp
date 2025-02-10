@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget, PreSpawnedPlayerObject};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    enemy::{Enemy, EnemyAliveBundle},
-    health::Health,
-};
+use crate::prelude::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Alive;
@@ -24,13 +21,14 @@ pub fn set_character_life_state(
     mut targets: Query<
         (
             Entity,
+            &Character,
             &Health,
             Option<&Alive>,
             Option<&mut Dying>,
             Option<&Dead>,
         ),
         (
-            With<Enemy>,
+            With<Character>,
             Without<Dead>,
             Or<(
                 With<Predicted>,
@@ -40,7 +38,7 @@ pub fn set_character_life_state(
         ),
     >,
 ) {
-    for (entity, health, alive, dying, dead) in targets.iter_mut() {
+    for (entity, character, health, alive, dying, dead) in targets.iter_mut() {
         let should_be_dead = health.current <= 0.0;
 
         if should_be_dead {
@@ -48,7 +46,7 @@ pub fn set_character_life_state(
             if alive.is_some() {
                 commands
                     .entity(entity)
-                    .remove_with_requires::<EnemyAliveBundle>();
+                    .remove_with_requires::<CharacterAliveBundle>();
             }
 
             // Ensure Dying is present if not already
@@ -60,7 +58,9 @@ pub fn set_character_life_state(
         } else {
             // Restore Alive state if health is > 0
             if alive.is_none() {
-                commands.entity(entity).insert(EnemyAliveBundle::init());
+                commands
+                    .entity(entity)
+                    .insert_if_new(CharacterAliveBundle::init(&character.id.data()));
             }
         }
 

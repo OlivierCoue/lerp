@@ -1,8 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use rust_common_game::{
-    map::map::Map, protocol::Player, shared::PIXEL_METER, utils::cartesian_to_isometric,
-};
+use rust_common_game::prelude::*;
 
 use crate::common::*;
 
@@ -44,7 +42,7 @@ pub fn sync_position_to_transform(
             cartesian_to_isometric(position.x, position.y).extend(transform.translation.z);
 
         iso_coord.z = match z_layer {
-            ZLayer::OnFloor => Z_OBJECT_ON_FLOOR,
+            ZLayer::OnFloor => Z_OBJECT_ON_FLOOR + (1. - ((iso_coord.y + 16.) / map.map_px_size.y)),
             ZLayer::Default => {
                 let mut y_offset = 0.;
                 if let Some(current_render_tiles) = map.get_render_tiles_from_position(position) {

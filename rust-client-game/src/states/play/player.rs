@@ -1,14 +1,9 @@
-use crate::states::play::animation::AtlasConfigInput;
-use crate::states::play::direction::DirectionCount;
 use crate::states::play::*;
-use crate::utils::ZLayer;
-use animation::AnimationConfig;
-use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use lightyear::prelude::PreSpawnedPlayerObject;
 use lightyear::shared::replication::components::Controlled;
 use rust_common_game::prelude::*;
-use std::str::FromStr;
 
 pub fn handle_new_client(
     mut client_query: Query<
@@ -24,78 +19,23 @@ pub fn handle_new_client(
     }
 }
 
+#[derive(Component)]
+pub struct PlayerRender;
+
 pub fn handle_new_player(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut player_query: Query<(Entity, Has<Controlled>), (Added<Predicted>, With<Player>)>,
-    skill_db: Res<SkillDb>,
+    mut player_query: Query<
+        (Entity, Has<Controlled>),
+        (
+            Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,
+            With<Player>,
+            Without<PlayerRender>,
+        ),
+    >,
 ) {
     for (entity, controlled) in player_query.iter_mut() {
         println!("[handle_new_player] New Player");
-
-        let animation_config = AnimationConfig::build(
-            &asset_server,
-            &mut texture_atlas_layouts,
-            AtlasConfigInput {
-                repeated: true,
-                frame_count: 16,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
-                image_path: String::from_str("assets/atlas_player_walk.png").unwrap(),
-            },
-            AtlasConfigInput {
-                repeated: true,
-                frame_count: 16,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
-                image_path: String::from_str("assets/atlas_player_idle.png").unwrap(),
-            },
-            AtlasConfigInput {
-                repeated: true,
-                frame_count: 16,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
-                image_path: String::from_str("assets/atlas_player_attack.png").unwrap(),
-            },
-            AtlasConfigInput {
-                repeated: false,
-                frame_count: 8,
-                atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 8, 16, None, None),
-                image_path: String::from_str("assets/atlas_player_attack.png").unwrap(),
-            },
-        );
-
-        let mut player_bundle = PlayerBundle::from_protocol();
-        attach_all_skills(
-            &mut commands,
-            entity,
-            &mut player_bundle.skills_available,
-            &skill_db,
-        );
-        commands
-            .entity(entity)
-            .insert_if_new(player_bundle)
-            .insert((
-                PlaySceneTag,
-                TransformInterpolation,
-                Transform::from_xyz(0., 0., 1.),
-                Visibility::default(),
-                ZLayer::Default,
-                DirectionCount(8),
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Sprite {
-                        image: animation_config.atlas_idle.image_path.clone(),
-                        texture_atlas: Some(TextureAtlas {
-                            layout: animation_config.atlas_idle.atlas_layout.clone(),
-                            index: 0,
-                        }),
-                        anchor: bevy::sprite::Anchor::Custom(Vec2::new(0., -0.33)),
-                        ..default()
-                    },
-                    animation_config,
-                    Transform::from_scale(Vec3::new(1., 1., 0.)),
-                ));
-            });
+        commands.entity(entity).insert(PlayerRender);
 
         if controlled {
             commands.entity(entity).insert(

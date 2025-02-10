@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{states::play::*, utils::ZLayer};
 use animation::AnimationConfig;
 use avian2d::prelude::*;
@@ -42,13 +40,13 @@ pub struct CharacterCorpsRenderBundle {
     pub sprite: Sprite,
 }
 
-pub fn on_enemy(
+pub fn on_character(
     mut commands: Commands,
     mut player_query: Query<
         (Entity, &Position),
         (
             Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>,
-            With<Enemy>,
+            With<Character>,
             Without<CharacterRender>,
         ),
     >,
@@ -66,7 +64,8 @@ pub fn on_enemy(
     }
 }
 
-fn get_enemy_animation_config(
+fn get_character_animation_config(
+    character: &Character,
     asset_server: &AssetServer,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> AnimationConfig {
@@ -75,38 +74,51 @@ fn get_enemy_animation_config(
         texture_atlas_layouts,
         AtlasConfigInput {
             repeated: true,
-            frame_count: 14,
-            atlas_layout: TextureAtlasLayout::from_grid(UVec2::new(123, 111), 14, 8, None, None),
-            image_path: String::from_str("assets/atlas_enemy_walk_123x111.png").unwrap(),
+            frame_count: 16,
+            atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
+            image_path: format!(
+                "assets/character/{}-walk.png",
+                character.id.animation_data()
+            ),
         },
         AtlasConfigInput {
             repeated: true,
-            frame_count: 14,
-            atlas_layout: TextureAtlasLayout::from_grid(UVec2::new(123, 111), 14, 8, None, None),
-            image_path: String::from_str("assets/atlas_enemy_walk_123x111.png").unwrap(),
+            frame_count: 16,
+            atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
+            image_path: format!(
+                "assets/character/{}-idle.png",
+                character.id.animation_data()
+            ),
         },
         AtlasConfigInput {
             repeated: true,
-            frame_count: 14,
-            atlas_layout: TextureAtlasLayout::from_grid(UVec2::new(123, 111), 14, 8, None, None),
-            image_path: String::from_str("assets/atlas_enemy_walk_123x111.png").unwrap(),
+            frame_count: 16,
+            atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
+            image_path: format!(
+                "assets/character/{}-attack.png",
+                character.id.animation_data()
+            ),
         },
         AtlasConfigInput {
             repeated: false,
-            frame_count: 21,
-            atlas_layout: TextureAtlasLayout::from_grid(UVec2::new(152, 117), 21, 8, None, None),
-            image_path: String::from_str("assets/atlas_enemy_death_152x117.png").unwrap(),
+            frame_count: 16,
+            atlas_layout: TextureAtlasLayout::from_grid(UVec2::splat(256), 16, 8, None, None),
+            image_path: format!(
+                "assets/character/{}-death.png",
+                character.id.animation_data()
+            ),
         },
     )
 }
 
-pub fn update_enemy_render_state(
+pub fn update_character_render_state(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut query: Query<
         (
             Entity,
+            &Character,
             &mut ZLayer,
             Option<&CharacterBodyRenderRef>,
             Option<&CharacterCorpsRenderRef>,
@@ -120,8 +132,16 @@ pub fn update_enemy_render_state(
         ),
     >,
 ) {
-    for (entity, mut z_layer, body_render_ref, corps_render_ref, direction, is_alive, is_dead) in
-        query.iter_mut()
+    for (
+        entity,
+        character,
+        mut z_layer,
+        body_render_ref,
+        corps_render_ref,
+        direction,
+        is_alive,
+        is_dead,
+    ) in query.iter_mut()
     {
         // Determine the new render state
         if is_alive.is_some() {
@@ -135,8 +155,11 @@ pub fn update_enemy_render_state(
             }
 
             // If enemy is alive, add animated sprite
-            let animation_config =
-                get_enemy_animation_config(&asset_server, &mut texture_atlas_layouts);
+            let animation_config = get_character_animation_config(
+                character,
+                &asset_server,
+                &mut texture_atlas_layouts,
+            );
 
             let character_body_render = commands
                 .spawn(CharacterBodyRenderBundle {
@@ -147,7 +170,7 @@ pub fn update_enemy_render_state(
                             layout: animation_config.atlas_idle.atlas_layout.clone(),
                             index: 0,
                         }),
-                        anchor: Anchor::Custom(Vec2::new(0.0, -0.25)),
+                        anchor: Anchor::Custom(Vec2::new(0., -0.33)),
                         ..default()
                     },
                     animation_config,
@@ -175,10 +198,13 @@ pub fn update_enemy_render_state(
                 .spawn(CharacterCorpsRenderBundle {
                     marker: CharacterCropsRender,
                     sprite: Sprite {
-                        image: asset_server.load("assets/atlas_enemy_corps_157x117.png"),
+                        image: asset_server.load(format!(
+                            "assets/character/{}-dead.png",
+                            character.id.animation_data()
+                        )),
                         texture_atlas: Some(TextureAtlas {
                             layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-                                UVec2::new(152, 117),
+                                UVec2::splat(256),
                                 1,
                                 8,
                                 None,
@@ -187,7 +213,7 @@ pub fn update_enemy_render_state(
 
                             index,
                         }),
-                        anchor: Anchor::Custom(Vec2::new(0.0, -0.25)),
+                        anchor: Anchor::Custom(Vec2::new(0., -0.33)),
                         ..default()
                     },
                 })

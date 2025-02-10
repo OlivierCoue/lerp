@@ -1,63 +1,59 @@
 use std::time::Duration;
 
-use avian2d::prelude::*;
 use bevy::prelude::*;
-use lightyear::prelude::*;
 
 use crate::prelude::*;
 
+#[derive(Component)]
+pub struct Player;
+
 #[derive(Bundle)]
 pub struct PlayerBundle {
-    marker: Player,
-    physics: PhysicsBundle,
-    position: Position,
-    character_controller: CharacterController,
-    movement_speed: MovementSpeed,
-    health: Health,
+    character: CharacterBundle,
     mana: Mana,
     skill_slot_map: SkillSlotMap,
-    pub skills_available: SkillsAvailable,
-    skill_speed: SkillSpeed,
-    team: Team,
 }
-impl Default for PlayerBundle {
-    fn default() -> Self {
+
+impl PlayerBundle {
+    pub fn new(position: &Vec2) -> Self {
         let mut skill_slot_map = SkillSlotMap::default();
         skill_slot_map.insert(PlayerActions::SkillSlot1, SkillName::BowAttack);
         skill_slot_map.insert(PlayerActions::SkillSlot2, SkillName::SplitArrow);
         skill_slot_map.insert(PlayerActions::SkillSlot3, SkillName::FlowerArrow);
+
         Self {
-            marker: Player(ClientId::Netcode(0)),
-            physics: Self::physics(),
-            position: Position::default(),
-            character_controller: CharacterController,
-            movement_speed: MovementSpeed(PLAYER_BASE_MOVEMENT_SPEED),
-            health: Health::new(PLAYER_BASE_HEALTH),
+            character: CharacterBundle::new(CharacterId::Player, position),
             mana: Mana::new(PLAYER_BASE_MANA),
             skill_slot_map,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct PlayerLocalBundle {
+    marker: Player,
+    pub skills_available: SkillsAvailable,
+    skill_speed: SkillSpeed,
+}
+impl PlayerLocalBundle {
+    pub fn init() -> Self {
+        Self {
+            marker: Player,
             skills_available: SkillsAvailable::default(),
             skill_speed: SkillSpeed {
                 value: Duration::from_millis(200),
             },
-            team: Team::Player,
         }
     }
 }
-impl PlayerBundle {
-    pub fn new(client_id: ClientId, position: &Vec2) -> Self {
-        Self {
-            marker: Player(client_id),
-            position: Position(*position),
-            ..default()
-        }
-    }
-    pub fn from_protocol() -> Self {
-        Self { ..default() }
-    }
-    pub fn physics() -> PhysicsBundle {
-        PhysicsBundle {
-            rigid_body: RigidBody::Kinematic,
-            collider: Collider::circle(PLAYER_SIZE / 2.),
-        }
-    }
+
+pub fn player_init_local(entity: Entity, commands: &mut Commands, skill_db: &SkillDb) {
+    let mut player_local_bundle = PlayerLocalBundle::init();
+    attach_all_skills(
+        commands,
+        entity,
+        &mut player_local_bundle.skills_available,
+        skill_db,
+    );
+    commands.entity(entity).insert_if_new(player_local_bundle);
 }

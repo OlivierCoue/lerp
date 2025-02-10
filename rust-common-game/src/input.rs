@@ -195,7 +195,7 @@ pub fn handle_input_spawn_enemies(
             for y in 0..5 {
                 count += 1;
                 let enemy = (
-                    EnemyBaseBundle::new(&Vec2::new(x as f32 * ENEMY_SIZE, y as f32 * ENEMY_SIZE)),
+                    EnemyBundle::new(&Vec2::new(x as f32 * ENEMY_SIZE, y as f32 * ENEMY_SIZE)),
                     PreSpawnedPlayerObject::new(xor_u64s(&[tick_manager.tick().0 as u64, count])),
                 );
                 let enemy_entity = commands.spawn(enemy).id();

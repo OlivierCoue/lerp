@@ -1,66 +1,37 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, server::ReplicationTarget, PreSpawnedPlayerObject};
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Component)]
 pub struct Enemy;
 
 #[derive(Bundle)]
-pub struct EnemyBaseBundle {
-    marker: Enemy,
-    position: Position,
-    health: Health,
-    team: Team,
+pub struct EnemyBundle {
+    character: CharacterBundle,
 }
-impl Default for EnemyBaseBundle {
-    fn default() -> Self {
-        Self {
-            marker: Enemy,
-            position: Position::default(),
-            health: Health::new(ENEMY_BASE_HEALTH),
-            team: Team::Enemy,
-        }
-    }
-}
-
-impl EnemyBaseBundle {
+impl EnemyBundle {
     pub fn new(position: &Vec2) -> Self {
         Self {
-            position: Position(*position),
-            ..default()
+            character: CharacterBundle::new(CharacterId::Enemy, position),
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct EnemyAliveBundle {
-    marker: Alive,
-    physics: PhysicsBundle,
-    hittable: Hittable,
-    hit_tracker: HitTracker,
-    character_controller: CharacterController,
-    movement_speed: MovementSpeed,
+pub struct EnemyLocalBundle {
+    marker: Enemy,
 }
-impl EnemyAliveBundle {
+impl EnemyLocalBundle {
     pub fn init() -> Self {
-        Self {
-            marker: Alive,
-            physics: Self::physics(),
-            character_controller: CharacterController,
-            movement_speed: MovementSpeed(ENEMY_BASE_MOVEMENT_SPEED),
-            hittable: Hittable,
-            hit_tracker: HitTracker::default(),
-        }
+        Self { marker: Enemy }
     }
-    pub fn physics() -> PhysicsBundle {
-        PhysicsBundle {
-            rigid_body: RigidBody::Kinematic,
-            collider: Collider::circle(ENEMY_SIZE / 2.),
-        }
-    }
+}
+
+pub fn enemy_init_local(entity: Entity, commands: &mut Commands) {
+    let enemy_local_bundle = EnemyLocalBundle::init();
+    commands.entity(entity).insert_if_new(enemy_local_bundle);
 }
 
 pub fn enemy_movement_behavior(

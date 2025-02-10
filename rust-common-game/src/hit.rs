@@ -11,12 +11,9 @@ use crate::prelude::*;
 pub struct HitSource(pub Team);
 
 #[derive(Component, Default)]
-pub struct Hittable;
-
-#[derive(Component, Default, Deref, DerefMut)]
-pub struct HitTracker {
+pub struct Hittable {
     /// SkillInstanceHash
-    pub map: HashSet<u64>,
+    pub hit_track_map: HashSet<u64>,
 }
 
 pub struct HitEventData {
@@ -43,7 +40,7 @@ pub fn on_hit_event(
     >,
     _skill_q: Query<&SkillDamageOnHit, (With<Skill>, Without<HitSource>, Without<Hittable>)>,
     mut target: Query<
-        (&Team, Option<&mut Health>, Option<&mut HitTracker>),
+        (&Team, Option<&mut Health>, &mut Hittable),
         (
             With<Hittable>,
             Without<HitSource>,
@@ -65,7 +62,7 @@ pub fn on_hit_event(
                 continue;
             };
 
-            let Ok((target_team, target_health, target_hit_tracker)) =
+            let Ok((target_team, target_health, mut target_hittable)) =
                 target.get_mut(event_data.target)
             else {
                 if !despawned_entities.contains(&event_data.target) {
@@ -79,13 +76,11 @@ pub fn on_hit_event(
                 continue;
             }
 
-            // If the target have a HitTracker, insert the skill instance hash in it.
+            // Insert the skill instance hash in the hit track map.
             // If it was already in, then we stop and do not apply any on hit effect.
             // This prevent shotguning.
-            if let Some(mut target_hit_tracker) = target_hit_tracker {
-                if !target_hit_tracker.insert(**skill_instance_hash) {
-                    continue;
-                }
+            if !target_hittable.hit_track_map.insert(**skill_instance_hash) {
+                continue;
             }
 
             // If the source apply DamageOnHit and the target has Health, then apply damages.

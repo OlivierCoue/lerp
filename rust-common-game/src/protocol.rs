@@ -32,9 +32,6 @@ pub struct PlayerClient {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Player(pub ClientId);
-
-#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MovementTargets(pub Vec<Vec2>);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -112,10 +109,7 @@ impl Plugin for ProtocolPlugin {
         app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Simple);
 
-        app.register_component::<Player>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
-
-        app.register_component::<Enemy>(ChannelDirection::ServerToClient)
+        app.register_component::<Character>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Projectile>(ChannelDirection::ServerToClient)

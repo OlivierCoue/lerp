@@ -142,6 +142,7 @@ impl Plugin for SharedPlugin {
             FixedUpdate,
             (
                 on_hit_event.run_if(on_event::<HitEvent>),
+                set_character_local,
                 set_character_life_state,
             )
                 .chain()
