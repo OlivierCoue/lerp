@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-
+use text_input::ui_text_input_focus;
+pub mod text_input;
 //////////
 // BUTTON
 
@@ -71,7 +72,12 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (ui_button_default, ui_checkbox_default, ui_checkbox_checked),
+            (
+                ui_button_default,
+                ui_checkbox_default,
+                ui_checkbox_checked,
+                ui_text_input_focus,
+            ),
         );
     }
 }

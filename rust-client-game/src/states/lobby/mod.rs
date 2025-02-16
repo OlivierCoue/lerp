@@ -1,6 +1,13 @@
+use std::net::IpAddr;
+use std::str::FromStr;
+
 use crate::common::*;
+use crate::lightyear::get_client_net_config;
+use crate::ui::text_input::create_text_input;
 use crate::ui::*;
 use bevy::prelude::*;
+use bevy_simple_text_input::TextInputValue;
+use lightyear::client::config::ClientConfig;
 
 #[derive(Component)]
 pub struct LobbySceneTag;
@@ -15,12 +22,15 @@ enum ButtonAction {
     ToggleDebugShowYSortBoundaries,
 }
 
+#[derive(Component)]
+struct TextInputServerAddress;
+
 pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>) {
     println!("[lobby_scene_setup]");
 
     commands.spawn((LobbySceneTag, Camera2d));
     commands.spawn((LobbySceneTag, Text("Lobby Scene".to_string())));
-    commands
+    let container = commands
         .spawn((
             LobbySceneTag,
             Node {
@@ -32,74 +42,84 @@ pub fn lobby_scene_setup(mut commands: Commands, debug_config: Res<DebugConfig>)
                 ..default()
             },
         ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonAction::Play,
-                    Button,
-                    BorderColor(Color::BLACK),
-                    BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON),
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn(Text("Play".to_string()));
-                });
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonAction::Logout,
-                    Button,
-                    BorderColor(Color::BLACK),
-                    BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON),
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn(Text("Logout".to_string()));
-                });
-        })
-        .with_children(|parent| {
-            add_debug_option_checkbox(
-                parent,
-                "Show collider",
-                ButtonAction::ToggleDebugShowCollider,
-                debug_config.show_colliders,
-            );
-            add_debug_option_checkbox(
-                parent,
-                "Show confirmed",
-                ButtonAction::ToggleDebugShowConfirmed,
-                debug_config.show_confirmed_entities,
-            );
-            add_debug_option_checkbox(
-                parent,
-                "Show flow field",
-                ButtonAction::ToggleDebugShowFlowField,
-                debug_config.show_flow_field,
-            );
-            add_debug_option_checkbox(
-                parent,
-                "Show Y sort boundaries",
-                ButtonAction::ToggleDebugShowYSortBoundaries,
-                debug_config.show_y_sort_boundaries,
-            );
-        });
+        .id();
+
+    let text_input_server_address_entity = create_text_input(
+        &mut commands,
+        TextInputServerAddress,
+        "Server Address".to_string(),
+        Some("127.0.0.1".to_string()),
+    );
+    commands
+        .entity(container)
+        .add_children(&[text_input_server_address_entity]);
+
+    commands.entity(container).with_children(|parent| {
+        parent
+            .spawn((
+                ButtonAction::Play,
+                Button,
+                BorderColor(Color::BLACK),
+                BorderRadius::MAX,
+                BackgroundColor(NORMAL_BUTTON),
+                Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn(Text("Play".to_string()));
+            });
+
+        parent
+            .spawn((
+                ButtonAction::Logout,
+                Button,
+                BorderColor(Color::BLACK),
+                BorderRadius::MAX,
+                BackgroundColor(NORMAL_BUTTON),
+                Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn(Text("Logout".to_string()));
+            });
+
+        add_debug_option_checkbox(
+            parent,
+            "Show collider",
+            ButtonAction::ToggleDebugShowCollider,
+            debug_config.show_colliders,
+        );
+        add_debug_option_checkbox(
+            parent,
+            "Show confirmed",
+            ButtonAction::ToggleDebugShowConfirmed,
+            debug_config.show_confirmed_entities,
+        );
+        add_debug_option_checkbox(
+            parent,
+            "Show flow field",
+            ButtonAction::ToggleDebugShowFlowField,
+            debug_config.show_flow_field,
+        );
+        add_debug_option_checkbox(
+            parent,
+            "Show Y sort boundaries",
+            ButtonAction::ToggleDebugShowYSortBoundaries,
+            debug_config.show_y_sort_boundaries,
+        );
+    });
 }
 
 fn add_debug_option_checkbox(
@@ -148,18 +168,26 @@ pub fn lobby_scene_logic(
 }
 
 fn lobby_scene_button_logic(
+    mut lightyear_client_config: ResMut<ClientConfig>,
     mut app_state: ResMut<NextState<AppState>>,
     mut debug_config: ResMut<DebugConfig>,
     mut interaction_query: Query<
         (&Interaction, &ButtonAction, Option<&mut Checkbox>),
         (Changed<Interaction>, With<Button>),
     >,
+    text_input_server_address_query: Query<&TextInputValue, With<TextInputServerAddress>>,
 ) {
     for (interaction, action, checkbox) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => match action {
                 ButtonAction::Play => {
-                    app_state.set(AppState::Play);
+                    let server_address = text_input_server_address_query.get_single().unwrap();
+                    if let Ok(server_address) = IpAddr::from_str(server_address.0.as_str()) {
+                        lightyear_client_config.net = get_client_net_config(server_address);
+                        app_state.set(AppState::Play);
+                    } else {
+                        println!("Invalid server address")
+                    };
                 }
                 ButtonAction::Logout => {
                     app_state.set(AppState::Auth);

@@ -1,14 +1,8 @@
 use crate::common::*;
+use crate::ui::text_input::create_text_input;
 use crate::ui::*;
 use bevy::prelude::*;
-use bevy::ui::FocusPolicy;
 use bevy_simple_text_input::*;
-
-const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
-const BORDER_COLOR_INACTIVE: Color = Color::srgb(0.25, 0.25, 0.25);
-const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
-const TEXT_COLOR_PLACEHOLDER: Color = Color::srgb(0.5, 0.5, 0.5);
-const BACKGROUND_COLOR: Color = Color::srgb(0.15, 0.15, 0.15);
 
 #[derive(Component)]
 struct AuthSceneTag;
@@ -30,7 +24,7 @@ fn auth_scene_setup(mut commands: Commands) {
 
     commands.spawn((AuthSceneTag, Camera2d));
     commands.spawn((AuthSceneTag, Text("Authentication Scene".to_string())));
-    commands
+    let container_entity = commands
         .spawn((
             AuthSceneTag,
             Node {
@@ -43,139 +37,67 @@ fn auth_scene_setup(mut commands: Commands) {
             },
             Interaction::None,
         ))
-        .with_children(|parent| {
-            parent.spawn((
-                TextInputUsername,
-                BorderColor(BORDER_COLOR_ACTIVE),
-                BackgroundColor(BACKGROUND_COLOR),
-                FocusPolicy::Block,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(50.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    padding: UiRect::all(Val::Px(5.0)),
-                    ..default()
-                },
-                TextInput,
-                TextInputTextFont(TextFont {
-                    font_size: 20.,
-                    ..default()
-                }),
-                TextInputTextColor(TextColor(TEXT_COLOR)),
-                TextInputSettings {
-                    retain_on_submit: true,
-                    ..default()
-                },
-                TextInputPlaceholder {
-                    value: "Username".to_string(),
-                    text_color: Some(TextColor(TEXT_COLOR_PLACEHOLDER)),
-                    text_font: Some(TextFont {
-                        font_size: 20.,
-                        ..default()
-                    }),
-                },
-                TextInputInactive(true),
-            ));
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                TextInputPassword,
-                BorderColor(BORDER_COLOR_ACTIVE),
-                BackgroundColor(BACKGROUND_COLOR),
-                FocusPolicy::Block,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(50.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    padding: UiRect::all(Val::Px(5.0)),
-                    ..default()
-                },
-                TextInput,
-                TextInputTextFont(TextFont {
-                    font_size: 20.,
-                    ..default()
-                }),
-                TextInputTextColor(TextColor(TEXT_COLOR)),
-                TextInputSettings {
-                    retain_on_submit: true,
-                    mask_character: Some('*'),
-                },
-                TextInputPlaceholder {
-                    value: "Password".to_string(),
-                    text_color: Some(TextColor(TEXT_COLOR_PLACEHOLDER)),
-                    text_font: Some(TextFont {
-                        font_size: 20.,
-                        ..default()
-                    }),
-                },
-                TextInputInactive(true),
-            ));
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonAction::Login,
-                    Button,
-                    BorderColor(Color::BLACK),
-                    BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON),
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        // horizontally center child text
-                        justify_content: JustifyContent::Center,
-                        // vertically center child text
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn(Text("Login".to_string()));
-                });
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonAction::Exit,
-                    Button,
-                    BorderColor(Color::BLACK),
-                    BorderRadius::MAX,
-                    BackgroundColor(NORMAL_BUTTON),
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        // horizontally center child text
-                        justify_content: JustifyContent::Center,
-                        // vertically center child text
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn(Text("Exit".to_string()));
-                });
-        });
-}
+        .id();
 
-fn text_input_focus(
-    query: Query<(Entity, &Interaction), Changed<Interaction>>,
-    mut text_input_query: Query<(Entity, &mut TextInputInactive, &mut BorderColor)>,
-) {
-    for (interaction_entity, interaction) in &query {
-        if *interaction == Interaction::Pressed {
-            for (entity, mut inactive, mut border_color) in &mut text_input_query {
-                if entity == interaction_entity {
-                    inactive.0 = false;
-                    *border_color = BORDER_COLOR_ACTIVE.into();
-                } else {
-                    inactive.0 = true;
-                    *border_color = BORDER_COLOR_INACTIVE.into();
-                }
-            }
-        }
-    }
+    let username_text_input_entity = create_text_input(
+        &mut commands,
+        TextInputUsername,
+        "Username".to_string(),
+        None,
+    );
+
+    let password_text_input_entity = create_text_input(
+        &mut commands,
+        TextInputPassword,
+        "Password".to_string(),
+        None,
+    );
+
+    commands
+        .entity(container_entity)
+        .add_children(&[username_text_input_entity, password_text_input_entity]);
+
+    commands.entity(container_entity).with_children(|parent| {
+        parent
+            .spawn((
+                ButtonAction::Login,
+                Button,
+                BorderColor(Color::BLACK),
+                BorderRadius::MAX,
+                BackgroundColor(NORMAL_BUTTON),
+                Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn(Text("Login".to_string()));
+            });
+
+        parent
+            .spawn((
+                ButtonAction::Exit,
+                Button,
+                BorderColor(Color::BLACK),
+                BorderRadius::MAX,
+                BackgroundColor(NORMAL_BUTTON),
+                Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn(Text("Exit".to_string()));
+            });
+    });
 }
 
 fn auth_scene_logic(
@@ -235,7 +157,6 @@ impl Plugin for AuthPlugin {
             Update,
             auth_scene_button_logic.run_if(in_state(AppState::Auth)),
         );
-        app.add_systems(Update, text_input_focus.run_if(in_state(AppState::Auth)));
         app.add_systems(OnExit(AppState::Auth), auth_scene_cleanup);
     }
 }

@@ -27,7 +27,7 @@ pub struct CharacterBodyRenderBundle {
     pub animation_config: AnimationConfig,
 }
 
-// Coprs
+// Corps
 #[derive(Component)]
 pub struct CharacterCorpsRenderRef(pub Entity);
 
