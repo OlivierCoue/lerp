@@ -7,6 +7,7 @@ use bevy::utils::HashMap;
 use item_drop::generate_item_dropped_on_death;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
+use lightyear::server::input::leafwing::InputSystemSet;
 use local_ip_address::local_ip;
 use rust_common_game::input::PlayerActions;
 
@@ -84,23 +85,18 @@ fn handle_connections(
 }
 
 fn replicate_inputs(
-    mut connection: ResMut<ConnectionManager>,
-    mut input_events: ResMut<Events<MessageEvent<InputMessage<PlayerActions>>>>,
+    mut receive_inputs: ResMut<Events<ServerReceiveMessage<InputMessage<PlayerActions>>>>,
+    mut send_inputs: EventWriter<ServerSendMessage<InputMessage<PlayerActions>>>,
 ) {
-    for event in input_events.drain() {
-        let client_id = event.from();
-
-        // Optional: do some validation on the inputs to check that there's no cheating
-        // Inputs for a specific tick should be write *once*. Don't let players change old inputs.
-
-        // rebroadcast the input to other clients
-        connection
-            .send_message_to_target::<InputChannel, _>(
-                &event.message,
-                NetworkTarget::AllExceptSingle(client_id),
-            )
-            .unwrap()
-    }
+    // rebroadcast the input to other clients
+    // we are calling drain() here so make sure that this system runs after the `ReceiveInputs` set,
+    // so that the server had the time to process the inputs
+    send_inputs.send_batch(receive_inputs.drain().map(|ev| {
+        ServerSendMessage::new_with_target::<InputChannel>(
+            ev.message,
+            NetworkTarget::AllExceptSingle(ev.from),
+        )
+    }));
 }
 
 fn update_player_client_metrics(
@@ -132,13 +128,11 @@ fn main() {
     };
 
     let server_config = server::ServerConfig {
-        shared: shared_config(Mode::Separate),
+        shared: shared_config(),
         net: vec![net_config],
         replication: ReplicationConfig {
-            send_interval: REPLICATION_INTERVAL,
-            ..default()
+            send_updates_mode: SendUpdatesMode::SinceLastAck,
         },
-
         ..default()
     };
     let server_plugin = server::ServerPlugins::new(server_config);
@@ -158,7 +152,7 @@ fn main() {
             PreUpdate,
             // this system will replicate the inputs of a client to other clients
             // so that a client can predict other clients
-            replicate_inputs.after(MainSet::EmitEvents),
+            replicate_inputs.after(InputSystemSet::ReceiveInputs),
         )
         .add_systems(
             Update,

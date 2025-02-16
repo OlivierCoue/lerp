@@ -11,6 +11,9 @@ use std::time::Duration;
 fn display_network_status(state: Res<State<NetworkingState>>) {
     if state.is_changed() {
         match state.get() {
+            NetworkingState::Disconnecting => {
+                println!("NET: Disconnecting");
+            }
             NetworkingState::Disconnected => {
                 println!("NET: Disconnected");
             }
@@ -66,11 +69,10 @@ pub struct LightyearPlugin;
 impl Plugin for LightyearPlugin {
     fn build(&self, app: &mut App) {
         let client_config = client::ClientConfig {
-            shared: shared_config(Mode::Separate),
+            shared: shared_config(),
             net: get_client_net_config(IpAddr::from_str("127.0.0.1").unwrap()),
             replication: ReplicationConfig {
-                send_interval: REPLICATION_INTERVAL,
-                ..default()
+                send_updates_mode: SendUpdatesMode::SinceLastAck,
             },
             prediction: client::PredictionConfig {
                 minimum_input_delay_ticks: 6,
