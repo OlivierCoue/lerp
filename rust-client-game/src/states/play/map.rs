@@ -25,7 +25,7 @@ pub const MAP_TILE_IMG_SIZE_FLOOR: Vec2 = Vec2::new(160.0, 80.0);
 pub const MAP_TILE_IMG_SIZE_WALL: Vec2 = Vec2::new(160.0, 320.0);
 
 #[derive(Component)]
-pub struct TileMapFloorChunk {
+struct TileMapFloorChunk {
     pub position: IVec2,
     pub walls: Vec<Entity>,
 }
@@ -180,7 +180,7 @@ fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
     .as_ivec2()
 }
 
-pub fn spawn_map_chunks_around_camera(
+fn spawn_map_chunks_around_camera(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     camera_query: Query<&Transform, With<Camera>>,
@@ -207,7 +207,7 @@ pub fn spawn_map_chunks_around_camera(
     }
 }
 
-pub fn despawn_outofrange_map_chunks(
+fn despawn_outofrange_map_chunks(
     mut commands: Commands,
     camera_query: Query<&Transform, With<Camera>>,
     chunks_query: Query<(Entity, &TileMapFloorChunk)>,
@@ -290,4 +290,19 @@ pub fn render_flow_field(
             ..Default::default()
         },
     ));
+}
+
+pub struct MapPlugin;
+
+impl Plugin for MapPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                spawn_map_chunks_around_camera,
+                despawn_outofrange_map_chunks,
+            )
+                .run_if(in_state(AppState::Play)),
+        );
+    }
 }

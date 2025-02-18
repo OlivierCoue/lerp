@@ -4,18 +4,19 @@ use crate::common::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use flow_field::debug_render_flow_field;
 use lightyear::prelude::client::*;
 use rust_common_game::prelude::*;
 
 use super::PlaySceneTag;
 
 #[derive(Component)]
-pub struct DebugCollider;
+struct DebugCollider;
 
 #[derive(Component)]
-pub struct DebugColliderEntityRef(pub Entity);
+struct DebugColliderEntityRef(pub Entity);
 
-pub(crate) fn debug_draw_colliders(
+fn debug_draw_colliders(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
     collider_q: Query<
@@ -104,7 +105,7 @@ pub(crate) fn debug_draw_colliders(
     }
 }
 
-pub(crate) fn debug_undraw_colliders(
+fn debug_undraw_colliders(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
     collider_q: Query<Entity, (With<Collider>, Without<DebugCollider>)>,
@@ -127,7 +128,7 @@ pub struct DebugConfirmedEntity;
 #[derive(Component)]
 pub struct DebugConfirmedEntityRef(pub Entity);
 
-pub(crate) fn debug_draw_confirmed_entities(
+fn debug_draw_confirmed_entities(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
     confirmed_q: Query<
@@ -187,7 +188,7 @@ pub(crate) fn debug_draw_confirmed_entities(
     }
 }
 
-pub(crate) fn debug_undraw_confirmed_entities(
+fn debug_undraw_confirmed_entities(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
     confirmed_q: Query<Entity, (With<Confirmed>, Without<DebugConfirmedEntity>)>,
@@ -204,42 +205,23 @@ pub(crate) fn debug_undraw_confirmed_entities(
     }
 }
 
-pub(crate) fn _debug_draw_targets(
-    mut gizmos: Gizmos,
-    confirmed_q: Query<&MovementTargets, (With<Player>, With<Confirmed>)>,
-    predicted_q: Query<&MovementTargets, (With<Player>, With<Predicted>)>,
-    interpolated_q: Query<&MovementTargets, (With<Player>, With<Interpolated>)>,
-) {
-    // Predicted
-    for targets in predicted_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                cartesian_to_isometric_vec2(target),
-                15.,
-                Color::linear_rgb(0., 0., 1.),
-            );
-        }
-    }
+pub struct DebugPlugin;
 
-    // Confirmed
-    for targets in confirmed_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                cartesian_to_isometric_vec2(target),
-                12.,
-                Color::linear_rgb(0., 1., 0.),
-            );
-        }
-    }
-
-    // Interpolated
-    for targets in interpolated_q.iter() {
-        if let Some(target) = targets.0.first() {
-            gizmos.circle_2d(
-                cartesian_to_isometric_vec2(target),
-                12.,
-                Color::linear_rgb(0., 1., 1.),
-            );
-        }
+impl Plugin for DebugPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                debug_draw_confirmed_entities,
+                debug_undraw_confirmed_entities,
+                debug_draw_colliders,
+                debug_undraw_colliders,
+            )
+                .run_if(in_state(AppState::Play)),
+        );
+        app.add_systems(
+            FixedUpdate,
+            (debug_render_flow_field).run_if(in_state(AppState::Play)),
+        );
     }
 }

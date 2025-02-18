@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
 use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
+use drop::generate_loop_on_death;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use local_ip_address::local_ip;
@@ -13,6 +14,8 @@ use rust_common_game::prelude::*;
 
 use std::net::SocketAddr;
 use std::time::Duration;
+
+mod drop;
 
 #[derive(Resource, Default)]
 pub struct ClientPlayerMap(HashMap<ClientId, Entity>);
@@ -164,5 +167,6 @@ fn main() {
                 update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
             ),
         )
+        .add_systems(FixedUpdate, generate_loop_on_death)
         .run();
 }

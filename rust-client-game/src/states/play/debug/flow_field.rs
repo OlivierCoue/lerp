@@ -7,7 +7,7 @@ use rust_common_game::map::map::NavTileCoord;
 
 use super::DebugConfig;
 
-pub fn debug_render_flow_field(
+pub(super) fn debug_render_flow_field(
     debug_config: Res<DebugConfig>,
     mut tilemap_q: Query<&TileStorage, With<TileMapFlowField>>,
     mut tile_q: Query<&mut TileTextureIndex, With<TileFlowField>>,

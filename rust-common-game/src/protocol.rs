@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::prelude::*;
 
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
+pub const LOOT_REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(2);
 
 // Channels
 
@@ -147,6 +148,10 @@ impl Plugin for ProtocolPlugin {
         app.register_component::<Position>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full)
             .add_should_rollback(position_should_rollback);
+
+        // Server driven components
+        app.register_component::<Loot>(ChannelDirection::ServerToClient);
+
         // Channels
         app.add_channel::<Channel1>(ChannelSettings {
             mode: ChannelMode::OrderedReliable(ReliableSettings::default()),

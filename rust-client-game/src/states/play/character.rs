@@ -11,17 +11,17 @@ use super::{
 };
 
 #[derive(Component)]
-pub struct CharacterRender;
+struct CharacterRender;
 
 // Body
 #[derive(Component)]
-pub struct CharacterBodyRenderRef(pub Entity);
+struct CharacterBodyRenderRef(pub Entity);
 
 #[derive(Component)]
-pub struct CharacterBodyRender;
+struct CharacterBodyRender;
 
 #[derive(Bundle)]
-pub struct CharacterBodyRenderBundle {
+struct CharacterBodyRenderBundle {
     pub marker: CharacterBodyRender,
     pub sprite: Sprite,
     pub animation_config: AnimationConfig,
@@ -29,18 +29,18 @@ pub struct CharacterBodyRenderBundle {
 
 // Corps
 #[derive(Component)]
-pub struct CharacterCorpsRenderRef(pub Entity);
+struct CharacterCorpsRenderRef(pub Entity);
 
 #[derive(Component)]
-pub struct CharacterCropsRender;
+struct CharacterCropsRender;
 
 #[derive(Bundle)]
-pub struct CharacterCorpsRenderBundle {
+struct CharacterCorpsRenderBundle {
     pub marker: CharacterCropsRender,
     pub sprite: Sprite,
 }
 
-pub fn on_character(
+fn on_character(
     mut commands: Commands,
     mut player_query: Query<
         (Entity, &Position),
@@ -111,7 +111,7 @@ fn get_character_animation_config(
     )
 }
 
-pub fn update_character_render_state(
+fn update_character_render_state(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
@@ -225,5 +225,16 @@ pub fn update_character_render_state(
                 .add_child(character_corps_render);
             *z_layer = ZLayer::OnFloor;
         }
+    }
+}
+
+pub struct CharacterPlugin;
+
+impl Plugin for CharacterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (on_character, update_character_render_state).run_if(in_state(AppState::Play)),
+        );
     }
 }

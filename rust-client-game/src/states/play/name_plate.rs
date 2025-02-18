@@ -40,7 +40,7 @@ fn get_resource_bar_translation_x(width: f32) -> f32 {
     -(RESOURCE_BAR_MAX_WIDTH / 2.0) + (width / 2.0)
 }
 
-pub fn remove_name_plate(
+fn remove_name_plate(
     mut commands: Commands,
     health_query: Query<
         (Entity, &HasNamePlate),
@@ -56,7 +56,7 @@ pub fn remove_name_plate(
     }
 }
 
-pub fn add_name_plate(
+fn add_name_plate(
     mut commands: Commands,
     health_query: Query<
         (Entity, &Health, Option<&Mana>),
@@ -146,7 +146,7 @@ pub fn add_name_plate(
     }
 }
 
-pub fn update_health_bar(
+fn update_health_bar(
     health_q: Query<&Health, (Changed<Health>, With<Predicted>, Without<HealthBar>)>,
     mut health_bar_q: Query<(&mut Sprite, &mut Transform, &HealthBar), With<HealthBar>>,
 ) {
@@ -160,7 +160,7 @@ pub fn update_health_bar(
     }
 }
 
-pub fn update_mana_bar(
+fn update_mana_bar(
     mana_q: Query<&Mana, (Changed<Mana>, With<Predicted>, Without<ManaBar>)>,
     mut mana_bar_q: Query<(&mut Sprite, &mut Transform, &ManaBar), With<ManaBar>>,
 ) {
@@ -174,7 +174,7 @@ pub fn update_mana_bar(
     }
 }
 
-pub fn update_skill_in_progress_bar(
+fn update_skill_in_progress_bar(
     skill_in_progress_q: Query<&SkillInProgress, (With<Predicted>, Without<SkillInProgressBar>)>,
     mut skill_in_progress_bar_q: Query<
         (&mut Sprite, &mut Transform, &SkillInProgressBar),
@@ -197,5 +197,23 @@ pub fn update_skill_in_progress_bar(
         } else {
             sprite.custom_size = Some(Vec2::new(0., SKILL_IN_PROGRESS_BAR_HEIGHT));
         }
+    }
+}
+
+pub struct NamePlatePlugin;
+
+impl Plugin for NamePlatePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                remove_name_plate,
+                add_name_plate,
+                update_health_bar,
+                update_mana_bar,
+                update_skill_in_progress_bar,
+            )
+                .run_if(in_state(AppState::Play)),
+        );
     }
 }

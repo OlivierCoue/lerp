@@ -1,8 +1,10 @@
 mod animation;
 mod camera;
 mod character;
+mod cursor;
 mod debug;
 mod direction;
+mod loot;
 pub mod map;
 mod name_plate;
 mod player;
@@ -19,7 +21,7 @@ use bevy::diagnostic::DiagnosticsStore;
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
-use bevy_transform_interpolation::TransformEasingSet;
+use cursor::CursorPlugin;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::client::input::leafwing::InputSystemSet;
@@ -29,29 +31,26 @@ use lightyear::shared::replication::components::Controlled;
 use animation::animate_sprite;
 use character::*;
 use direction::update_direction;
-use flow_field::debug_render_flow_field;
+use loot::LootPlugin;
 use name_plate::*;
 use projectile::*;
 
 use rust_common_game::prelude::*;
 
-#[derive(Component)]
-pub struct PlayerCamera;
-
 #[derive(Component, Default)]
 pub struct PlaySceneTag;
 
 #[derive(Component)]
-pub struct FpsDisplayTag;
+struct FpsDisplayTag;
 
 #[derive(Component)]
-pub struct PingDisplayTag;
+struct PingDisplayTag;
 
 #[derive(Component)]
-pub struct RollBackHistoric(pub [bool; 100]);
+struct RollBackHistoric(pub [bool; 100]);
 
 #[derive(Component)]
-pub struct RollbackStateLineItem;
+struct RollbackStateLineItem;
 
 #[derive(Component, PartialEq, Eq)]
 enum ButtonAction {
@@ -60,7 +59,7 @@ enum ButtonAction {
     CameraZoomOut,
 }
 
-pub fn play_scene_setup(mut commands: Commands) {
+fn play_scene_setup(mut commands: Commands) {
     println!("[play_scene_setup]");
 
     commands.connect_client();
@@ -70,8 +69,8 @@ pub fn play_scene_setup(mut commands: Commands) {
         Camera2d,
         OrthographicProjection {
             scaling_mode: ScalingMode::AutoMax {
-                max_width: 1280.,
-                max_height: 720.,
+                max_width: CAMERA_VIEWPORT_SIZE.x,
+                max_height: CAMERA_VIEWPORT_SIZE.y,
             },
             ..OrthographicProjection::default_2d()
         },
@@ -193,7 +192,7 @@ pub fn play_scene_setup(mut commands: Commands) {
         });
 }
 
-pub fn play_scene_logic(
+fn play_scene_logic(
     mut app_state: ResMut<NextState<AppState>>,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
@@ -246,7 +245,7 @@ fn play_scene_button_logic(
     }
 }
 
-pub fn play_scene_cleanup(
+fn play_scene_cleanup(
     mut commands: Commands,
     query: Query<Entity, Or<(With<PlaySceneTag>, With<CommonPlaySceneTag>)>>,
     mut chunk_manager: ResMut<ChunkManager>,
@@ -259,7 +258,7 @@ pub fn play_scene_cleanup(
     chunk_manager.spawned_chunks.clear();
 }
 
-pub fn update_fps(
+fn update_fps(
     diagnostics: Res<DiagnosticsStore>,
     mut query: Query<&mut Text, With<FpsDisplayTag>>,
 ) {
@@ -273,7 +272,7 @@ pub fn update_fps(
     }
 }
 
-pub fn update_ping(
+fn update_ping(
     query_client: Query<&PlayerClient, (With<Predicted>, Without<PingDisplayTag>)>,
     mut query_text: Query<&mut Text, With<PingDisplayTag>>,
 ) {
@@ -284,7 +283,7 @@ pub fn update_ping(
     }
 }
 
-pub fn update_rollback_state(
+fn update_rollback_state(
     rollback: Res<Rollback>,
     mut query_container: Query<(&mut RollBackHistoric, &Children), Without<RollbackStateLineItem>>,
     mut query_line_item: Query<&mut BackgroundColor, With<RollbackStateLineItem>>,
@@ -311,6 +310,16 @@ pub struct PlayPlugin;
 
 impl Plugin for PlayPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((
+            CameraPlugin,
+            CharacterPlugin,
+            CursorPlugin,
+            DebugPlugin,
+            LootPlugin,
+            MapPlugin,
+            NamePlatePlugin,
+            ProjectilePlugin,
+        ));
         app.insert_resource(ChunkManager::default());
         app.add_systems(
             OnEnter(AppState::Play),
@@ -332,45 +341,16 @@ impl Plugin for PlayPlugin {
                 play_scene_logic,
                 handle_new_client,
                 handle_new_player,
-                handle_new_projectile,
-                handle_removed_projectile,
-                add_name_plate,
-                remove_name_plate,
-                update_health_bar,
-                update_mana_bar,
-                update_skill_in_progress_bar,
-                (update_direction, animate_sprite).chain(),
-                debug_draw_confirmed_entities,
-                debug_undraw_confirmed_entities,
-                debug_draw_colliders,
-                debug_undraw_colliders,
                 update_fps,
                 update_ping,
-                spawn_map_chunks_around_camera,
-                despawn_outofrange_map_chunks,
+                (update_direction, animate_sprite).chain(),
             )
                 .run_if(in_state(AppState::Play)),
-        );
-        app.add_systems(
-            Update,
-            (on_character, update_character_render_state).run_if(in_state(AppState::Play)),
-        );
-        app.add_systems(
-            Update,
-            (camera_draw_border).run_if(in_state(AppState::Play)),
         );
 
         app.add_systems(
             FixedUpdate,
-            (update_rollback_state, debug_render_flow_field).run_if(in_state(AppState::Play)),
-        );
-
-        app.add_systems(
-            PostUpdate,
-            camera_follow
-                .before(TransformSystem::TransformPropagate)
-                .after(TransformEasingSet::UpdateEasingTick)
-                .run_if(in_state(AppState::Play)),
+            (update_rollback_state).run_if(in_state(AppState::Play)),
         );
     }
 }

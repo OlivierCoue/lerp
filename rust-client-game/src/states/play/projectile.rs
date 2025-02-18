@@ -3,12 +3,16 @@ use bevy::prelude::*;
 use lightyear::prelude::{client::Predicted, PreSpawnedPlayerObject};
 use rust_common_game::prelude::*;
 
-use crate::{common::cartesian_to_isometric_vec2, utils::ZLayer, IsoZ};
+use crate::{
+    common::{cartesian_to_isometric_vec2, AppState},
+    utils::ZLayer,
+    IsoZ,
+};
 
 use super::PlaySceneTag;
 
 #[derive(Bundle)]
-pub struct ProjecileDisplayBundle {
+struct ProjecileDisplayBundle {
     pub play_scene_tag: PlaySceneTag,
     pub transform: Transform,
     pub transform_interpolation: TransformInterpolation,
@@ -17,7 +21,7 @@ pub struct ProjecileDisplayBundle {
     pub z_layer: ZLayer,
 }
 
-pub fn handle_new_projectile(
+fn handle_new_projectile(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut projectile_query: Query<
@@ -47,7 +51,7 @@ pub fn handle_new_projectile(
     }
 }
 
-pub fn handle_removed_projectile(
+fn handle_removed_projectile(
     mut commands: Commands,
     query: Query<Entity, Or<(With<Predicted>, With<PreSpawnedPlayerObject>)>>,
     mut projectile_query: RemovedComponents<Projectile>,
@@ -59,5 +63,16 @@ pub fn handle_removed_projectile(
                 .remove::<(ProjectileBundle, ProjecileDisplayBundle)>();
             commands.entity(entity).despawn_descendants();
         }
+    }
+}
+
+pub struct ProjectilePlugin;
+
+impl Plugin for ProjectilePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (handle_new_projectile, handle_removed_projectile).run_if(in_state(AppState::Play)),
+        );
     }
 }
