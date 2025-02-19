@@ -67,10 +67,10 @@ fn main() {
             TilemapPlugin,
             ShapePlugin,
             // Internal
+            LightyearPlugin,
             UtilsPlugin,
             UiPlugin,
             SetupPlugin,
-            LightyearPlugin,
             AuthPlugin,
             LobbyPlugin,
             PlayPlugin,

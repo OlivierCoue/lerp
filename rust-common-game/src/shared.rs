@@ -24,6 +24,8 @@ pub const PLAYER_BASE_MOVEMENT_SPEED: f32 = 8. * PIXEL_METER;
 pub const ENEMY_BASE_MOVEMENT_SPEED: f32 = 5. * PIXEL_METER;
 pub const PROJECTILE_BASE_MOVEMENT_SPEED: f32 = 30. * PIXEL_METER;
 
+pub const PLAYER_PICKUP_RADIUS: f32 = PIXEL_METER;
+
 pub const PLAYER_BASE_HEALTH: f32 = 100.;
 pub const ENEMY_BASE_HEALTH: f32 = 20.;
 
@@ -32,7 +34,7 @@ pub const PLAYER_BASE_MANA: f32 = 100.;
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum GameSimulationSet {
     ApplyPassiveEffects,
-    RegisterSkills,
+    RegisterInputs,
     TriggerSkills,
     ExcecuteSkills,
     SpawnSkills,
@@ -53,7 +55,7 @@ impl Plugin for SharedPlugin {
                 .build()
                 .disable::<SyncPlugin>(),
         );
-        app.add_plugins(CharacterControllerPlugin);
+        app.add_plugins((CharacterControllerPlugin, InputPlugin, LootPlugin));
 
         app.insert_resource(avian2d::sync::SyncConfig {
             transform_to_position: false,
@@ -75,7 +77,7 @@ impl Plugin for SharedPlugin {
             (
                 GameSimulationSet::Others,
                 GameSimulationSet::ApplyPassiveEffects,
-                GameSimulationSet::RegisterSkills,
+                GameSimulationSet::RegisterInputs,
                 GameSimulationSet::TriggerSkills,
                 GameSimulationSet::ExcecuteSkills,
                 GameSimulationSet::RegisterHitEvents,
@@ -104,16 +106,6 @@ impl Plugin for SharedPlugin {
                 progress_skill_cooldown_timers.run_if(not(is_in_rollback)),
             )
                 .in_set(GameSimulationSet::ApplyPassiveEffects),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            (
-                handle_input_move_wasd,
-                handle_input_skill_slot,
-                handle_input_spawn_enemies,
-            )
-                .in_set(GameSimulationSet::RegisterSkills),
         );
 
         app.add_systems(

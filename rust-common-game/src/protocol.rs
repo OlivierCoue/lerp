@@ -32,71 +32,11 @@ pub struct PlayerClient {
     pub player_ref: Entity,
 }
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct MovementTargets(pub Vec<Vec2>);
+#[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq, Deref)]
+pub struct MovementTarget(pub Vec2);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MovementSpeed(pub f32);
-
-pub fn health_should_rollback(this: &Health, that: &Health) -> bool {
-    if this.ne(that) {
-        println!("rollback: health");
-        return true;
-    }
-    false
-}
-
-pub fn mana_should_rollback(this: &Mana, that: &Mana) -> bool {
-    if this.ne(that) {
-        println!("rollback: mana");
-        return true;
-    }
-    false
-}
-
-pub fn dead_should_rollback(this: &Dead, that: &Dead) -> bool {
-    if this.ne(that) {
-        println!("rollback: dead");
-        return true;
-    }
-    false
-}
-
-pub fn position_should_rollback(this: &Position, that: &Position) -> bool {
-    if this.ne(that) {
-        println!("rollback: position");
-        return true;
-    }
-    false
-}
-
-pub fn linear_velocity_should_rollback(this: &LinearVelocity, that: &LinearVelocity) -> bool {
-    if this.ne(that) {
-        println!("rollback: linear velocity");
-        return true;
-    }
-    false
-}
-
-pub fn angular_velocity_should_rollback(this: &AngularVelocity, that: &AngularVelocity) -> bool {
-    if this.ne(that) {
-        println!("rollback: angular velocity");
-        return true;
-    }
-    false
-}
-
-pub fn linear_velocity_correction(
-    _: &LinearVelocity,
-    other: &LinearVelocity,
-    _: f32,
-) -> LinearVelocity {
-    *other
-}
-
-pub fn position_correction(_: &Position, other: &Position, _: f32) -> Position {
-    *other
-}
 
 pub struct ProtocolPlugin;
 
@@ -123,31 +63,25 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Once);
 
         app.register_component::<Health>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(health_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Mana>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(mana_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Dead>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(dead_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
-        app.register_component::<MovementTargets>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
+        app.register_component::<MovementTarget>(ChannelDirection::ServerToClient)
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(linear_velocity_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(angular_velocity_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Position>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full)
-            .add_should_rollback(position_should_rollback);
+            .add_prediction(ComponentSyncMode::Full);
 
         // Server driven components
         app.register_component::<Loot>(ChannelDirection::ServerToClient);

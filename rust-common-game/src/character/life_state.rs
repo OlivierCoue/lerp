@@ -67,7 +67,7 @@ pub fn set_character_life_state(
         // Tick dying timer if present
         if let Some(mut dying_state) = dying {
             dying_state.timer.tick(time.delta());
-            if dead.is_none() && dying_state.timer.just_finished() {
+            if dead.is_none() && dying_state.timer.finished() {
                 commands.entity(entity).remove::<Dying>().insert(Dead);
             }
         }

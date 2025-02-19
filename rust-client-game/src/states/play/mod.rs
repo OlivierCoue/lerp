@@ -4,6 +4,7 @@ mod character;
 mod cursor;
 mod debug;
 mod direction;
+mod input;
 mod loot;
 pub mod map;
 mod name_plate;
@@ -22,6 +23,7 @@ use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
 use cursor::CursorPlugin;
+use input::InputPlugin;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::client::input::leafwing::InputSystemSet;
@@ -135,6 +137,8 @@ fn play_scene_setup(mut commands: Commands) {
             },
         ))
         .with_children(|parent| {
+            let button_size = Vec2::new(100., 30.);
+
             parent
                 .spawn((
                     ButtonAction::SpawnEnemies,
@@ -142,8 +146,8 @@ fn play_scene_setup(mut commands: Commands) {
                     BorderColor(Color::BLACK),
                     BackgroundColor(NORMAL_BUTTON),
                     Node {
-                        width: Val::Px(100.0),
-                        height: Val::Px(30.0),
+                        width: Val::Px(button_size.x),
+                        height: Val::Px(button_size.y),
                         border: UiRect::all(Val::Px(2.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -160,8 +164,8 @@ fn play_scene_setup(mut commands: Commands) {
                     BorderColor(Color::BLACK),
                     BackgroundColor(NORMAL_BUTTON),
                     Node {
-                        width: Val::Px(100.0),
-                        height: Val::Px(30.0),
+                        width: Val::Px(button_size.x),
+                        height: Val::Px(button_size.y),
                         border: UiRect::all(Val::Px(2.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -178,8 +182,8 @@ fn play_scene_setup(mut commands: Commands) {
                     BorderColor(Color::BLACK),
                     BackgroundColor(NORMAL_BUTTON),
                     Node {
-                        width: Val::Px(100.0),
-                        height: Val::Px(30.0),
+                        width: Val::Px(button_size.x),
+                        height: Val::Px(button_size.y),
                         border: UiRect::all(Val::Px(2.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -314,6 +318,7 @@ impl Plugin for PlayPlugin {
             CameraPlugin,
             CharacterPlugin,
             CursorPlugin,
+            InputPlugin,
             DebugPlugin,
             LootPlugin,
             MapPlugin,
@@ -329,7 +334,7 @@ impl Plugin for PlayPlugin {
 
         app.add_systems(
             FixedPreUpdate,
-            (sync_cursor_poisition, play_scene_button_logic)
+            (play_scene_button_logic)
                 .before(InputSystemSet::BufferClientInputs)
                 .in_set(InputManagerSystem::ManualControl)
                 .run_if(in_state(AppState::Play)),

@@ -10,6 +10,7 @@ use lightyear::{
     },
 };
 use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 
 use crate::prelude::*;
 
@@ -19,7 +20,7 @@ pub struct InputVec2 {
     pub y: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect, Actionlike)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone, Copy, Reflect, Actionlike)]
 pub enum PlayerActions {
     Move,
     MoveUp,
@@ -32,7 +33,14 @@ pub enum PlayerActions {
     #[actionlike(DualAxis)]
     Cursor,
     SpawnEnemies,
+    // TODO: Dirty to dup them for local/remote but don't know how to it in better way yet
+    // Also dirty to use TripleAxis to store entity bits but need to PR Leafwing or use another lib...
+    #[actionlike(TripleAxis)]
+    PickupDroppedItemLocal,
+    #[actionlike(TripleAxis)]
+    PickupDroppedItemRemote,
 }
+
 impl PlayerActions {
     /// You could use the `strum` crate to derive this automatically!
     pub fn variants() -> impl Iterator<Item = PlayerActions> {
@@ -58,33 +66,25 @@ pub struct SkillSlotMap {
     map: HashMap<PlayerActions, SkillName>,
 }
 
-pub fn shared_handle_move_click_behavior(
-    action: &ActionState<PlayerActions>,
-    mut targets: Mut<MovementTargets>,
-) {
-    if action.pressed(&PlayerActions::Move) {
-        let Some(cursor_position) = action.dual_axis_data(&PlayerActions::Cursor) else {
-            println!("cursor_position not set skipping");
-            return;
-        };
-
-        *targets = MovementTargets(vec![Vec2::new(
-            cursor_position.pair.x,
-            cursor_position.pair.y,
-        )])
-    }
-}
+#[derive(Event)]
+/// Trigered when player start to move/dash or any action that should cancel current action
+pub struct PlayerCancelAction(pub Entity);
 
 pub fn handle_input_move_wasd(
+    mut commands: Commands,
     tick_manager: Res<TickManager>,
     rollback: Option<Res<Rollback>>,
+    mut player_cancel_action_ev: EventWriter<PlayerCancelAction>,
     mut player_query: Query<
         (
+            Entity,
             &ActionState<PlayerActions>,
             &InputBuffer<PlayerActions>,
             &mut LinearVelocity,
+            &Position,
             &MovementSpeed,
             Has<SkillInProgress>,
+            Option<&MovementTarget>,
         ),
         (With<Player>, Or<(With<Predicted>, With<ReplicationTarget>)>),
     >,
@@ -94,8 +94,16 @@ pub fn handle_input_move_wasd(
         .map(|rb| tick_manager.tick_or_rollback_tick(rb))
         .unwrap_or(tick_manager.tick());
 
-    for (action, buffer, mut linear_velocity, movement_speed, has_skill_in_progress) in
-        player_query.iter_mut()
+    for (
+        entity,
+        action,
+        buffer,
+        mut linear_velocity,
+        position,
+        movement_speed,
+        has_skill_in_progress,
+        movement_target,
+    ) in player_query.iter_mut()
     {
         let action = if buffer.get(tick).is_some() {
             action
@@ -125,6 +133,25 @@ pub fn handle_input_move_wasd(
         }
 
         direction = direction.clamp_length_max(1.0);
+
+        if direction != Vec2::ZERO {
+            player_cancel_action_ev.send(PlayerCancelAction(entity));
+            // TODO: Do we need this here ?
+            if movement_target.is_some() {
+                commands.entity(entity).remove::<MovementTarget>();
+            }
+        } else if let Some(movement_target) = movement_target {
+            let to_target: Vec2 = movement_target.0 - position.0;
+            let distance_to_target = to_target.length();
+            // Target reached stopping
+            if distance_to_target <= 1e-4 {
+                direction = Vec2::ZERO;
+                commands.entity(entity).remove::<MovementTarget>();
+            } else {
+                direction = to_target.normalize();
+            }
+        }
+
         let modifier = if has_skill_in_progress { 0.6 } else { 1. };
         let new_velocity = direction * movement_speed.0 * modifier;
         if new_velocity != linear_velocity.0 {
@@ -133,7 +160,7 @@ pub fn handle_input_move_wasd(
     }
 }
 
-pub fn handle_input_skill_slot(
+fn handle_input_skill_slot(
     mut skill_trigger_ev: EventWriter<TriggerSkillEvent>,
     player_query: Query<
         (
@@ -176,7 +203,7 @@ pub fn handle_input_skill_slot(
     }
 }
 
-pub fn handle_input_spawn_enemies(
+fn handle_input_spawn_enemies(
     tick_manager: Res<TickManager>,
     identity: NetworkIdentity,
     mut commands: Commands,
@@ -218,36 +245,49 @@ pub fn handle_input_spawn_enemies(
     }
 }
 
-pub fn shared_move_to_target_behaviour(
-    time: &Res<Time<Physics>>,
-    position: &Position,
-    movement_speed: &MovementSpeed,
-    mut velocity: Mut<LinearVelocity>,
-    mut targets: Mut<MovementTargets>,
+fn handle_input_click(
+    identity: NetworkIdentity,
+    mut commands: Commands,
+    player_query: Query<
+        (Entity, &ActionState<PlayerActions>),
+        (Or<(With<Predicted>, With<ReplicationTarget>)>,),
+    >,
 ) {
-    if let Some(target) = targets.0.first() {
-        let to_target: Vec2 = *target - position.0;
-        let distance_to_target = to_target.length();
-
-        // If close enough to the target, stop movement
-        if distance_to_target <= 1e-4 {
-            velocity.0 = Vec2::ZERO;
-            targets.0.clear();
+    for (player_entity, action_state) in player_query.iter() {
+        let action = if identity.is_client() {
+            &PlayerActions::PickupDroppedItemLocal
         } else {
-            // Calculate direction to the target
-            let direction = to_target.normalize_or_zero();
-            // Compute movement distance based on speed and delta time
-            let max_distance = movement_speed.0 * time.delta_secs();
-
-            // If the next step overshoots the target, use reduced velocity
-            if max_distance > distance_to_target {
-                *velocity = LinearVelocity(direction * (distance_to_target / time.delta_secs()));
-            // Else go at max speed
-            } else {
-                *velocity = LinearVelocity(
-                    (direction * movement_speed.0).clamp_length_max(movement_speed.0),
-                )
-            }
+            &PlayerActions::PickupDroppedItemRemote
+        };
+        let Some(clicked_entity) = action_state.triple_axis_data(action) else {
+            continue;
+        };
+        if clicked_entity.triple == Vec3::ZERO {
+            continue;
         }
+        // Dirty way to recreate Entity from bits stored in 3 f32 in a triple axis Leafwing action..
+        let clicked_entity = Entity::from_bits(vec3_to_u64(clicked_entity.triple));
+
+        commands
+            .entity(player_entity)
+            .insert(PendingItemDroppedPickup(clicked_entity));
+    }
+}
+
+pub struct InputPlugin;
+
+impl Plugin for InputPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<PlayerCancelAction>();
+        app.add_systems(
+            FixedUpdate,
+            (
+                handle_input_move_wasd,
+                handle_input_skill_slot,
+                handle_input_spawn_enemies,
+                handle_input_click,
+            )
+                .in_set(GameSimulationSet::RegisterInputs),
+        );
     }
 }

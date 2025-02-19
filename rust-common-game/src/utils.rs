@@ -20,3 +20,14 @@ pub fn cartesian_to_isometric(cart_x: f32, cart_y: f32) -> Vec2 {
         (cart_y - cart_x) / 2.0, // Y-axis in isometric space
     )
 }
+
+pub fn u64_to_vec3(value: u64) -> Vec3 {
+    let high = (value >> 42) as f32;
+    let mid = ((value >> 20) & 0x3FFFFF) as f32;
+    let low = (value & 0xFFFFF) as f32;
+    Vec3::new(high, mid, low)
+}
+
+pub fn vec3_to_u64(v: Vec3) -> u64 {
+    ((v.x as u64) << 42) | ((v.y as u64) << 20) | (v.z as u64)
+}

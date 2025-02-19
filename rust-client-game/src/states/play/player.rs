@@ -46,45 +46,9 @@ pub fn handle_new_player(
                     (PlayerActions::MoveRight, KeyCode::KeyD),
                     (PlayerActions::SkillSlot3, KeyCode::KeyE),
                 ])
-                .with(PlayerActions::SkillSlot1, MouseButton::Left)
+                // .with(PlayerActions::SkillSlot1, MouseButton::Left)
                 .with(PlayerActions::SkillSlot2, MouseButton::Right),
             );
         }
     }
-}
-
-pub fn sync_cursor_poisition(
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    windows: Query<&Window>,
-    mut action_state_query: Query<
-        &mut ActionState<PlayerActions>,
-        (With<Player>, With<Predicted>, With<Controlled>),
-    >,
-) {
-    let (camera, camera_transform) = camera_query.single();
-
-    let Ok(winodw) = windows.get_single() else {
-        return;
-    };
-
-    let Some(screen_cursor_position) = winodw.cursor_position() else {
-        return;
-    };
-
-    let Ok(world_cursor_position) =
-        camera.viewport_to_world_2d(camera_transform, screen_cursor_position)
-    else {
-        return;
-    };
-
-    let actual_world_cursor_position = isometric_to_cartesian(
-        world_cursor_position.x,
-        world_cursor_position.y - 1. * PIXEL_METER,
-    );
-
-    let Ok(mut action_state) = action_state_query.get_single_mut() else {
-        return;
-    };
-
-    action_state.set_axis_pair(&PlayerActions::Cursor, actual_world_cursor_position);
 }
