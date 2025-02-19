@@ -5,7 +5,7 @@ mod cursor;
 mod debug;
 mod direction;
 mod input;
-mod loot;
+mod item_drop;
 pub mod map;
 mod name_plate;
 mod player;
@@ -33,7 +33,7 @@ use lightyear::shared::replication::components::Controlled;
 use animation::animate_sprite;
 use character::*;
 use direction::update_direction;
-use loot::LootPlugin;
+use item_drop::ItemDropPlugin;
 use name_plate::*;
 use projectile::*;
 
@@ -320,7 +320,7 @@ impl Plugin for PlayPlugin {
             CursorPlugin,
             InputPlugin,
             DebugPlugin,
-            LootPlugin,
+            ItemDropPlugin,
             MapPlugin,
             NamePlatePlugin,
             ProjectilePlugin,

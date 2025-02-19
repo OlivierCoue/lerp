@@ -55,7 +55,7 @@ impl Plugin for SharedPlugin {
                 .build()
                 .disable::<SyncPlugin>(),
         );
-        app.add_plugins((CharacterControllerPlugin, InputPlugin, LootPlugin));
+        app.add_plugins((CharacterControllerPlugin, InputPlugin, ItemDropPlugin));
 
         app.insert_resource(avian2d::sync::SyncConfig {
             transform_to_position: false,
@@ -83,19 +83,18 @@ impl Plugin for SharedPlugin {
                 GameSimulationSet::RegisterHitEvents,
                 GameSimulationSet::ConsumeHitEvents,
             )
-                .chain(),
+                .chain()
+                .after(PhysicsSet::StepSimulation),
         );
 
         app.add_systems(
             FixedUpdate,
             (
-                (
-                    (update_flow_field.run_if(not(is_in_rollback)),),
-                    enemy_movement_behavior,
-                )
-                    .chain(),
+                update_flow_field.run_if(not(is_in_rollback)),
+                enemy_movement_behavior,
                 process_projectile_distance,
             )
+                .chain()
                 .in_set(GameSimulationSet::Others),
         );
 
@@ -104,16 +103,15 @@ impl Plugin for SharedPlugin {
             (
                 mana_regeneration,
                 progress_skill_cooldown_timers.run_if(not(is_in_rollback)),
+                progress_skill_in_progress_timers,
             )
+                .chain()
                 .in_set(GameSimulationSet::ApplyPassiveEffects),
         );
 
         app.add_systems(
             FixedUpdate,
-            (
-                on_trigger_skill_event.run_if(on_event::<TriggerSkillEvent>),
-                progress_skill_in_progress_timers,
-            )
+            (on_trigger_skill_event.run_if(on_event::<TriggerSkillEvent>),)
                 .chain()
                 .in_set(GameSimulationSet::TriggerSkills),
         );

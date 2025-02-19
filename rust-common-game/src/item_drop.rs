@@ -9,7 +9,7 @@ use crate::prelude::*;
 pub struct PendingItemDroppedPickup(pub Entity);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Loot {
+pub struct ItemDropped {
     pub position: Vec2,
 }
 
@@ -25,7 +25,7 @@ fn pickup_item_dropped(
         ),
         (Or<(With<Predicted>, With<ReplicationTarget>)>,),
     >,
-    dropped_item_q: Query<&Loot>,
+    dropped_item_q: Query<&ItemDropped>,
 ) {
     for (player_entity, player_position, pending_item_dropped_pickup, player_movement_target) in
         player_q.iter()
@@ -77,9 +77,9 @@ fn cancel_pending_item_dropped_pickup(
         }
     }
 }
-pub struct LootPlugin;
+pub struct ItemDropPlugin;
 
-impl Plugin for LootPlugin {
+impl Plugin for ItemDropPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
@@ -87,6 +87,7 @@ impl Plugin for LootPlugin {
                 pickup_item_dropped,
                 cancel_pending_item_dropped_pickup.run_if(on_event::<PlayerCancelAction>),
             )
+                .chain()
                 .in_set(GameSimulationSet::ApplyPassiveEffects),
         );
     }

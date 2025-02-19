@@ -287,6 +287,7 @@ impl Plugin for InputPlugin {
                 handle_input_spawn_enemies,
                 handle_input_click,
             )
+                .chain()
                 .in_set(GameSimulationSet::RegisterInputs),
         );
     }

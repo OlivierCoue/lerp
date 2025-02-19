@@ -1,14 +1,18 @@
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use rust_common_game::prelude::*;
 
 use super::direction::Direction;
 
+const DEFAULT_ANIMATION_DURATION_SECS: f32 = 0.05;
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum AnimationState {
     Walk,
     Idle,
-    Attack,
+    Attack((u64, Duration)),
     Dead,
 }
 
@@ -74,7 +78,7 @@ impl AnimationConfig {
         };
 
         Self {
-            timer: Timer::from_seconds(0.05, TimerMode::Repeating),
+            timer: Timer::from_seconds(DEFAULT_ANIMATION_DURATION_SECS, TimerMode::Repeating),
             state: AnimationState::Idle,
             atlas_walk,
             atlas_idle,
@@ -115,9 +119,15 @@ pub fn animate_sprite(
                 animation_config.atlas_death.frame_count,
                 animation_config.atlas_death.repeated,
             )
-        } else if let Some(_skill_in_progress) = skill_in_progress {
+        } else if let Some(skill_in_progress) = skill_in_progress {
             (
-                AnimationState::Attack,
+                AnimationState::Attack((
+                    skill_in_progress.excecute_skill_event.skill_instance_hash,
+                    skill_in_progress
+                        .timer
+                        .duration()
+                        .div_f32(animation_config.atlas_attack.frame_count as f32),
+                )),
                 animation_config.atlas_attack.frame_count,
                 animation_config.atlas_attack.repeated,
             )
@@ -143,27 +153,38 @@ pub fn animate_sprite(
 
         if state_changed {
             match new_state {
-                AnimationState::Attack => {
+                AnimationState::Attack((_hash, duration)) => {
                     sprite.image = animation_config.atlas_attack.image_path.clone();
                     let atlas = sprite.texture_atlas.as_mut().unwrap();
                     atlas.layout = animation_config.atlas_attack.atlas_layout.clone();
                     atlas.index = 0;
+                    animation_config.timer.reset();
+                    animation_config.timer.set_duration(duration);
                 }
                 AnimationState::Walk => {
                     sprite.image = animation_config.atlas_walk.image_path.clone();
                     let atlas = sprite.texture_atlas.as_mut().unwrap();
                     atlas.layout = animation_config.atlas_walk.atlas_layout.clone();
+                    animation_config
+                        .timer
+                        .set_duration(Duration::from_secs_f32(DEFAULT_ANIMATION_DURATION_SECS));
                 }
                 AnimationState::Idle => {
                     sprite.image = animation_config.atlas_idle.image_path.clone();
                     let atlas = sprite.texture_atlas.as_mut().unwrap();
                     atlas.layout = animation_config.atlas_idle.atlas_layout.clone();
+                    animation_config
+                        .timer
+                        .set_duration(Duration::from_secs_f32(DEFAULT_ANIMATION_DURATION_SECS));
                 }
                 AnimationState::Dead => {
                     sprite.image = animation_config.atlas_death.image_path.clone();
                     let atlas = sprite.texture_atlas.as_mut().unwrap();
                     atlas.layout = animation_config.atlas_death.atlas_layout.clone();
                     atlas.index = 0;
+                    animation_config
+                        .timer
+                        .set_duration(Duration::from_secs_f32(DEFAULT_ANIMATION_DURATION_SECS));
                 }
             }
         }

@@ -13,7 +13,10 @@ use super::cursor::{HoverableEntity, HoverableEntityKind};
 #[derive(Component)]
 struct ItemDroppedRender;
 
-fn on_new_item_dropped(mut commands: Commands, q: Query<(Entity, &Loot), Added<Loot>>) {
+fn on_new_item_dropped(
+    mut commands: Commands,
+    q: Query<(Entity, &ItemDropped), Added<ItemDropped>>,
+) {
     for (entity, loot) in &q {
         let size = Vec2::new(60., 12.);
         let shape = shapes::Rectangle {
@@ -53,9 +56,9 @@ fn update_item_dropped_hover_state(
     }
 }
 
-pub struct LootPlugin;
+pub struct ItemDropPlugin;
 
-impl Plugin for LootPlugin {
+impl Plugin for ItemDropPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,

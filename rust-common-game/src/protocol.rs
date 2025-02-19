@@ -84,7 +84,7 @@ impl Plugin for ProtocolPlugin {
             .add_prediction(ComponentSyncMode::Full);
 
         // Server driven components
-        app.register_component::<Loot>(ChannelDirection::ServerToClient);
+        app.register_component::<ItemDropped>(ChannelDirection::ServerToClient);
 
         // Channels
         app.add_channel::<Channel1>(ChannelSettings {

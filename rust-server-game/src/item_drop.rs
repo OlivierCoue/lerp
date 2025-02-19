@@ -4,13 +4,13 @@ use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use rust_common_game::prelude::*;
 
-pub(crate) fn generate_loop_on_death(
+pub(crate) fn generate_item_dropped_on_death(
     mut commands: Commands,
     dead_enemy_q: Query<&Position, (Added<Dead>, With<Enemy>)>,
 ) {
     for position in dead_enemy_q.iter() {
         commands.spawn((
-            Loot {
+            ItemDropped {
                 position: position.0,
             },
             Replicate {
