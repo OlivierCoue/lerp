@@ -5,16 +5,51 @@ use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ItemDroppedSound {
+    Alter1,
+    Alter2,
+    Alter6,
+}
+impl ItemDroppedSound {
+    pub fn audio_path(&self) -> &'static str {
+        match &self {
+            Self::Alter1 => "assets/sound/item-drop/AlertSound1.mp3",
+            Self::Alter2 => "assets/sound/item-drop/AlertSound2.mp3",
+            Self::Alter6 => "assets/sound/item-drop/AlertSound6.mp3",
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum ItemRarity {
+    Common,
+    Magic,
+    Rare,
+    Unique,
+}
+
 #[derive(Component)]
 pub struct PendingItemDroppedPickup(pub Entity);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ItemDropped {
     pub position: Vec2,
+    pub ratity: ItemRarity,
+}
+impl ItemDropped {
+    pub fn sound_effect(&self) -> Option<ItemDroppedSound> {
+        match &self.ratity {
+            ItemRarity::Common => None,
+            ItemRarity::Magic => None,
+            ItemRarity::Rare => Some(ItemDroppedSound::Alter2),
+            ItemRarity::Unique => Some(ItemDroppedSound::Alter6),
+        }
+    }
 }
 
 #[derive(Event)]
-pub struct ItemDroppedPickedUp;
+pub struct ItemDroppedPickedUp(pub Entity);
 
 fn pickup_item_dropped(
     identity: NetworkIdentity,
@@ -42,7 +77,7 @@ fn pickup_item_dropped(
                 commands
                     .entity(player_entity)
                     .remove::<(PendingItemDroppedPickup, MovementTarget)>();
-                item_dropped_picked_up_ev.send(ItemDroppedPickedUp);
+                item_dropped_picked_up_ev.send(ItemDroppedPickedUp(pending_item_dropped_pickup.0));
                 if identity.is_server() {
                     commands.entity(pending_item_dropped_pickup.0).despawn();
                 }

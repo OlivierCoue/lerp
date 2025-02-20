@@ -4,11 +4,14 @@ use bevy::prelude::*;
 use bevy::state::app::StatesPlugin;
 use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
+use bevy_rand::plugin::EntropyPlugin;
+use bevy_rand::prelude::WyRand;
 use item_drop::generate_item_dropped_on_death;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use lightyear::server::input::leafwing::InputSystemSet;
 use local_ip_address::local_ip;
+
 use rust_common_game::input::PlayerActions;
 
 use rust_common_game::prelude::*;
@@ -144,6 +147,7 @@ fn main() {
             filter: "wgpu=error,bevy_render=info,bevy_ecs=warn".to_string(),
             ..default()
         })
+        .add_plugins(EntropyPlugin::<WyRand>::default())
         .add_plugins(server_plugin.build())
         .add_plugins(SharedPlugin)
         .init_resource::<ClientPlayerMap>()

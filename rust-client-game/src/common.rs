@@ -30,4 +30,5 @@ pub struct DebugConfig {
 pub const Z_FLOOR: f32 = 0.;
 pub const Z_OBJECT_ON_FLOOR: f32 = 10.;
 pub const Z_DEFAULT: f32 = 20.;
-pub const Z_DEBUG: f32 = 30.;
+pub const Z_ITEM_DROPPED_NAME_PLATE: f32 = 30.;
+pub const Z_DEBUG: f32 = 40.;

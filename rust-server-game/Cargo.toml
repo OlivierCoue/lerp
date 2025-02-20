@@ -13,6 +13,8 @@ lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "eb7c4
 local-ip-address = "0.6.0"
 rust-common-game = { path = "../rust-common-game" }
 serde = { version = "1.0.215", features = ["derive"] }
+rand_core = "0.6"
+bevy_rand = { version = "0.9", features = ["wyrand"] }
 
 [lints.clippy]
 type_complexity = "allow"
