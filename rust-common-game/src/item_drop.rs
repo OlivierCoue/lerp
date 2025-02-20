@@ -13,9 +13,13 @@ pub struct ItemDropped {
     pub position: Vec2,
 }
 
+#[derive(Event)]
+pub struct ItemDroppedPickedUp;
+
 fn pickup_item_dropped(
     identity: NetworkIdentity,
     mut commands: Commands,
+    mut item_dropped_picked_up_ev: EventWriter<ItemDroppedPickedUp>,
     player_q: Query<
         (
             Entity,
@@ -38,6 +42,7 @@ fn pickup_item_dropped(
                 commands
                     .entity(player_entity)
                     .remove::<(PendingItemDroppedPickup, MovementTarget)>();
+                item_dropped_picked_up_ev.send(ItemDroppedPickedUp);
                 if identity.is_server() {
                     commands.entity(pending_item_dropped_pickup.0).despawn();
                 }
@@ -81,6 +86,7 @@ pub struct ItemDropPlugin;
 
 impl Plugin for ItemDropPlugin {
     fn build(&self, app: &mut App) {
+        app.add_event::<ItemDroppedPickedUp>();
         app.add_systems(
             FixedUpdate,
             (

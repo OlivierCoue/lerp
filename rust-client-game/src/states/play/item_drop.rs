@@ -14,9 +14,12 @@ use super::cursor::{HoverableEntity, HoverableEntityKind};
 struct ItemDroppedRender;
 
 fn on_new_item_dropped(
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
     q: Query<(Entity, &ItemDropped), Added<ItemDropped>>,
 ) {
+    let mut audio_played = false;
+
     for (entity, loot) in &q {
         let size = Vec2::new(60., 12.);
         let shape = shapes::Rectangle {
@@ -38,6 +41,14 @@ fn on_new_item_dropped(
             Stroke::new(Color::linear_rgb(1., 0., 0.), 2.0),
             Fill::color(Color::linear_rgb(1., 1., 1.)),
         ));
+
+        // Prevent to play the same sound multiple times in a single frame
+        if !audio_played {
+            audio_played = true;
+            let audio_source_alert_2 =
+                asset_server.load::<AudioSource>("assets/sound/item-drop/AlertSound2.mp3");
+            commands.spawn((AudioPlayer(audio_source_alert_2), PlaybackSettings::DESPAWN));
+        }
     }
 }
 
@@ -56,6 +67,17 @@ fn update_item_dropped_hover_state(
     }
 }
 
+fn on_item_dropped_picked_up(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut item_dropped_picked_up_ev: EventReader<ItemDroppedPickedUp>,
+) {
+    if item_dropped_picked_up_ev.read().next().is_some() {
+        let audio_source = asset_server.load::<AudioSource>("assets/sound/item-pickup.mp3");
+        commands.spawn((AudioPlayer(audio_source), PlaybackSettings::DESPAWN));
+    }
+}
+
 pub struct ItemDropPlugin;
 
 impl Plugin for ItemDropPlugin {
@@ -63,6 +85,11 @@ impl Plugin for ItemDropPlugin {
         app.add_systems(
             Update,
             (on_new_item_dropped, update_item_dropped_hover_state).run_if(in_state(AppState::Play)),
+        );
+        app.add_systems(
+            Update,
+            (on_item_dropped_picked_up)
+                .run_if(in_state(AppState::Play).and(on_event::<ItemDroppedPickedUp>)),
         );
     }
 }

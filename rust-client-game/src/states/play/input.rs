@@ -45,6 +45,8 @@ fn handle_mouse_click(
         fixed_mouse_state.left_button_just_pressed = true;
     } else if fixed_mouse_state.left_button_just_pressed {
         fixed_mouse_state.left_button_just_pressed = false;
+        action_state.set_axis_triple(&PlayerActions::PickupDroppedItemLocal, Vec3::ZERO);
+        action_state.set_axis_triple(&PlayerActions::PickupDroppedItemRemote, Vec3::ZERO);
     }
 
     // If the cursor is not over an interactable element, we trigger de default SkillSlot1

@@ -59,7 +59,7 @@ fn main() {
                 })
                 .set(LogPlugin {
                     level: Level::INFO,
-                    filter: "wgpu=error,bevy_render=info,bevy_ecs=warn,bevy_time=war".to_string(),
+                    filter: "wgpu=error,bevy_render=info,bevy_ecs=warn,bevy_time=warn,symphonia_core=warn,symphonia_bundle_mp3=warn".to_string(),
                     ..default()
                 }),
             FrameTimeDiagnosticsPlugin,
