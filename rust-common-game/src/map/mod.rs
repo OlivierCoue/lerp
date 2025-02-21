@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use input::*;
+use lightyear::prelude::NetworkIdentity;
 use loader::load_map;
 use map::Map;
 
@@ -9,8 +10,13 @@ pub mod loader;
 pub mod map;
 pub mod tile_kind;
 
-pub fn generate_map(mut commands: Commands, mut map_grid: ResMut<Map>) {
-    load_map(&mut commands, &mut map_grid, create_large_map_input());
+pub fn generate_map(identity: NetworkIdentity, mut commands: Commands, mut map_grid: ResMut<Map>) {
+    load_map(
+        identity,
+        &mut commands,
+        &mut map_grid,
+        create_large_map_input(),
+    );
 }
 
 pub mod prelude {

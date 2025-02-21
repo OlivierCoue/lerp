@@ -33,6 +33,7 @@ fn handle_connections(
     mut connections: EventReader<ConnectEvent>,
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
+    map: Res<Map>,
 ) {
     for connection in connections.read() {
         let client_id = connection.client_id;
@@ -40,7 +41,7 @@ fn handle_connections(
 
         let player_id = commands.spawn_empty().id();
         commands.entity(player_id).insert((
-            PlayerBundle::new(&Vec2::new(0., 0.)),
+            PlayerBundle::new(&map.player_spawn_position),
             Replicate {
                 sync: SyncTarget {
                     prediction: NetworkTarget::All,
@@ -151,7 +152,8 @@ fn main() {
         .add_plugins(server_plugin.build())
         .add_plugins(SharedPlugin)
         .init_resource::<ClientPlayerMap>()
-        .add_systems(Startup, (start_server, generate_map))
+        .add_systems(Startup, start_server)
+        .add_systems(OnEnter(NetworkingState::Started), generate_map)
         .add_systems(
             PreUpdate,
             // this system will replicate the inputs of a client to other clients

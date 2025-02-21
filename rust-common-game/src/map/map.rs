@@ -90,6 +90,8 @@ pub struct Map {
     pub map_px_half_size: Vec2,
 
     nav_tile_px_offset: Vec2,
+
+    pub player_spawn_position: Vec2,
 }
 impl Map {
     pub fn reset(&mut self, render_map_size: UVec2) {

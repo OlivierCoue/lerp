@@ -1,17 +1,11 @@
 use avian2d::prelude::{Collider, Position, RigidBody};
 use bevy::{prelude::*, utils::HashMap};
-
-use crate::{
-    shared::{NAV_TILE_SIZE, RENDER_TO_NAV_TILE_MULTI},
-    utils::CommonPlaySceneTag,
-    wall::Wall,
+use lightyear::prelude::{
+    server::{Replicate, ReplicationTarget, SyncTarget},
+    NetworkIdentity, NetworkTarget,
 };
 
-use super::{
-    input::MapInput,
-    map::*,
-    tile_kind::{RenderTileFloorKind, RenderTileWallKind},
-};
+use crate::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
 struct WallSegment {
@@ -26,7 +20,12 @@ struct WallKey {
 }
 
 /// Reset the given Map and load the given InputMap in it
-pub fn load_map(commands: &mut Commands, map_grid: &mut Map, input: MapInput) {
+pub fn load_map(
+    identity: NetworkIdentity,
+    commands: &mut Commands,
+    map_grid: &mut Map,
+    input: MapInput,
+) {
     // Reset the map with the input size
     map_grid.reset(UVec2::new(
         input.map.first().unwrap().len() as u32,
@@ -93,7 +92,16 @@ pub fn load_map(commands: &mut Commands, map_grid: &mut Map, input: MapInput) {
                 .get_bottom_right(x_render, y_render)
                 .is_some_and(|t| *t == 'F');
 
-            if *tile_char == 'F'
+            if *tile_char == 'S' {
+                map_grid.player_spawn_position = Vec2::new(
+                    x_render as f32 * RENDER_TILE_SIZE,
+                    y_render as f32 * RENDER_TILE_SIZE,
+                ) - map_grid.map_px_half_size;
+            }
+
+            if *tile_char == 'S'
+                || *tile_char == 'E'
+                || *tile_char == 'F'
                 || *tile_char == 'D'
                 || (*tile_char == 'W' && (is_bottom_floor || is_right_floor))
                 || (*tile_char == 'W' && is_bottom_right_floor)
@@ -161,6 +169,32 @@ pub fn load_map(commands: &mut Commands, map_grid: &mut Map, input: MapInput) {
                         RenderTileWallKind::LefttWallWithDoorTop,
                         UVec2::new(x_render, y_render),
                     );
+                }
+            }
+
+            if identity.is_server() && *tile_char == 'E' {
+                for x in 0..5 {
+                    for y in 0..5 {
+                        let position = Vec2::new(
+                            x_render as f32 * RENDER_TILE_SIZE + x as f32 * ENEMY_SIZE,
+                            y_render as f32 * RENDER_TILE_SIZE + y as f32 * ENEMY_SIZE,
+                        ) - map_grid.map_px_half_size;
+
+                        let enemy = (EnemyBundle::new(&position),);
+                        let enemy_entity = commands.spawn(enemy).id();
+
+                        commands.entity(enemy_entity).insert((Replicate {
+                            sync: SyncTarget {
+                                prediction: NetworkTarget::All,
+                                interpolation: NetworkTarget::None,
+                            },
+                            target: ReplicationTarget {
+                                target: NetworkTarget::All,
+                            },
+                            group: REPLICATION_GROUP,
+                            ..default()
+                        },));
+                    }
                 }
             }
         }
