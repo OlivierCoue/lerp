@@ -3,6 +3,7 @@ pub mod enemy;
 pub mod flow_field;
 pub mod health;
 pub mod hit;
+pub mod http_api;
 pub mod input;
 pub mod item_drop;
 pub mod mana;
@@ -24,6 +25,7 @@ pub mod prelude {
     pub use crate::flow_field::*;
     pub use crate::health::*;
     pub use crate::hit::*;
+    pub use crate::http_api::*;
     pub use crate::input::*;
     pub use crate::item_drop::*;
     pub use crate::mana::*;

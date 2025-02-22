@@ -27,7 +27,7 @@ fn display_network_status(state: Res<State<NetworkingState>>) {
     }
 }
 
-pub fn get_client_net_config(server_address: IpAddr) -> client::NetConfig {
+pub fn get_client_net_config(server_address: IpAddr, port: u16) -> client::NetConfig {
     let mut rng = rand::rng();
     let client_id = rng.random_range(1..10001);
 
@@ -39,7 +39,7 @@ pub fn get_client_net_config(server_address: IpAddr) -> client::NetConfig {
     };
 
     // let server_addr = SocketAddr::new(IpAddr::from_str("15.237.150.220").unwrap(), 34255);
-    let server_addr = SocketAddr::new(server_address, 34255);
+    let server_addr = SocketAddr::new(server_address, port);
     let client_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
 
     let io = client::IoConfig::from_transport(client::ClientTransport::UdpSocket(client_addr))
@@ -70,7 +70,7 @@ impl Plugin for LightyearPlugin {
     fn build(&self, app: &mut App) {
         let client_config = client::ClientConfig {
             shared: shared_config(),
-            net: get_client_net_config(IpAddr::from_str("127.0.0.1").unwrap()),
+            net: get_client_net_config(IpAddr::from_str("127.0.0.1").unwrap(), 34255),
             replication: ReplicationConfig {
                 send_updates_mode: SendUpdatesMode::SinceLastAck,
             },

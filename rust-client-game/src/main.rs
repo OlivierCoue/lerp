@@ -9,6 +9,7 @@ use bevy_simple_text_input::TextInputPlugin;
 
 use common::*;
 use lightyear::*;
+use network::tokio_task::TokioTasksPlugin;
 use states::auth::*;
 use states::lobby::*;
 use states::play::*;
@@ -17,6 +18,7 @@ use utils::*;
 
 mod common;
 mod lightyear;
+mod network;
 mod states;
 mod ui;
 mod utils;
@@ -67,6 +69,7 @@ fn main() {
             TilemapPlugin,
             ShapePlugin,
             // Internal
+            TokioTasksPlugin::default(),
             LightyearPlugin,
             UtilsPlugin,
             UiPlugin,

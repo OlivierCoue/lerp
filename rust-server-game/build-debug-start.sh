@@ -9,4 +9,4 @@ cp ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unkno
 
 docker rmi -f rust-server-game:1
 docker build ./rust-server-game/dist/debug -t rust-server-game:1
-docker run --rm -p 34255:34255/udp rust-server-game:1
+docker run --rm -p 34000-35000:34000-35000/udp -p 4000:4000/tcp rust-server-game:1

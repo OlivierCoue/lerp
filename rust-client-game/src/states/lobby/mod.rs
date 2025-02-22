@@ -1,13 +1,16 @@
 use std::net::IpAddr;
 use std::str::FromStr;
 
-use crate::common::*;
 use crate::lightyear::get_client_net_config;
 use crate::ui::text_input::create_text_input;
 use crate::ui::*;
+use crate::{common::*, network::tokio_task::TokioTasksRuntime};
 use bevy::prelude::*;
+use bevy::tasks::AsyncComputeTaskPool;
 use bevy_simple_text_input::TextInputValue;
 use lightyear::client::config::ClientConfig;
+use rust_common_game::http_api::HttpStartServerResponse;
+use serde::{Deserialize, Serialize};
 
 #[derive(Component)]
 pub struct LobbySceneTag;
@@ -168,6 +171,7 @@ pub fn lobby_scene_logic(
 }
 
 fn lobby_scene_button_logic(
+    tokio_runtime: ResMut<TokioTasksRuntime>,
     mut lightyear_client_config: ResMut<ClientConfig>,
     mut app_state: ResMut<NextState<AppState>>,
     mut debug_config: ResMut<DebugConfig>,
@@ -182,12 +186,42 @@ fn lobby_scene_button_logic(
             Interaction::Pressed => match action {
                 ButtonAction::Play => {
                     let server_address = text_input_server_address_query.get_single().unwrap();
-                    if let Ok(server_address) = IpAddr::from_str(server_address.0.as_str()) {
-                        lightyear_client_config.net = get_client_net_config(server_address);
-                        app_state.set(AppState::Play);
-                    } else {
-                        println!("Invalid server address")
+                    let Ok(server_address) = IpAddr::from_str(server_address.0.as_str()) else {
+                        println!("Invalid server address");
+                        break;
                     };
+
+                    tokio_runtime.spawn_background_task(move |mut ctx| async move {
+                        let response = reqwest::Client::new()
+                            .post(format!("http://{}:4000/server/start", server_address))
+                            .send()
+                            .await
+                            .unwrap()
+                            .json::<HttpStartServerResponse>()
+                            .await
+                            .unwrap();
+                        info!(
+                            "Server: uuid: {} port: {}",
+                            response.instance_uuid, response.instance_port
+                        );
+
+                        ctx.run_on_main_thread(move |ctx| {
+                            let mut lightyear_client_config = ctx
+                                .world
+                                .get_resource_mut::<ClientConfig>()
+                                .expect("Lightyear ClientConfig resource not initialized");
+                            lightyear_client_config.net =
+                                get_client_net_config(server_address, response.instance_port);
+
+                            let mut app_state = ctx
+                                .world
+                                .get_resource_mut::<NextState<AppState>>()
+                                .expect("AppState state not initialized");
+
+                            app_state.set(AppState::Play);
+                        })
+                        .await;
+                    });
                 }
                 ButtonAction::Logout => {
                     app_state.set(AppState::Auth);
