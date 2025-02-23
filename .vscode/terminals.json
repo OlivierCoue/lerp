@@ -5,27 +5,11 @@
         "open": true
       },
       {
-        "name": "cargo-lambda",
+        "name": "lerp-client-game",
         "open": true
       },
       {
-        "name": "rust-client",
-        "open": true
-      },
-      {
-        "name": "rust-common",
-        "open": true
-      },
-      {
-        "name": "rust-server-game",
-        "open": true
-      },
-      {
-        "name": "rust-server-scaler",
-        "open": true
-      },
-      {
-        "name": "rust-server-test",
+        "name": "lerp-server-game",
         "open": true
       }
     ]

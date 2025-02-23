@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "rust-client-game",
-    "rust-common-game",
-    "rust-server-game",
+    "lerp-client-game",
+    "lerp-common-game",
+    "lerp-server-game",
 ]
 resolver = "2"
 

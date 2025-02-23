@@ -65,9 +65,9 @@ jobs:
       #   shell: bash
       #   run: cargo lambda build --compiler cargo --release --output-format zip
 
-      - name: Build rust-server-game
+      - name: Build lerp-server-game
         shell: bash
-        run: ./rust-server-game/build-release.sh
+        run: ./lerp-server-game/build-release.sh
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -98,5 +98,5 @@ jobs:
           REPOSITORY: game-${{ github.ref_name }}
           IMAGE_TAG: latest
         run: |
-          docker build ./rust-server-game/dist/release -t $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker build ./lerp-server-game/dist/release -t $REGISTRY/$REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG

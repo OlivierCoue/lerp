@@ -1,10 +1,7 @@
 .ssh
 .env
 /target
-/local
-/output
 .devcontainer/local
 .devcontainer/volume
 
-rust-server-game/dist
-rust-server-game-legacy/image/rust-server-game
+lerp-server-game/dist

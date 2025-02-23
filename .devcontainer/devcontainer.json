@@ -1,0 +1,41 @@
+{
+    "name": "lerp",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "shutdownAction": "stopCompose",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "lldb.executable": "/usr/bin/lldb",
+                "files.watcherExclude": {
+                    "**/target/**": true
+                },
+                "rust-analyzer.checkOnSave.command": "clippy"
+            },
+            "extensions": [
+                "vadimcn.vscode-lldb",
+                "mutantdino.resourcemonitor",
+                "rust-lang.rust-analyzer",
+                "tamasfe.even-better-toml",
+                "serayuzgur.crates",
+                "ms-azuretools.vscode-docker",
+                "fabiospampinato.vscode-terminals",
+                "eamodio.gitlens",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    },
+    "mounts": [
+        "source=/mnt/c,target=/mnt/c,type=bind,consistency=cached",
+        "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached"
+    ],
+    "postCreateCommand": ".devcontainer/post-create.sh",
+    "remoteUser": "root",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "enableNonRootDocker": false,
+            "moby": false
+        }
+    }
+}

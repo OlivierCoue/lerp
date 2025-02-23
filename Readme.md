@@ -5,7 +5,7 @@
 
 ### Requirement (windows)
 
-Docker Desktop (with Kubernetes enabled): https://docs.docker.com/desktop/install/windows-install/.
+Docker Desktop: https://docs.docker.com/desktop/install/windows-install/.
 
 WSL: https://learn.microsoft.com/en-us/windows/wsl/install
 
@@ -21,68 +21,14 @@ Copy .env.example to .env (update the copied version if needed):
 cp .env.example .env
 ```
 
-Build:
+Build the game client:
 
 ```
-cargo build
+./lerp-client-game/build-debug.sh
 ```
 
-Start lambdas (rust-server-auth & rust-server-scaler):
+Build and start the game server:
 
 ```
-cargo lambda watch -a 0.0.0.0 -p 3000 --ignore-changes
-```
-
-Start rust-server-game:
-
-```
-./rust-server-game/build-debug.sh
-```
-
-Invoke rust-server-scaler:
-
-```
-cargo lambda invoke rust-lambda-scaler -a 0.0.0.0 -p 3000 --data-example eventbridge-schedule
-```
-
-Build rust-client for windows (first, set the LERP_GODOT_LOCATION variable in your .env)
-
-```
-./rust-client/build-debug.sh
-./rust-client/build-release.sh
-```
-
-## SQLX
-
-Generate query metadata file (.sqlx) (require https://crates.io/crates/sqlx-cli to be installed)
-
-See doc to add it as a pre-commit hook: https://github.com/launchbadge/sqlx/blob/main/FAQ.md#how-do-i-compile-with-the-macros-without-needing-a-database-eg-in-ci
-
-```
-cargo sqlx prepare --workspace
-```
-
-## Workaround: windows cross compile
-
-Try once `./rust-client/build-debug.sh`
-
-Then change in the `win32.c`, add include `ws2tcpip.h`
-
-## K8S Setup
-
-```
-kubectl create namespace lerp
-kubectl create namespace ingress-nginx
-kubectl create configmap nginx-custom --from-file=./k8s/nginx-tmpl --namespace ingress-nginx
-
-helm upgrade -f ./k8s/ingress-nginx-values.yaml --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress-nginx
-```
-
-## K8S Remove all
-
-```
-helm uninstall ingress-nginx --namespace ingress-nginx
-kubectl delete configmaps nginx-custom --namespace ingress-nginx
+./lerp-server-game/build-debug-start.sh
 ```
