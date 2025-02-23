@@ -1,1 +1,0 @@
-ssh -i "./.ssh/cta-udp-real-time.pem" ubuntu@35.181.43.91
