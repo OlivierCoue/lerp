@@ -28,7 +28,8 @@
     },
     "mounts": [
         "source=/mnt/c,target=/mnt/c,type=bind,consistency=cached",
-        "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached"
+        "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached",
+        "source=${localEnv:HOME}/.ssh,target=/root/.aws,type=bind,consistency=cached",
     ],
     "postCreateCommand": ".devcontainer/post-create.sh",
     "remoteUser": "root",
