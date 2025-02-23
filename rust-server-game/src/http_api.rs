@@ -5,8 +5,10 @@ use std::{
 };
 
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
-use serde::{Deserialize, Serialize};
-use tokio::sync::oneshot::{self, Sender};
+use tokio::{
+    signal,
+    sync::{mpsc, oneshot},
+};
 use tracing::*;
 use uuid::Uuid;
 
@@ -14,14 +16,14 @@ use crate::game::{start_game_world, GameInstanceConfig};
 use rust_common_game::prelude::*;
 
 const MIN_UDP_PORT: u16 = 34000;
-const MAX_UDP_PORT: u16 = 35000;
+const MAX_UDP_PORT: u16 = 34005;
 
 #[derive(Debug)]
 struct GameInstance {
     uuid: Uuid,
     port: u16,
     thread_join_handle: Option<JoinHandle<()>>,
-    exit_channel_tx: Option<Sender<bool>>,
+    in_exit_channel_tx: Option<oneshot::Sender<bool>>,
 }
 
 #[derive(Clone)]
@@ -30,14 +32,28 @@ struct AppStateDyn {
 }
 
 trait GameInstanceRepo: Send + Sync {
-    fn get(&self, id: u16) -> Option<Arc<Mutex<GameInstance>>>;
+    fn get(&self, port: u16) -> Option<Arc<Mutex<GameInstance>>>;
 
-    fn set(&self, user: GameInstance);
+    fn set(&self, game_instance: GameInstance);
+
+    fn remove(&self, port: u16) -> Option<Arc<Mutex<GameInstance>>>;
+
+    fn get_instance_exit_tx(&self) -> mpsc::Sender<u16>;
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct InMemoryGameInstanceRepo {
+    pub instance_exit_tx: mpsc::Sender<u16>,
     map: Arc<Mutex<HashMap<u16, Arc<Mutex<GameInstance>>>>>,
+}
+
+impl InMemoryGameInstanceRepo {
+    fn new(instance_exit_tx: mpsc::Sender<u16>) -> Self {
+        Self {
+            instance_exit_tx,
+            map: Arc::new(Mutex::new(HashMap::default())),
+        }
+    }
 }
 
 impl GameInstanceRepo for InMemoryGameInstanceRepo {
@@ -50,6 +66,14 @@ impl GameInstanceRepo for InMemoryGameInstanceRepo {
             .lock()
             .unwrap()
             .insert(game_instance.port, Arc::new(Mutex::new(game_instance)));
+    }
+
+    fn remove(&self, port: u16) -> Option<Arc<Mutex<GameInstance>>> {
+        self.map.lock().unwrap().remove(&port)
+    }
+
+    fn get_instance_exit_tx(&self) -> mpsc::Sender<u16> {
+        self.instance_exit_tx.clone()
     }
 }
 
@@ -66,6 +90,7 @@ async fn post_server_start(
         let game_instance_config = GameInstanceConfig {
             port,
             exit_channel_rx: rx,
+            instance_exit_tx: state.instance_repo.get_instance_exit_tx(),
         };
         let thread_join_handle = thread::spawn(move || {
             start_game_world(game_instance_config);
@@ -76,7 +101,7 @@ async fn post_server_start(
             uuid,
             port,
             thread_join_handle: Some(thread_join_handle),
-            exit_channel_tx: Some(tx),
+            in_exit_channel_tx: Some(tx),
         });
 
         let response = HttpStartServerResponse {
@@ -109,7 +134,7 @@ async fn post_server_stop(
             return (StatusCode::BAD_REQUEST, Json(response));
         }
 
-        if let Some(tx) = lock.exit_channel_tx.take() {
+        if let Some(tx) = lock.in_exit_channel_tx.take() {
             if tx.send(true).is_ok() {
                 lock.thread_join_handle.take().unwrap().join().unwrap();
                 let response = HttpStopServerResponse { succcess: true };
@@ -126,15 +151,59 @@ async fn post_server_stop(
 }
 
 pub(crate) async fn start_http_api() {
+    let (tx, mut rx) = mpsc::channel(100);
+
+    let app_state_1 = AppStateDyn {
+        instance_repo: Arc::new(InMemoryGameInstanceRepo::new(tx)),
+    };
+    let app_state_2 = app_state_1.clone();
+
     let app = Router::new()
         .route("/server/start", post(post_server_start))
         .route("/server/stop", post(post_server_stop))
-        .with_state(AppStateDyn {
-            instance_repo: Arc::new(InMemoryGameInstanceRepo::default()),
-        });
+        .with_state(app_state_1);
 
-    // run our app with hyper, listening globally on port 3000
+    let task = tokio::spawn(async move {
+        while let Some(port) = rx.recv().await {
+            app_state_2.instance_repo.remove(port);
+            info!("Removed instance with port {} from app state", port);
+        }
+    });
+
+    // Bind listener
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
-    println!("Starting server");
-    axum::serve(listener, app).await.unwrap();
+    info!("HTTP Server started");
+
+    // Run the server with graceful shutdown
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+
+    // Ensure the background task is cancelled properly
+    task.abort();
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }

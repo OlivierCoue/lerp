@@ -4,23 +4,16 @@ use bevy::time::common_conditions::on_timer;
 use bevy::utils::HashMap;
 use bevy_rand::plugin::EntropyPlugin;
 use bevy_rand::prelude::WyRand;
-
 use item_drop::generate_item_dropped_on_death;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use lightyear::server::input::leafwing::InputSystemSet;
 use local_ip_address::local_ip;
-
 use rust_common_game::input::PlayerActions;
-
 use rust_common_game::prelude::*;
-use tokio::sync::oneshot::Receiver;
-
 use std::net::SocketAddr;
-
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::{mpsc, oneshot};
 
 mod item_drop;
 
@@ -119,19 +112,35 @@ fn update_player_client_metrics(
 }
 
 #[derive(Resource)]
-struct ExitFlag(Arc<AtomicBool>);
+struct ExitState {
+    pub port: u16,
+    pub lifetime: Duration,
+    pub instance_exit_rx: oneshot::Receiver<bool>,
+    pub instance_exit_tx: mpsc::Sender<u16>,
+}
 
-fn exit_listener_system(exit_flag: Res<ExitFlag>, mut exit: EventWriter<AppExit>) {
-    // Check the flag; if set to true, send an exit event
-    if exit_flag.0.load(Ordering::Relaxed) {
-        info!("Exiting bevy app");
-        exit.send(AppExit::Success);
+fn exit_listener_system(
+    mut exit_state: ResMut<ExitState>,
+    mut app_exit_event: EventWriter<AppExit>,
+    player_q: Query<&Player>,
+) {
+    exit_state.lifetime += Duration::from_millis(100);
+
+    if exit_state.instance_exit_rx.try_recv().is_ok()
+        || (exit_state.lifetime > Duration::from_secs(10) && player_q.is_empty())
+    {
+        exit_state
+            .instance_exit_tx
+            .blocking_send(exit_state.port)
+            .unwrap();
+        app_exit_event.send(AppExit::Success);
     }
 }
 
 pub(crate) struct GameInstanceConfig {
     pub port: u16,
-    pub exit_channel_rx: Receiver<bool>,
+    pub exit_channel_rx: oneshot::Receiver<bool>,
+    pub instance_exit_tx: mpsc::Sender<u16>,
 }
 
 pub(crate) fn start_game_world(config: GameInstanceConfig) {
@@ -160,38 +169,34 @@ pub(crate) fn start_game_world(config: GameInstanceConfig) {
     };
     let server_plugin = server::ServerPlugins::new(server_config);
 
-    let exit_flag_1 = Arc::new(AtomicBool::new(false));
-    let exit_flag_2 = exit_flag_1.clone();
+    App::new()
+        .add_plugins((MinimalPlugins, StatesPlugin))
+        .add_plugins(EntropyPlugin::<WyRand>::default())
+        .add_plugins(server_plugin.build())
+        .add_plugins(SharedPlugin)
+        .init_resource::<ClientPlayerMap>()
+        .insert_resource(ExitState {
+            port: config.port,
+            instance_exit_rx: config.exit_channel_rx,
+            instance_exit_tx: config.instance_exit_tx,
+            lifetime: Duration::ZERO,
+        })
+        .add_systems(Startup, start_server)
+        .add_systems(OnEnter(NetworkingState::Started), generate_map)
+        .add_systems(
+            PreUpdate,
+            replicate_inputs.after(InputSystemSet::ReceiveInputs),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_connections,
+                update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
+                exit_listener_system.run_if(on_timer(Duration::from_millis(100))),
+            ),
+        )
+        .add_systems(FixedUpdate, generate_item_dropped_on_death)
+        .run();
 
-    let join_handle = std::thread::spawn(move || {
-        App::new()
-            .add_plugins((MinimalPlugins, StatesPlugin))
-            .add_plugins(EntropyPlugin::<WyRand>::default())
-            .add_plugins(server_plugin.build())
-            .add_plugins(SharedPlugin)
-            .init_resource::<ClientPlayerMap>()
-            .insert_resource(ExitFlag(exit_flag_2))
-            .add_systems(Startup, start_server)
-            .add_systems(OnEnter(NetworkingState::Started), generate_map)
-            .add_systems(
-                PreUpdate,
-                replicate_inputs.after(InputSystemSet::ReceiveInputs),
-            )
-            .add_systems(
-                Update,
-                (
-                    handle_connections,
-                    update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
-                    exit_listener_system.run_if(on_timer(Duration::from_millis(100))),
-                ),
-            )
-            .add_systems(FixedUpdate, generate_item_dropped_on_death)
-            .run();
-        info!("App stopped");
-    });
-
-    config.exit_channel_rx.blocking_recv().unwrap();
-    exit_flag_1.store(true, Ordering::Relaxed);
-    join_handle.join().unwrap();
     info!("start_game_world stopped");
 }
