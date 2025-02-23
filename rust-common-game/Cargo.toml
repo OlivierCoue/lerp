@@ -10,6 +10,7 @@ bevy = { version = "0.15", default-features = false, features = ["multi_threaded
 leafwing-input-manager = "0.16"
 lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "eb7c47f", features = ["avian2d", "leafwing"] }
 serde = { version = "1.0.215", features = ["derive"] }
+tokio = { version = "1.43.0", features = ["rt", "sync"] }
 uuid = { version = "1.0", features = ["serde", "v4"] }
 
 [lints.clippy]

@@ -1,10 +1,12 @@
 use std::{
     collections::HashMap,
+    net::SocketAddr,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use local_ip_address::local_ip;
 use tokio::{
     signal,
     sync::{mpsc, oneshot},
@@ -171,7 +173,10 @@ pub(crate) async fn start_http_api() {
     });
 
     // Bind listener
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
+    let listener =
+        tokio::net::TcpListener::bind(SocketAddr::new(local_ip().unwrap().to_canonical(), 4000))
+            .await
+            .unwrap();
     info!("HTTP Server started");
 
     // Run the server with graceful shutdown

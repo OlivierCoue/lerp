@@ -8,6 +8,7 @@ pub mod input;
 pub mod item_drop;
 pub mod mana;
 pub mod map;
+pub mod network;
 pub mod physics;
 pub mod player;
 pub mod projectile;
@@ -31,6 +32,7 @@ pub mod prelude {
     pub use crate::mana::*;
     pub use crate::map::prelude::*;
     pub use crate::map::*;
+    pub use crate::network::prelude::*;
     pub use crate::physics::*;
     pub use crate::player::*;
     pub use crate::projectile::*;

@@ -1,9 +1,9 @@
-use crate::map::{TileFlowField, TileMapFlowField};
-
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTextureIndex};
 use rust_common_game::flow_field::{FlowField, FlowFieldDirection};
 use rust_common_game::map::map::NavTileCoord;
+
+use crate::states::play::map::{TileFlowField, TileMapFlowField};
 
 use super::DebugConfig;
 

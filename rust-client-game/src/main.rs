@@ -9,7 +9,7 @@ use bevy_simple_text_input::TextInputPlugin;
 
 use common::*;
 use lightyear::*;
-use network::tokio_task::TokioTasksPlugin;
+use rust_common_game::prelude::*;
 use states::auth::*;
 use states::lobby::*;
 use states::play::*;
@@ -18,7 +18,6 @@ use utils::*;
 
 mod common;
 mod lightyear;
-mod network;
 mod states;
 mod ui;
 mod utils;

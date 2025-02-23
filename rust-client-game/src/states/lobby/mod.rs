@@ -1,16 +1,14 @@
 use std::net::IpAddr;
 use std::str::FromStr;
 
+use crate::common::*;
 use crate::lightyear::get_client_net_config;
 use crate::ui::text_input::create_text_input;
 use crate::ui::*;
-use crate::{common::*, network::tokio_task::TokioTasksRuntime};
 use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
 use bevy_simple_text_input::TextInputValue;
 use lightyear::client::config::ClientConfig;
-use rust_common_game::http_api::HttpStartServerResponse;
-use serde::{Deserialize, Serialize};
+use rust_common_game::prelude::*;
 
 #[derive(Component)]
 pub struct LobbySceneTag;
@@ -172,7 +170,6 @@ pub fn lobby_scene_logic(
 
 fn lobby_scene_button_logic(
     tokio_runtime: ResMut<TokioTasksRuntime>,
-    mut lightyear_client_config: ResMut<ClientConfig>,
     mut app_state: ResMut<NextState<AppState>>,
     mut debug_config: ResMut<DebugConfig>,
     mut interaction_query: Query<
