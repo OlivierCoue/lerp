@@ -5,3 +5,5 @@
 .devcontainer/volume
 
 lerp-server-game/dist
+
+*:Zone.Identifier
