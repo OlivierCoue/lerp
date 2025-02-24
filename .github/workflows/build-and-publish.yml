@@ -8,6 +8,8 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name }}
+    env:
+      APP_ENV: ${{ vars.APP_ENV }}
     permissions:
       id-token: write
       contents: read
@@ -95,7 +97,7 @@ jobs:
       - name: Build, tag, and push game docker image to AWS ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: game-${{ github.ref_name }}
+          REPOSITORY: game-${{ env.APP_ENV }}
           IMAGE_TAG: latest
         run: |
           docker build ./lerp-server-game/dist/release -t $REGISTRY/$REPOSITORY:$IMAGE_TAG
