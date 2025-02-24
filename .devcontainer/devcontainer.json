@@ -18,11 +18,10 @@
                 "mutantdino.resourcemonitor",
                 "rust-lang.rust-analyzer",
                 "tamasfe.even-better-toml",
-                "serayuzgur.crates",
+                "fill-labs.dependi",
                 "ms-azuretools.vscode-docker",
                 "fabiospampinato.vscode-terminals",
-                "eamodio.gitlens",
-                "esbenp.prettier-vscode"
+                "eamodio.gitlens"
             ]
         }
     },
