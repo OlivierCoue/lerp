@@ -3,21 +3,50 @@ name = "lerp-client-game"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["gui"]
+gui = [
+  "bevy/bevy_animation",
+  "bevy/bevy_asset",
+  "bevy/bevy_audio",
+  "bevy/bevy_core_pipeline",
+  "bevy/bevy_gizmos",
+  "bevy/bevy_pbr",
+  "bevy/bevy_picking",
+  "bevy/bevy_render",
+  "bevy/bevy_scene",
+  "bevy/bevy_sprite",
+  "bevy/bevy_text",
+  "bevy/bevy_ui",
+  "bevy/bevy_window",
+  "bevy/bevy_winit",
+  "bevy/default_font",
+  "bevy/hdr",
+  "bevy/mp3",
+  "bevy/png",
+  "bevy/smaa_luts",
+  "bevy/tonemapping_luts",
+  "bevy/webgl2",
+  "bevy/x11",
+]
 
 [dependencies]
-avian2d = "0.2.0"
-bevy = { version = "0.15", default-features = true, features = ["multi_threaded", "bevy_state", "serialize", "mp3"] }
-bevy_ecs_tilemap = { version = "0.15"}
-bevy_prototype_lyon = "0.13"
-bevy_simple_text_input = "0.10"
-bevy_transform_interpolation = "0.1"
-leafwing-input-manager = "0.16"
-lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "eb7c47f", features = ["avian2d", "leafwing", "visualizer"] }
-rand = { version = "0.9" }
-reqwest = {version = "0.12.12", features = ["json"]}
-lerp-common-game = { path = "../lerp-common-game" }
-serde = { version = "1.0.215", features = ["derive"] }
-tokio = { version = "1.43.0", features = ["rt", "sync"] }
+# Internal
+lerp-common-game = { workspace = true }
+
+# External
+avian2d = { workspace = true }
+bevy = { workspace = true }
+bevy_ecs_tilemap = { workspace = true }
+bevy_prototype_lyon = { workspace = true }
+bevy_simple_text_input = { workspace = true }
+bevy_transform_interpolation = { workspace = true }
+leafwing-input-manager = { workspace = true }
+lightyear = { workspace = true, features = ["visualizer"] }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync"] }
 
 [lints.clippy]
 type_complexity = "allow"

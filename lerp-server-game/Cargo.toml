@@ -3,23 +3,25 @@ name = "lerp-server-game"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
-avian2d = { version = "0.2.0", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize" ] }
-axum = { version = "0.8.1", features = ["macros"] }
-bevy = { version = "0.15", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
-bevy_rand = { version = "0.9", features = ["wyrand"] }
-bitflags = { version = "2.6", features = ["serde"] }
-leafwing-input-manager = "0.16"
-lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "eb7c47f", features = ["avian2d", "leafwing"] }
-local-ip-address = "0.6.0"
-rand_core = "0.6"
-lerp-common-game = { path = "../lerp-common-game" }
-serde = { version = "1.0.215", features = ["derive"] }
-tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "signal"] }
-tracing = { version = "0.1.41", features = ["log"] }
-tracing-subscriber = { version = "0.3.19", default-features = false, features = ["env-filter", "fmt"] }
-uuid = { version = "1.0", features = ["serde", "v4"] }
+# Internal
+lerp-common-game = { workspace = true }
+
+# External
+avian2d = { workspace = true }
+axum = { workspace = true, features = ["macros"] }
+bevy = { workspace = true }
+bevy_rand = { workspace = true, features = ["wyrand"] }
+leafwing-input-manager = { workspace = true }
+lightyear = { workspace = true }
+local-ip-address = { workspace = true }
+rand_core = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
 
 [lints.clippy]
 type_complexity = "allow"
