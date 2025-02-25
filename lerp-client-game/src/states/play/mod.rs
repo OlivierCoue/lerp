@@ -277,7 +277,7 @@ fn update_fps(
 }
 
 fn update_ping(
-    query_client: Query<&PlayerClient, (With<Predicted>, Without<PingDisplayTag>)>,
+    query_client: Query<&PlayerClient, Without<PingDisplayTag>>,
     mut query_text: Query<&mut Text, With<PingDisplayTag>>,
 ) {
     for mut text in &mut query_text {
@@ -328,7 +328,11 @@ impl Plugin for PlayPlugin {
         app.insert_resource(ChunkManager::default());
         app.add_systems(
             OnEnter(AppState::Play),
-            (play_scene_setup, (generate_map, render_flow_field).chain()),
+            (
+                play_scene_setup,
+                reset_flow_field,
+                (generate_map, init_flow_field_render).chain(),
+            ),
         );
         app.add_systems(OnExit(AppState::Play), play_scene_cleanup);
 

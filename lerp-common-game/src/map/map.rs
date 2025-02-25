@@ -108,6 +108,7 @@ impl Map {
             );
         }
         self.render_map_wall.clear();
+        self.render_map_floor.clear();
         self.render_map_size = render_map_size;
 
         self.nav_map.clear();
@@ -120,6 +121,7 @@ impl Map {
         self.map_px_half_size = self.map_px_size / 2.;
 
         self.nav_tile_px_offset = self.map_px_half_size - NAV_TILE_SIZE / 2.0;
+        self.player_spawn_position = Vec2::ZERO;
     }
 
     pub fn add_tile_floor(&mut self, kind: RenderTileFloorKind, render_tile_pos: UVec2) {

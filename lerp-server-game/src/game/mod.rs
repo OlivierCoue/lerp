@@ -5,12 +5,12 @@ use bevy::utils::HashMap;
 use bevy_rand::plugin::EntropyPlugin;
 use bevy_rand::prelude::WyRand;
 use item_drop::generate_item_dropped_on_death;
+use lerp_common_game::input::PlayerActions;
+use lerp_common_game::prelude::*;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use lightyear::server::input::leafwing::InputSystemSet;
 use local_ip_address::local_ip;
-use lerp_common_game::input::PlayerActions;
-use lerp_common_game::prelude::*;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
@@ -35,25 +35,26 @@ fn handle_connections(
         let client_id = connection.client_id;
         info!("New client {:?}", client_id);
 
-        let player_id = commands.spawn_empty().id();
-        commands.entity(player_id).insert((
-            PlayerBundle::new(&map.player_spawn_position),
-            Replicate {
-                sync: SyncTarget {
-                    prediction: NetworkTarget::All,
-                    interpolation: NetworkTarget::None,
-                },
-                target: ReplicationTarget {
-                    target: NetworkTarget::All,
-                },
-                controlled_by: ControlledBy {
-                    target: NetworkTarget::Single(client_id),
+        let player_id = commands
+            .spawn((
+                PlayerBundle::new(&map.player_spawn_position),
+                Replicate {
+                    sync: SyncTarget {
+                        prediction: NetworkTarget::All,
+                        interpolation: NetworkTarget::None,
+                    },
+                    target: ReplicationTarget {
+                        target: NetworkTarget::All,
+                    },
+                    controlled_by: ControlledBy {
+                        target: NetworkTarget::Single(client_id),
+                        ..default()
+                    },
+                    group: REPLICATION_GROUP,
                     ..default()
                 },
-                group: REPLICATION_GROUP,
-                ..default()
-            },
-        ));
+            ))
+            .id();
 
         let player_client = (
             PlayerClient {
@@ -63,10 +64,6 @@ fn handle_connections(
                 player_ref: player_id,
             },
             Replicate {
-                sync: SyncTarget {
-                    prediction: NetworkTarget::Single(client_id),
-                    interpolation: NetworkTarget::None,
-                },
                 target: ReplicationTarget {
                     target: NetworkTarget::Single(client_id),
                 },
@@ -74,7 +71,7 @@ fn handle_connections(
                     target: NetworkTarget::Single(client_id),
                     ..default()
                 },
-                group: REPLICATION_GROUP,
+                group: LOOT_REPLICATION_GROUP,
                 ..default()
             },
         );
@@ -121,13 +118,15 @@ struct ExitState {
 
 fn exit_listener_system(
     mut exit_state: ResMut<ExitState>,
+    client_player_map: Res<ClientPlayerMap>,
     mut app_exit_event: EventWriter<AppExit>,
-    player_q: Query<&Player>,
+    client_player_q: Query<&PlayerClient>,
 ) {
     exit_state.lifetime += Duration::from_millis(100);
 
     if exit_state.instance_exit_rx.try_recv().is_ok()
-        || (exit_state.lifetime > Duration::from_secs(10) && player_q.is_empty())
+        || (exit_state.lifetime > Duration::from_secs(20) && client_player_q.is_empty())
+        || (!client_player_map.0.is_empty() && client_player_q.is_empty())
     {
         exit_state
             .instance_exit_tx
@@ -188,11 +187,14 @@ pub(crate) fn start_game_world(config: GameInstanceConfig) {
             replicate_inputs.after(InputSystemSet::ReceiveInputs),
         )
         .add_systems(
-            Update,
+            FixedUpdate,
             (
-                handle_connections,
+                (
+                    handle_connections,
+                    exit_listener_system.run_if(on_timer(Duration::from_millis(100))),
+                )
+                    .chain(),
                 update_player_client_metrics.run_if(on_timer(Duration::from_secs(1))),
-                exit_listener_system.run_if(on_timer(Duration::from_millis(100))),
             ),
         )
         .add_systems(FixedUpdate, generate_item_dropped_on_death)

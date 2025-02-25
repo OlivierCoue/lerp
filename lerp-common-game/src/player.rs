@@ -22,7 +22,7 @@ impl PlayerBundle {
         skill_slot_map.insert(PlayerActions::SkillSlot3, SkillName::FlowerArrow);
 
         Self {
-            character: CharacterBundle::new(CharacterId::Player, position),
+            character: CharacterBundle::new(0, CharacterId::Player, position),
             mana: Mana::new(PLAYER_BASE_MANA),
             skill_slot_map,
         }

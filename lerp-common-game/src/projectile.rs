@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, utils::HashSet};
-use client::{Predicted, PredictionDespawnCommandsExt};
+use bevy::prelude::*;
+use client::Predicted;
 use lightyear::prelude::server::*;
 use lightyear::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -234,7 +234,11 @@ pub fn process_projectile_distance(
             if identity.is_server() {
                 commands.entity(entity).despawn();
             } else {
-                commands.entity(entity).prediction_despawn();
+                // NOTE: using prediction_despawn should be the good way but as it does not all none networked
+                // component, it is still availble in system such as process_projectile_collisions where it should not
+                // maybe filter on predicted in process_projectile_collisions ?
+                commands.entity(entity).despawn();
+                // commands.entity(entity).prediction_despawn();
             }
         } else {
             previous_position.0 = current_position.0;
@@ -243,17 +247,11 @@ pub fn process_projectile_distance(
 }
 
 pub fn process_projectile_collisions(
-    // mut collision_event_reader: EventReader<Collision>,
     collisions: Res<Collisions>,
     mut hit_events: EventWriter<HitEvent>,
-    // TODO: Query hittable entities
-    hittable_q: Query<&Hittable, With<Alive>>,
+    hittable_q: Query<&Hittable>,
     projectile_q: Query<(&Projectile, &ProjectileData)>,
-    wall_q: Query<&Wall>,
-    mut commands: Commands,
-    identity: NetworkIdentity,
 ) {
-    let mut despawned_entities = HashSet::new();
     let mut event_data = Vec::new();
 
     // when A and B collide, it can be reported as one of:
@@ -266,19 +264,7 @@ pub fn process_projectile_collisions(
         }
 
         if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity1) {
-            let collide_with_wall = wall_q.get(contacts.entity2).is_ok();
-            let collide_with_hittable = hittable_q.get(contacts.entity2).is_ok();
-
-            // despawn the projectile if it hit a wall
-            if collide_with_wall && despawned_entities.insert(contacts.entity1) {
-                if identity.is_server() {
-                    commands.entity(contacts.entity1).despawn();
-                } else {
-                    commands.entity(contacts.entity1).prediction_despawn();
-                }
-            }
-
-            if collide_with_hittable {
+            if hittable_q.get(contacts.entity2).is_ok() {
                 event_data.push(HitEventData {
                     source: contacts.entity1,
                     skill: projectile_data.skill_source,
@@ -288,19 +274,7 @@ pub fn process_projectile_collisions(
         }
 
         if let Ok((_, projectile_data)) = projectile_q.get(contacts.entity2) {
-            let collide_with_wall = wall_q.get(contacts.entity1).is_ok();
-            let collide_with_hittable = hittable_q.get(contacts.entity1).is_ok();
-
-            // despawn the projectile if it hit a wall
-            if collide_with_wall && despawned_entities.insert(contacts.entity2) {
-                if identity.is_server() {
-                    commands.entity(contacts.entity2).despawn();
-                } else {
-                    commands.entity(contacts.entity2).prediction_despawn();
-                }
-            }
-
-            if collide_with_hittable {
+            if hittable_q.get(contacts.entity1).is_ok() {
                 event_data.push(HitEventData {
                     source: contacts.entity2,
                     skill: projectile_data.skill_source,

@@ -53,7 +53,7 @@ impl FlowField {
     }
 }
 
-// Directions for neighbor traversal
+/// Directions for neighbor traversal
 const DIRECTIONS: [(i32, i32, FlowFieldDirection); 8] = [
     (0, 1, FlowFieldDirection::South),
     (0, -1, FlowFieldDirection::North),
@@ -64,7 +64,13 @@ const DIRECTIONS: [(i32, i32, FlowFieldDirection); 8] = [
     (-1, -1, FlowFieldDirection::NorthEast),
     (1, -1, FlowFieldDirection::NorthWest),
 ];
+/// Max search distance in number of nav tiles
 const MAX_SEACH_DISTANCE: u32 = 40;
+
+pub fn reset_flow_field(mut flow_field: ResMut<FlowField>) {
+    flow_field.map.clear();
+    flow_field.size = UVec2::ZERO;
+}
 
 pub fn update_flow_field(
     map_grid: Res<Map>,

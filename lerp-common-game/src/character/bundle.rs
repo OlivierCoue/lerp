@@ -38,6 +38,7 @@ impl CharacterId {
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Character {
+    pub uid: u64,
     pub id: CharacterId,
 }
 
@@ -61,10 +62,10 @@ pub struct CharacterBundle {
     pub health: Health,
 }
 impl CharacterBundle {
-    pub fn new(id: CharacterId, position: &Vec2) -> Self {
+    pub fn new(uid: u64, id: CharacterId, position: &Vec2) -> Self {
         let data = id.data();
         Self {
-            marker: Character { id },
+            marker: Character { uid, id },
             position: Position(*position),
             health: Health::new(data.health),
         }

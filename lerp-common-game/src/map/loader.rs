@@ -1,4 +1,4 @@
-use avian2d::prelude::{Collider, Position, RigidBody};
+use avian2d::prelude::{Collider, Position};
 use bevy::{prelude::*, utils::HashMap};
 use lightyear::prelude::{
     server::{Replicate, ReplicationTarget, SyncTarget},
@@ -32,6 +32,7 @@ pub fn load_map(
         input.map.len() as u32,
     ));
 
+    let mut enemy_uid_index = 0;
     for x_render in 0..map_grid.render_map_size.x {
         for y_render in 0..map_grid.render_map_size.y {
             let Some(tile_char) = input.get(x_render, y_render) else {
@@ -180,20 +181,22 @@ pub fn load_map(
                             y_render as f32 * RENDER_TILE_SIZE + y as f32 * ENEMY_SIZE,
                         ) - map_grid.map_px_half_size;
 
-                        let enemy = (EnemyBundle::new(&position),);
-                        let enemy_entity = commands.spawn(enemy).id();
+                        commands.spawn((
+                            EnemyBundle::new(enemy_uid_index, &position),
+                            Replicate {
+                                sync: SyncTarget {
+                                    prediction: NetworkTarget::All,
+                                    interpolation: NetworkTarget::None,
+                                },
+                                target: ReplicationTarget {
+                                    target: NetworkTarget::All,
+                                },
+                                group: REPLICATION_GROUP,
+                                ..default()
+                            },
+                        ));
 
-                        commands.entity(enemy_entity).insert((Replicate {
-                            sync: SyncTarget {
-                                prediction: NetworkTarget::All,
-                                interpolation: NetworkTarget::None,
-                            },
-                            target: ReplicationTarget {
-                                target: NetworkTarget::All,
-                            },
-                            group: REPLICATION_GROUP,
-                            ..default()
-                        },));
+                        enemy_uid_index += 1;
                     }
                 }
             }
@@ -289,13 +292,7 @@ pub fn load_map(
                 wall.height as f32 * NAV_TILE_SIZE,
             );
 
-            commands.spawn((
-                CommonPlaySceneTag,
-                Wall,
-                position,
-                RigidBody::Static,
-                collider,
-            ));
+            commands.spawn((CommonPlaySceneTag, WallBundle::new(position, collider)));
         }
     }
 }

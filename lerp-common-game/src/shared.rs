@@ -46,6 +46,10 @@ pub enum GameSimulationSet {
 #[derive(Clone)]
 pub struct SharedPlugin;
 
+pub fn is_at_least_on_client_connected(q: Query<&PlayerClient>) -> bool {
+    !q.is_empty()
+}
+
 impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ProtocolPlugin);
@@ -53,7 +57,8 @@ impl Plugin for SharedPlugin {
             PhysicsPlugins::new(FixedUpdate)
                 .with_length_unit(PIXEL_METER)
                 .build()
-                .disable::<SyncPlugin>(),
+                .disable::<SyncPlugin>()
+                .disable::<ColliderHierarchyPlugin>(),
         );
         app.add_plugins((CharacterControllerPlugin, InputPlugin, ItemDropPlugin));
 
@@ -84,12 +89,15 @@ impl Plugin for SharedPlugin {
                 GameSimulationSet::ConsumeHitEvents,
             )
                 .chain()
-                .after(PhysicsSet::StepSimulation),
+                .in_set(PhysicsSet::Sync)
+                .run_if(is_at_least_on_client_connected),
         );
 
         app.add_systems(
             FixedUpdate,
             (
+                set_character_local,
+                set_character_life_state,
                 update_flow_field.run_if(not(is_in_rollback)),
                 enemy_movement_behavior,
                 process_projectile_distance,
@@ -130,11 +138,7 @@ impl Plugin for SharedPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (
-                on_hit_event.run_if(on_event::<HitEvent>),
-                set_character_local,
-                set_character_life_state,
-            )
+            (on_hit_event.run_if(on_event::<HitEvent>),)
                 .chain()
                 .in_set(GameSimulationSet::ConsumeHitEvents),
         );

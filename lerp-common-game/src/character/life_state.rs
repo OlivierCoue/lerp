@@ -18,7 +18,7 @@ pub struct Dead;
 pub fn set_character_life_state(
     time: Res<Time<Fixed>>,
     mut commands: Commands,
-    mut targets: Query<
+    mut character_q: Query<
         (
             Entity,
             &Character,
@@ -38,7 +38,7 @@ pub fn set_character_life_state(
         ),
     >,
 ) {
-    for (entity, character, health, alive, dying, dead) in targets.iter_mut() {
+    for (entity, character, health, alive, dying, dead) in character_q.iter_mut() {
         let should_be_dead = health.current <= 0.0;
 
         if should_be_dead {

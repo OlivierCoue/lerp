@@ -12,6 +12,10 @@ use crate::prelude::*;
 pub const REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(1);
 pub const LOOT_REPLICATION_GROUP: ReplicationGroup = ReplicationGroup::new_id(2);
 
+/// Marks an entity that only exist localy (on server and client, but not send over network)
+#[derive(Component, Default)]
+pub struct NotNetworked;
+
 // Channels
 
 #[derive(Channel)]
@@ -46,21 +50,18 @@ impl Plugin for ProtocolPlugin {
         app.add_plugins(LeafwingInputPlugin::<PlayerActions>::default());
         // Messages
         app.register_message::<SpawnEnemies>(ChannelDirection::ClientToServer);
-        // Components
-        app.register_component::<PlayerClient>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Simple);
-
+        // Predicted Components
         app.register_component::<Character>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Projectile>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<SkillSlotMap>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<MovementSpeed>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Once);
+            .add_prediction(ComponentSyncMode::Full);
 
         app.register_component::<Health>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
@@ -77,13 +78,11 @@ impl Plugin for ProtocolPlugin {
         app.register_component::<LinearVelocity>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
 
-        app.register_component::<AngularVelocity>(ChannelDirection::ServerToClient)
-            .add_prediction(ComponentSyncMode::Full);
-
         app.register_component::<Position>(ChannelDirection::ServerToClient)
             .add_prediction(ComponentSyncMode::Full);
 
-        // Server driven components
+        // None predicted components (fully driven by server only)
+        app.register_component::<PlayerClient>(ChannelDirection::ServerToClient);
         app.register_component::<ItemDropped>(ChannelDirection::ServerToClient);
 
         // Channels

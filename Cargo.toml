@@ -22,16 +22,16 @@ type_complexity = "allow"
 lerp-common-game = { path = "./lerp-common-game", version = "0.1.0" }
 
 # External
-avian2d = { version = "0.2.0", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize" ] }
+avian2d = { version = "0.2.0", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "serialize", "enhanced-determinism" ] }
 axum = { version = "0.8.1" }
-bevy = { version = "=0.15.2", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
+bevy = { version = "0.15.3", default-features = false, features = ["multi_threaded", "bevy_state", "serialize"] }
 bevy_ecs_tilemap = { version = "0.15"}
 bevy_prototype_lyon = "0.13"
 bevy_rand = { version = "0.9" }
 bevy_simple_text_input = "0.10"
 bevy_transform_interpolation = "0.1"
 leafwing-input-manager = "0.16"
-lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "203a838", features = ["avian2d", "leafwing"] }
+lightyear = { git = "https://github.com/OlivierCoue/lightyear.git", rev = "99aed29", features = ["avian2d", "leafwing"] }
 local-ip-address = "0.6.0"
 rand = { version = "0.9" }
 rand_core = "0.6"

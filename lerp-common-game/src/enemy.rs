@@ -12,9 +12,9 @@ pub struct EnemyBundle {
     character: CharacterBundle,
 }
 impl EnemyBundle {
-    pub fn new(position: &Vec2) -> Self {
+    pub fn new(uid: u64, position: &Vec2) -> Self {
         Self {
-            character: CharacterBundle::new(CharacterId::Enemy, position),
+            character: CharacterBundle::new(uid, CharacterId::Enemy, position),
         }
     }
 }
@@ -38,7 +38,7 @@ pub fn enemy_movement_behavior(
     map_grid: Res<Map>,
     flow_field: Res<FlowField>,
     mut query_enemies: Query<
-        (&Position, &mut LinearVelocity, &MovementSpeed),
+        (&Character, &Position, &mut LinearVelocity, &MovementSpeed),
         (
             With<Enemy>,
             With<Alive>,
@@ -52,25 +52,18 @@ pub fn enemy_movement_behavior(
 ) {
     // Collect and sort enemies deterministically
     let mut enemies: Vec<_> = query_enemies.iter_mut().collect();
-    enemies.sort_by(|(pos_a, _, _), (pos_b, _, _)| {
-        pos_a
-            .x
-            .partial_cmp(&pos_b.x)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| {
-                pos_a
-                    .y
-                    .partial_cmp(&pos_b.y)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
+    enemies.sort_by(|(char_a, _, _, _), (char_b, _, _, _)| {
+        char_a.uid.partial_cmp(&char_b.uid).unwrap()
     });
 
     // Store enemy positions for separation
-    let enemies_position: Vec<_> = enemies.iter().map(|(pos, _, _)| *pos).collect();
+    let enemies_position: Vec<_> = enemies
+        .iter()
+        .map(|(character, pos, _, _)| (character.uid, *pos))
+        .collect();
 
-    let mut i: i32 = 0;
     #[allow(clippy::explicit_counter_loop)]
-    for (enemy_position, mut enemy_velocity, movement_speed) in enemies {
+    for (character, enemy_position, mut enemy_velocity, movement_speed) in enemies {
         // Retrieve the flow field direction
         let flow_direction = flow_field.get_direction_from_position(&map_grid, enemy_position);
 
@@ -82,8 +75,8 @@ pub fn enemy_movement_behavior(
         // Separation behavior
         let mut separation_force = Vec2::ZERO;
         let separation_distance = 1.0 * PIXEL_METER;
-        for other_position in &enemies_position {
-            if other_position != &enemy_position {
+        for (other_char_uid, other_position) in &enemies_position {
+            if *other_char_uid != character.uid {
                 let diff = enemy_position.0 - other_position.0;
                 let dist_sq = diff.length_squared();
                 if dist_sq < separation_distance.powi(2) && dist_sq > 0.0 {
@@ -96,7 +89,7 @@ pub fn enemy_movement_behavior(
         }
 
         // Scale separation force to avoid overpowering flow field
-        let separation_force_scale = if i % 3 == 0 { 0.5 } else { 0.25 };
+        let separation_force_scale = 0.5;
         separation_force =
             separation_force.normalize_or_zero() * movement_speed.0 * separation_force_scale;
 
@@ -105,6 +98,5 @@ pub fn enemy_movement_behavior(
 
         // Update velocity
         enemy_velocity.0 = combined_force.clamp_length_max(movement_speed.0);
-        i += 1;
     }
 }

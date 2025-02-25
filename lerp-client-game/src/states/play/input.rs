@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use leafwing_input_manager::{plugin::InputManagerSystem, prelude::ActionState};
+use lerp_common_game::prelude::*;
 use lightyear::{
     client::input::leafwing::InputSystemSet, prelude::client::Predicted,
     shared::replication::components::Controlled,
 };
-use lerp_common_game::prelude::*;
 
 use crate::{common::AppState, states::play::cursor::HoverableEntityKind};
 
@@ -100,6 +100,7 @@ fn handle_mouse_move(
 
     let actual_world_cursor_position = isometric_to_cartesian(
         world_cursor_position.x,
+        // TODO: make this dynamic, it is currently hard codded for projectile
         world_cursor_position.y - 1. * PIXEL_METER,
     );
 

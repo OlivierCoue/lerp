@@ -40,15 +40,16 @@ pub fn on_hit_event(
     >,
     _skill_q: Query<&SkillDamageOnHit, (With<Skill>, Without<HitSource>, Without<Hittable>)>,
     mut target: Query<
-        (&Team, Option<&mut Health>, &mut Hittable),
+        (&mut Hittable, Option<&Team>, Option<&mut Health>, Has<Wall>),
         (
             With<Hittable>,
             Without<HitSource>,
             Without<Skill>,
-            Or<(With<Predicted>, With<ReplicationTarget>)>,
+            Or<(With<Predicted>, With<ReplicationTarget>, With<NotNetworked>)>,
         ),
     >,
 ) {
+    // We use this hash set to store entities despawn in the current system run and prevent dup despawn
     let mut despawned_entities = HashSet::new();
 
     for event in hit_events.read() {
@@ -62,7 +63,7 @@ pub fn on_hit_event(
                 continue;
             };
 
-            let Ok((target_team, target_health, mut target_hittable)) =
+            let Ok((mut target_hittable, target_team, target_health, target_is_wall)) =
                 target.get_mut(event_data.target)
             else {
                 if !despawned_entities.contains(&event_data.target) {
@@ -71,8 +72,21 @@ pub fn on_hit_event(
                 continue;
             };
 
+            // Despawn the source if it hit a wall
+            // TODO: this this true because we only have projectile which can hit, but will change in the future
+            if target_is_wall {
+                if despawned_entities.insert(event_data.source) {
+                    if identity.is_server() {
+                        commands.entity(event_data.source).despawn();
+                    } else {
+                        commands.entity(event_data.source).prediction_despawn();
+                    }
+                }
+                continue;
+            }
+
             // If the source hit something from its own team we just ignore it
-            if hit_source.0 == *target_team {
+            if target_team.is_none_or(|target_team| *target_team == hit_source.0) {
                 continue;
             }
 

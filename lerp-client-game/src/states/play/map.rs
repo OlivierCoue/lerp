@@ -229,7 +229,7 @@ fn despawn_outofrange_map_chunks(
     }
 }
 
-pub fn render_flow_field(
+pub fn init_flow_field_render(
     debug_config: Res<DebugConfig>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,

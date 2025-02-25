@@ -1,15 +1,12 @@
 use crate::states::play::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use lerp_common_game::prelude::*;
 use lightyear::prelude::PreSpawnedPlayerObject;
 use lightyear::shared::replication::components::Controlled;
-use lerp_common_game::prelude::*;
 
 pub fn handle_new_client(
-    mut client_query: Query<
-        (Entity, &PlayerClient),
-        (Added<Predicted>, With<PlayerClient>, With<Controlled>),
-    >,
+    mut client_query: Query<(Entity, &PlayerClient), (Added<PlayerClient>, With<Controlled>)>,
 ) {
     for (_, player_client) in client_query.iter_mut() {
         println!(
