@@ -3656,6 +3656,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "lerp-map-editor"
+version = "0.0.1"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
+name = "lerp-map-gen"
+version = "0.0.1"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "lerp-server-game"
 version = "0.1.0"
 dependencies = [

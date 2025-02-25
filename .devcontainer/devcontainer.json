@@ -21,7 +21,8 @@
                 "fill-labs.dependi",
                 "ms-azuretools.vscode-docker",
                 "fabiospampinato.vscode-terminals",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "ms-azuretools.vscode-docker",
             ]
         }
     },

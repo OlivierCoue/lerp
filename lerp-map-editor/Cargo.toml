@@ -1,0 +1,16 @@
+[package]
+name = "lerp-map-editor"
+version = "0.0.1"
+edition = "2021"
+
+
+[dependencies]
+bevy = { version = "0.15", default-features = true, features = [
+    "multi_threaded",
+    "bevy_state",
+    "serialize",
+    "mp3",
+] }
+
+[lints.clippy]
+type_complexity = "allow"

@@ -3,6 +3,8 @@ members = [
     "lerp-client-game",
     "lerp-common-game",
     "lerp-server-game",
+    "lerp-map-editor",
+    "lerp-map-gen",
 ]
 resolver = "2"
 
