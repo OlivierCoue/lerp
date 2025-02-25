@@ -11,6 +11,7 @@ bevy = { version = "0.15", default-features = true, features = [
     "serialize",
     "mp3",
 ] }
+lerp-map-gen = { path = "../lerp-map-gen" }
 
 [lints.clippy]
 type_complexity = "allow"

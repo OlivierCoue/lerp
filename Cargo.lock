@@ -3660,6 +3660,7 @@ name = "lerp-map-editor"
 version = "0.0.1"
 dependencies = [
  "bevy",
+ "lerp-map-gen",
 ]
 
 [[package]]

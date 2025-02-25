@@ -1,49 +1,62 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
 pub struct MapGenPlugin;
 
 impl Plugin for MapGenPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_map);
+        app.insert_resource(Map::default());
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, PartialEq, Eq, Clone, Copy, Debug, Hash)]
+pub struct TilePos(pub UVec2);
+
+#[derive(Resource, Default)]
 pub struct Map {
-    pub data: Vec<Vec<TileType>>,
+    render_grid: HashMap<TilePos, TileKind>,
+    pub render_grid_size: UVec2,
+}
+impl Map {
+    pub fn reset(&mut self) {
+        self.render_grid.clear();
+        self.render_grid_size = UVec2::ZERO;
+    }
+
+    pub fn set_tile(&mut self, pos: TilePos, kind: TileKind) {
+        self.render_grid.insert(pos, kind);
+    }
+
+    pub fn get_tile(&self, pos: &TilePos) -> Option<&TileKind> {
+        self.render_grid.get(pos)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum TileType {
+pub enum TileKind {
     Wall,
     Water,
     Floor,
 }
 
-fn setup_map(mut commands: Commands) {
-    let generated_map = generate_map(20, 20);
-    commands.spawn(Map {
-        data: generated_map,
-    });
-}
+pub fn generate_map(map: &mut Map, size: UVec2) {
+    map.reset();
+    map.render_grid_size = size;
 
-fn generate_map(width: usize, height: usize) -> Vec<Vec<TileType>> {
-    let mut map = vec![vec![TileType::Floor; width]; height];
-    for y in 5..10 {
-        for x in 5..10 {
-            map[y][x] = TileType::Wall;
+    for x in 0..map.render_grid_size.x {
+        for y in 0..map.render_grid_size.y {
+            let kind = if x == 0
+                || x == map.render_grid_size.x - 1
+                || y == 0
+                || y == map.render_grid_size.y - 1
+            {
+                TileKind::Wall
+            } else {
+                TileKind::Floor
+            };
+
+            map.set_tile(TilePos(UVec2::new(x, y)), kind);
         }
     }
 
-    map[0][0] = TileType::Water;
-    map[height - 1][width - 1] = TileType::Water;
-    map
-}
-
-pub fn access_map(query: Query<&Map>) {
-    for map in query.iter() {
-        if !map.data.is_empty() && !map.data[0].is_empty() {
-            println!("Map data: {:?}", map.data);
-        }
-    }
+    map.set_tile(TilePos(UVec2::new(5, 5)), TileKind::Water);
 }
