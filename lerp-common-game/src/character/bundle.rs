@@ -94,6 +94,7 @@ pub struct CharacterAliveBundle {
     hittable: Hittable,
     character_controller: CharacterController,
     movement_speed: MovementSpeed,
+    stats_modifier: StatsModifiers,
 }
 impl CharacterAliveBundle {
     pub fn init(alive_data: &CharacterData) -> Self {
@@ -105,7 +106,8 @@ impl CharacterAliveBundle {
                 rigid_body: RigidBody::Kinematic,
                 collider: Collider::circle(alive_data.collider_diameter / 2.),
             },
-            movement_speed: MovementSpeed(alive_data.movement_speed),
+            movement_speed: MovementSpeed::new(alive_data.movement_speed),
+            stats_modifier: StatsModifiers::default(),
         }
     }
 }

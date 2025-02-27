@@ -69,7 +69,7 @@ pub fn enemy_movement_behavior(
 
         // Scale flow field force to movement speed
         let flow_field_force = flow_direction.map_or(Vec2::ZERO, |d| {
-            d.to_normalized_velocity() * movement_speed.0
+            d.to_normalized_velocity() * movement_speed.current
         });
 
         // Separation behavior
@@ -91,12 +91,12 @@ pub fn enemy_movement_behavior(
         // Scale separation force to avoid overpowering flow field
         let separation_force_scale = 0.5;
         separation_force =
-            separation_force.normalize_or_zero() * movement_speed.0 * separation_force_scale;
+            separation_force.normalize_or_zero() * movement_speed.current * separation_force_scale;
 
         // Combine forces
         let combined_force = flow_field_force + separation_force;
 
         // Update velocity
-        enemy_velocity.0 = combined_force.clamp_length_max(movement_speed.0);
+        enemy_velocity.0 = combined_force.clamp_length_max(movement_speed.current);
     }
 }

@@ -40,7 +40,18 @@ pub struct PlayerClient {
 pub struct MovementTarget(pub Vec2);
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct MovementSpeed(pub f32);
+pub struct MovementSpeed {
+    pub base: f32,
+    pub current: f32,
+}
+impl MovementSpeed {
+    pub fn new(base: f32) -> Self {
+        Self {
+            base,
+            current: base,
+        }
+    }
+}
 
 pub struct ProtocolPlugin;
 

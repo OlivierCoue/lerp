@@ -33,6 +33,7 @@ pub const PLAYER_BASE_MANA: f32 = 100.;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum GameSimulationSet {
+    ComputeStats,
     ApplyPassiveEffects,
     RegisterInputs,
     TriggerSkills,
@@ -60,7 +61,12 @@ impl Plugin for SharedPlugin {
                 .disable::<SyncPlugin>()
                 .disable::<ColliderHierarchyPlugin>(),
         );
-        app.add_plugins((CharacterControllerPlugin, InputPlugin, ItemDropPlugin));
+        app.add_plugins((
+            CharacterControllerPlugin,
+            InputPlugin,
+            ItemDropPlugin,
+            StatsPlugin,
+        ));
 
         app.insert_resource(avian2d::sync::SyncConfig {
             transform_to_position: false,
@@ -81,6 +87,7 @@ impl Plugin for SharedPlugin {
             FixedUpdate,
             (
                 GameSimulationSet::Others,
+                GameSimulationSet::ComputeStats,
                 GameSimulationSet::ApplyPassiveEffects,
                 GameSimulationSet::RegisterInputs,
                 GameSimulationSet::TriggerSkills,

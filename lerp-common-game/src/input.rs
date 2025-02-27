@@ -83,7 +83,6 @@ pub fn handle_input_move_wasd(
             &mut LinearVelocity,
             &Position,
             &MovementSpeed,
-            Has<SkillInProgress>,
             Option<&MovementTarget>,
         ),
         (With<Player>, Or<(With<Predicted>, With<ReplicationTarget>)>),
@@ -94,16 +93,8 @@ pub fn handle_input_move_wasd(
         .map(|rb| tick_manager.tick_or_rollback_tick(rb))
         .unwrap_or(tick_manager.tick());
 
-    for (
-        entity,
-        action,
-        buffer,
-        mut linear_velocity,
-        position,
-        movement_speed,
-        has_skill_in_progress,
-        movement_target,
-    ) in player_query.iter_mut()
+    for (entity, action, buffer, mut linear_velocity, position, movement_speed, movement_target) in
+        player_query.iter_mut()
     {
         let action = if buffer.get(tick).is_some() {
             action
@@ -152,8 +143,7 @@ pub fn handle_input_move_wasd(
             }
         }
 
-        let modifier = if has_skill_in_progress { 0.6 } else { 1. };
-        let new_velocity = direction * movement_speed.0 * modifier;
+        let new_velocity = direction * movement_speed.current;
         if new_velocity != linear_velocity.0 {
             linear_velocity.0 = new_velocity
         }

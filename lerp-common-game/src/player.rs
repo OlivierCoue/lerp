@@ -34,6 +34,7 @@ pub struct PlayerLocalBundle {
     marker: Player,
     pub skills_available: SkillsAvailable,
     skill_speed: SkillSpeed,
+    stat_modifier_source: StatModifierSources,
 }
 impl PlayerLocalBundle {
     pub fn init() -> Self {
@@ -42,6 +43,14 @@ impl PlayerLocalBundle {
             skills_available: SkillsAvailable::default(),
             skill_speed: SkillSpeed {
                 value: Duration::from_millis(200),
+            },
+            stat_modifier_source: StatModifierSources {
+                conditionals: vec![ConditionalStatModifierSource {
+                    stat: StatKind::MovementSpeed,
+                    modifier_type: StatModifierKind::More,
+                    modifier: -0.6,
+                    conditions: vec![StatCondition::SkillInProgress],
+                }],
             },
         }
     }

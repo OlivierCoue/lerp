@@ -1,5 +1,6 @@
 pub mod character;
 pub mod enemy;
+pub mod equipement;
 pub mod flow_field;
 pub mod health;
 pub mod hit;
@@ -16,6 +17,7 @@ pub mod protocol;
 pub mod settings;
 pub mod shared;
 pub mod skill;
+pub mod stats;
 pub mod team;
 pub mod utils;
 pub mod wall;
@@ -23,6 +25,7 @@ pub mod wall;
 pub mod prelude {
     pub use crate::character::prelude::*;
     pub use crate::enemy::*;
+    pub use crate::equipement::*;
     pub use crate::flow_field::*;
     pub use crate::health::*;
     pub use crate::hit::*;
@@ -40,6 +43,7 @@ pub mod prelude {
     pub use crate::settings::*;
     pub use crate::shared::*;
     pub use crate::skill::*;
+    pub use crate::stats::*;
     pub use crate::team::*;
     pub use crate::utils::*;
     pub use crate::wall::*;
