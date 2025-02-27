@@ -38,6 +38,8 @@ fn main() {
 enum ButtonAction {
     ResetMap,
     GenerateBSP,
+    WeightedRandomSplit,
+    SliceAndDice,
 }
 #[derive(Component, Default)]
 struct Tile {}
@@ -49,7 +51,7 @@ fn setup(
     commands.spawn(Camera2d);
     commands
         .spawn(Node {
-            width: Val::Percent(15.0),
+            width: Val::Percent(20.0),
             height: Val::Percent(100.0),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
@@ -79,7 +81,7 @@ fn setup(
                     Text::new("Reset"),
                     TextFont {
                         // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 33.0,
+                        font_size: 20.0,
                         ..default()
                     },
                     TextColor(Color::srgb(0.9, 0.9, 0.9)),
@@ -108,7 +110,65 @@ fn setup(
                     Text::new("GenerateBSP "),
                     TextFont {
                         // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 33.0,
+                        font_size: 20.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                ));
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+
+                        ..default()
+                    },
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON),
+                    ButtonAction::WeightedRandomSplit,
+                ))
+                .with_child((
+                    Text::new("Weithted Random Split "),
+                    TextFont {
+                        // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 20.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                ));
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+
+                        ..default()
+                    },
+                    BorderColor(Color::BLACK),
+                    BorderRadius::MAX,
+                    BackgroundColor(NORMAL_BUTTON),
+                    ButtonAction::SliceAndDice,
+                ))
+                .with_child((
+                    Text::new("Slide and dice "),
+                    TextFont {
+                        // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 20.0,
                         ..default()
                     },
                     TextColor(Color::srgb(0.9, 0.9, 0.9)),
@@ -213,6 +273,18 @@ fn button_system(
                     }
                     ButtonAction::ResetMap => {
                         map.generate_map(MAP_SIZE);
+                    }
+                    ButtonAction::WeightedRandomSplit => {
+                        map.generate_weighted_random_split(UVec2::new(
+                            rng.random_range(30..100),
+                            rng.random_range(30..100),
+                        ));
+                    }
+                    ButtonAction::SliceAndDice => {
+                        map.generate_slice_and_dice(UVec2::new(
+                            rng.random_range(30..100),
+                            rng.random_range(30..100),
+                        ));
                     }
                 }
                 render_map_event.send(RenderMapEvent);
