@@ -3661,6 +3661,7 @@ version = "0.0.1"
 dependencies = [
  "bevy",
  "lerp-map-gen",
+ "rand 0.9.0",
 ]
 
 [[package]]

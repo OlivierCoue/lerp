@@ -6,19 +6,29 @@ use bevy::{
     window::{PrimaryWindow, Window},
 };
 use lerp_map_gen::*;
+use rand::Rng;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
-const MAP_SIZE: UVec2 = UVec2::new(100, 100);
+const MAP_SIZE: UVec2 = UVec2::new(50, 50);
+
+#[derive(Event, Default)]
+struct RenderMapEvent;
 
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins, MapGenPlugin))
-        .add_systems(Startup, (setup, render_map).chain())
+        .add_event::<RenderMapEvent>()
+        .add_systems(Startup, (setup).chain())
         .add_systems(
             Update,
-            (zoom_camera, drag_camera, button_system, render_map),
+            (
+                zoom_camera,
+                drag_camera,
+                button_system,
+                render_map.run_if(on_event::<RenderMapEvent>),
+            ),
         )
         // .add_systems(Update, sprite_movement)
         .run();
@@ -28,10 +38,14 @@ fn main() {
 enum ButtonAction {
     ResetMap,
     GenerateBSP,
-    // Add more actions as needed
 }
-
-fn setup(mut commands: Commands, mut map: ResMut<Map>) {
+#[derive(Component, Default)]
+struct Tile {}
+fn setup(
+    mut commands: Commands,
+    mut map: ResMut<Map>,
+    mut render_map_event: EventWriter<RenderMapEvent>,
+) {
     commands.spawn(Camera2d);
     commands
         .spawn(Node {
@@ -101,13 +115,10 @@ fn setup(mut commands: Commands, mut map: ResMut<Map>) {
                 ));
         });
     map.generate_map(MAP_SIZE);
+    render_map_event.send(RenderMapEvent);
 }
 
-fn render_map(
-    mut commands: Commands,
-    map: Res<Map>,
-    mut sprite_query: Query<Entity, With<Sprite>>,
-) {
+fn render_map(mut commands: Commands, map: Res<Map>, mut sprite_query: Query<Entity, With<Tile>>) {
     // Clear existing map sprites
     for entity in sprite_query.iter_mut() {
         commands.entity(entity).despawn();
@@ -126,9 +137,11 @@ fn render_map(
                     y as f32 * 10. - (map.render_grid_size.y as f32 * 10. / 2.),
                     0.,
                 )),
+                Tile::default(),
             ));
         }
     }
+    println!("Map Rendered")
 }
 
 fn zoom_camera(
@@ -185,7 +198,10 @@ fn button_system(
         (Changed<Interaction>, With<Button>),
     >,
     mut map: ResMut<Map>,
+    mut render_map_event: EventWriter<RenderMapEvent>,
 ) {
+    let mut rng = rand::rng();
+
     for (interaction, mut color, mut border_color, button_action) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
@@ -193,12 +209,13 @@ fn button_system(
                 border_color.0 = Color::WHITE;
                 match *button_action {
                     ButtonAction::GenerateBSP => {
-                        map.generate_bsp_floor(10, UVec2::new(5, 5));
+                        map.generate_bsp_floor(rng.random_range(6..10), UVec2::new(5, 5));
                     }
                     ButtonAction::ResetMap => {
                         map.generate_map(MAP_SIZE);
                     }
                 }
+                render_map_event.send(RenderMapEvent);
             }
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();

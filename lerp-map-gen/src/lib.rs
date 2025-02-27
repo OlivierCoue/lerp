@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
-use rand::{rng, Rng};
+use rand::Rng;
 /// Number of pixels per one meter
 pub const PIXEL_METER: f32 = 32.;
 
@@ -37,10 +37,8 @@ impl Map {
         self.render_grid.get(pos)
     }
     pub fn generate_bsp_floor(&mut self, iterations: u32, min_size: UVec2) {
-        let mut rng = rng();
-
         let mut regions = vec![(UVec2::ZERO, self.render_grid_size)];
-
+        let mut rng = rand::rng();
         for _ in 0..iterations {
             let mut new_regions = Vec::new();
             for (start, size) in regions {

@@ -12,6 +12,7 @@ bevy = { version = "0.15", default-features = true, features = [
     "mp3",
 ] }
 lerp-map-gen = { path = "../lerp-map-gen" }
+rand = "0.9.0"
 
 [lints.clippy]
 type_complexity = "allow"
